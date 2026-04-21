@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация курьера — Ginza{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow rounded-4 border-0 overflow-hidden">
+                <div class="card-header bg-dark text-white py-3" style="border-radius: 1.2rem 1.2rem 0 0;">
+                    <h4 class="mb-0 fw-bold text-center">
+                        <i class="bi bi-person-plus-fill me-2"></i>Регистрация курьера
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} rounded-4">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Логин</label>
+                            <input type="text" name="username" id="username" class="form-control rounded-pill" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <input type="text" name="password" id="password" class="form-control rounded-pill" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Телефон</label>
+                            <input type="tel" name="phone" id="phone" class="form-control rounded-pill" placeholder="+7 (___) ___-__-__" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold shadow-sm">
+                            <i class="bi bi-check-lg me-2"></i>Создать курьера
+                        </button>
+                    </form>
+
+                    <div class="alert alert-info small mt-4 rounded-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Курьер сможет войти в систему с этими данными и принимать заказы на доставку.
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'operator_panel' %}" class="btn btn-outline-secondary rounded-pill">
+                            <i class="bi bi-arrow-left me-2"></i>Вернуться в панель управления
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#phone').inputmask("+7 (999) 999-99-99");
+    });
+</script>
+{% endblock %}

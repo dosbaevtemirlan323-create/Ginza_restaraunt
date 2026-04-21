@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Ginza Delivery — Байконур</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    
+    <style>
+        :root { 
+            --ginza-gold: #ffc107; 
+            --ginza-dark: #1a1a1a; 
+            --ginza-card-bg: #2d2d2d;
+        }
+        
+        body { 
+            background-color: #f8f9fa; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow-x: hidden; 
+        }
+        
+        /* --- ШАПКА (NAVBAR) --- */
+        .navbar { 
+            background: rgba(0,0,0,0.95) !important; 
+            padding: 15px 0; 
+            border-bottom: 2px solid var(--ginza-gold); 
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            padding: 10px 0;
+            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.98) !important;
+        }
+        
+        .navbar-brand { font-size: 1.8rem; transition: 0.3s; }
+        .navbar-brand:hover { transform: scale(1.05); }
+        
+        .nav-link-custom { 
+            color: white !important; 
+            transition: 0.3s; 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .nav-link-custom::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--ginza-gold);
+            transition: 0.3s;
+        }
+        
+        .nav-link-custom:hover::after {
+            width: 100%;
+        }
+        
+        .nav-link-custom:hover { color: var(--ginza-gold) !important; }
+
+        /* --- ГЛАВНЫЙ БАННЕР (HERO) --- */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                        url('https://images.unsplash.com/photo-1579027989536-b7b1f875659b?q=80&w=2070&auto=format&fit=crop');
+            height: 90vh;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            color: white;
+            position: relative;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, #f8f9fa, transparent);
+        }
+        
+        .hero h1 {
+            animation: fadeInUp 1s ease;
+        }
+        
+        .hero p {
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+        
+        .hero .btn {
+            animation: fadeInUp 1s ease 0.4s both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- СЛАЙДЕР (SWIPER) --- */
+        .dishes-slider {
+            background: var(--ginza-dark);
+            padding: 60px 0;
+        }
+        
+        .dishes-swiper {
+            padding: 20px 0 40px;
+        }
+        
+        .dishes-swiper .swiper-slide {
+            width: 280px;
+            height: auto;
+        }
+        
+        /* Карточка блюда */
+        .dish-card {
+            background: var(--ginza-card-bg);
+            border-radius: 20px;
+            border: 1px solid #444;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .dish-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .dish-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+        .dish-card h5 {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        .dish-card .price {
+            color: var(--ginza-gold);
+            font-weight: bold;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+        }
+        .btn-add-wheel {
+            transition: 0.3s;
+            margin-top: auto;
+        }
+        
+        /* Навигация Swiper */
+        .dishes-swiper .swiper-button-prev,
+        .dishes-swiper .swiper-button-next {
+            color: var(--ginza-gold);
+            background: rgba(0,0,0,0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .dishes-swiper .swiper-button-prev:after,
+        .dishes-swiper .swiper-button-next:after {
+            font-size: 18px;
+        }
+        .dishes-swiper .swiper-pagination-bullet-active {
+            background: var(--ginza-gold);
+        }
+        
+        /* На мобильных скрываем кнопки навигации (лучше использовать свайп) */
+        @media (max-width: 768px) {
+            .dishes-swiper .swiper-button-prev,
+            .dishes-swiper .swiper-button-next {
+                display: none;
+            }
+        }
+
+        /* --- ПРЕИМУЩЕСТВА --- */
+        .features-section {
+            padding: 80px 0;
+            background: white;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        /* --- ОТЗЫВЫ --- */
+        .reviews-section {
+            background: linear-gradient(135deg, #f8f9fa, #fff);
+            padding: 80px 0;
+        }
+        
+        .review-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        
+        .review-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .review-stars {
+            color: #ffc107;
+            margin-bottom: 15px;
+        }
+        
+        .review-text {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .review-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .review-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* --- МОБИЛЬНОЕ МЕНЮ --- */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            height: 65px;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .mobile-nav-item {
+            text-decoration: none;
+            color: #888;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        
+        .mobile-nav-item i { font-size: 22px; margin-bottom: 2px; }
+        .mobile-nav-item.active, .mobile-nav-item:hover { color: var(--ginza-gold); }
+
+        /* --- АДАПТИВНОСТЬ --- */
+        @media (max-width: 991px) {
+            .mobile-bottom-nav { display: flex; }
+            body { padding-bottom: 70px; }
+            .hero h1 { font-size: 3rem; }
+            .hero .lead { font-size: 1.5rem; }
+            .feature-card { margin-bottom: 20px; }
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .hero .lead { font-size: 1rem; }
+            .dishes-slider { padding: 40px 0; }
+            .features-section, .reviews-section { padding: 50px 0; }
+            .feature-card { padding: 20px; }
+            .review-card { padding: 20px; }
+            .contact-card .p-5 { padding: 30px !important; }
+        }
+
+        /* Контакты */
+        .contact-card { 
+            background: var(--ginza-card-bg); 
+            color: white; 
+            border-radius: 25px; 
+            overflow: hidden; 
+            transition: transform 0.3s; 
+        }
+        .contact-card:hover { transform: translateY(-5px); }
+        .map-container { height: 450px; filter: invert(0.9) hue-rotate(180deg); }
+        
+        /* Анимация для кнопки */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .hero .btn {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Улучшенные кнопки на мобильных */
+        @media (max-width: 768px) {
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .hero .btn-lg {
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+            .btn-add-wheel {
+                font-size: 14px;
+                padding: 8px;
+            }
+            .mobile-nav-item {
+                font-size: 11px;
+            }
+            .mobile-nav-item i {
+                font-size: 24px;
+            }
+        }
+        
+        /* Общие улучшения для тач-устройств */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .nav-link-custom, .mobile-nav-item, .filter-btn {
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .btn:active {
+                transform: scale(0.97);
+            }
+        }
+        
+        /* Стили для чата поддержки */
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 1rem;
+        }
+        .chat-message {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-message.user {
+            align-items: flex-end;
+        }
+        .chat-message.support {
+            align-items: flex-start;
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .chat-message.user .message-bubble {
+            background: #ffc107;
+            color: #000;
+        }
+        .message-time {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        .file-attachment {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            background: #e9ecef;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+        .file-attachment a {
+            text-decoration: none;
+            color: #0d6efd;
+        }
+        @media (max-width: 768px) {
+            .chat-messages {
+                height: 50vh;
+            }
+        }
+        
+        /* Дополнительные стили для собственной модалки */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1060;
+            overflow-y: auto;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-dialog {
+            margin: 0.5rem;
+            pointer-events: auto;
+            max-width: 500px;
+            width: 100%;
+        }
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            pointer-events: auto;
+        }
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body {
+            padding: 0;
+            flex: 1 1 auto;
+        }
+        .modal-footer {
+            padding: 0.75rem;
+            border-top: 1px solid #dee2e6;
+        }
+        .btn-close {
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+            opacity: 0.5;
+            width: 1em;
+            height: 1em;
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+        }
+        .btn-close:hover {
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand navbar-dark sticky-top" id="navbar">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'start' %}">GINZA <span class="text-warning">DELIVERY</span></a>
+
+        <div class="d-flex align-items-center gap-3 ms-auto">
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="nav-link-custom d-none d-lg-flex">
+                    <i class="bi bi-person fs-5"></i> <span class="nav-text">Профиль</span>
+                </a>
+                <a href="{% url 'favorites_list' %}" class="nav-link-custom d-none d-lg-flex">
+                    <i class="bi bi-heart fs-5"></i> <span class="nav-text">Избранное</span>
+                </a>
+                <form action="{% url 'logout' %}" method="post" class="m-0 d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm border-0 p-1 nav-link-custom">
+                        <i class="bi bi-box-arrow-right fs-5"></i> <span class="nav-text">Выход</span>
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-warning btn-sm fw-bold rounded-pill px-4">ВОЙТИ</a>
+            {% endif %}
+
+            <a href="{% url 'cart_detail' %}" class="nav-link-custom position-relative ms-2 d-none d-lg-flex">
+                <i class="bi bi-basket fs-4"></i>
+                <span id="cart-count-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 10px;">
+                    {{ cart|length }}
+                </span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="container text-center">
+        <h1 class="display-1 fw-bold">Вкус совершенства</h1>
+        <p class="lead mb-5 fs-3">Премиальная японская кухня в Байконуре</p>
+        <a href="{% url 'menu' %}" class="btn btn-warning btn-lg px-5 py-3 rounded-pill fw-bold shadow">ЗАКАЗАТЬ СЕЙЧАС</a>
+    </div>
+</section>
+
+<!-- Преимущества -->
+<section class="features-section">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5" data-aos="fade-up">Почему выбирают <span class="text-warning">GINZA</span></h2>
+        <div class="row g-4">
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-truck"></i></div>
+                    <h5 class="fw-bold mb-3">Бесплатная доставка</h5>
+                    <p class="text-muted">При заказе от 2000 ₽ доставка по городу бесплатно</p>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-star-fill"></i></div>
+                    <h5 class="fw-bold mb-3">Только свежие продукты</h5>
+                    <p class="text-muted">Используем продукты высшего качества от проверенных поставщиков</p>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-clock"></i></div>
+                    <h5 class="fw-bold mb-3">Быстрая готовка</h5>
+                    <p class="text-muted">Среднее время приготовления заказа — 30 минут</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Слайдер популярных блюд -->
+<div class="dishes-slider">
+    <div class="container mb-4 text-center text-lg-start">
+        <h2 class="text-white fw-bold" data-aos="fade-right"><span class="text-warning">★</span> Популярное сейчас</h2>
+    </div>
+    
+    <div class="swiper dishes-swiper">
+        <div class="swiper-wrapper">
+            {% for dish in popular_dishes %}
+            <div class="swiper-slide">
+                <div class="dish-card">
+                    {% if dish.image %}
+                        <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
+                    {% else %}
+                        <img src="/static/img/no-image.png" alt="Нет фото">
+                    {% endif %}
+                    <h5>{{ dish.name }}</h5>
+                    <div class="price">{{ dish.price }} ₽</div>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'cart_add' dish.id %}" class="btn btn-warning btn-sm w-100 rounded-pill fw-bold btn-add-wheel">В КОРЗИНУ</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-warning btn-sm w-100 rounded-pill fw-bold btn-add-wheel">В КОРЗИНУ</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+    </div>
+</div>
+
+<!-- Отзывы -->
+<section class="reviews-section">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5" data-aos="fade-up">Что говорят <span class="text-warning">наши гости</span></h2>
+        <div class="row g-4">
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+                <div class="review-card">
+                    <div class="review-avatar">А</div>
+                    <div class="review-stars">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="review-text">"Лучшая доставка суши в городе! Всегда свежее, вкусное, быстро привозят. Роллы просто тают во рту. Очень довольна!"</p>
+                    <div class="review-name">Анна С.</div>
+                    <div class="review-date">17 марта 2026</div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="review-card">
+                    <div class="review-avatar">М</div>
+                    <div class="review-stars">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="review-text">"Заказываю здесь уже полгода. Качество всегда на высоте, порции большие, цены приятные. Отдельное спасибо курьерам!"</p>
+                    <div class="review-name">Михаил К.</div>
+                    <div class="review-date">12 марта 2026</div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="review-card">
+                    <div class="review-avatar">Е</div>
+                    <div class="review-stars">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                    </div>
+                    <p class="review-text">"Отличное место! Заказывала сет на день рождения — все гости были в восторге. Доставка вовремя, все упаковано аккуратно."</p>
+                    <div class="review-name">Елена В.</div>
+                    <div class="review-date">8 марта 2026</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Мобильное нижнее меню -->
+<div class="mobile-bottom-nav">
+    <a href="{% url 'start' %}" class="mobile-nav-item active">
+        <i class="bi bi-house-door"></i><span>ГЛАВНАЯ</span>
+    </a>
+    <a href="{% url 'menu' %}" class="mobile-nav-item">
+        <i class="bi bi-grid"></i><span>МЕНЮ</span>
+    </a>
+    <a href="{% url 'cart_detail' %}" class="mobile-nav-item">
+        <i class="bi bi-basket"></i><span>КОРЗИНА</span>
+    </a>
+    <a href="{% url 'profile' %}" class="mobile-nav-item">
+        <i class="bi bi-person"></i><span>ПРОФИЛЬ</span>
+    </a>
+</div>
+
+<!-- Контакты и карта -->
+<section class="container my-5 py-5">
+    <div class="contact-card row g-0 shadow-lg">
+        <div class="col-lg-6 p-5">
+            <h2 class="display-5 fw-bold mb-4">Где мы <span class="text-warning">находимся?</span></h2>
+            <div class="d-flex align-items-center mb-4">
+                <i class="bi bi-geo-alt-fill text-warning fs-1 me-3"></i>
+                <span class="fs-5">г. Байконур, ул. Янгеля, 5А</span>
+            </div>
+            <div class="mb-4">
+                <i class="bi bi-clock text-warning fs-4 me-2"></i>
+                <span>Ежедневно: 11:00 — 23:00</span>
+            </div>
+            <div class="mb-4">
+                <i class="bi bi-telephone text-warning fs-4 me-2"></i>
+                <span>+7 (705) 729-05-41</span>
+            </div>
+            <a href="https://yandex.ru/maps/org/ginza/158233527211/" target="_blank" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold mt-3">ПРОЛОЖИТЬ МАРШРУТ</a>
+        </div>
+        <div class="col-lg-6">
+            <div class="map-container">
+                <iframe src="https://yandex.ru/map-widget/v1/?ll=63.308233%2C45.620021&mode=search&oid=158233527211&ol=biz&z=17" width="100%" height="100%" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Футер с контактами и кнопкой поддержки -->
+<footer class="bg-dark text-white py-5 text-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <p class="mb-2"><i class="bi bi-telephone-fill text-warning me-2"></i> Администратор: <a href="tel:+77774941919" class="text-white text-decoration-none">+7 777 494 19 19</a></p>
+                <p class="mb-3"><i class="bi bi-envelope-fill text-warning me-2"></i> Email: <a href="mailto:admin@ginza.kz" class="text-white text-decoration-none">admin@ginza.kz</a></p>
+                {% if user.is_authenticated %}
+                <button class="btn btn-outline-warning btn-sm rounded-pill px-4" id="supportBtn">
+                    <i class="bi bi-chat-dots me-2"></i>Техническая поддержка
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-warning btn-sm rounded-pill px-4">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Войдите для обращения в поддержку
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="bg-secondary my-4">
+        <p class="mb-0 text-secondary small">© 2026 Ginza Delivery — Байконур. Все права защищены.</p>
+    </div>
+</footer>
+
+<!-- Модальное окно чата поддержки -->
+<div class="modal" id="supportChatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-headset me-2"></i>Техническая поддержка</h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="text-center text-muted py-4">Загрузка истории...</div>
+                </div>
+                <div class="chat-input-area p-3 border-top">
+                    <div class="d-flex gap-2">
+                        <textarea class="form-control form-control-sm" id="chatMessageInput" rows="2" placeholder="Напишите сообщение..."></textarea>
+                        <button class="btn btn-warning btn-sm" id="sendMessageBtn">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <input type="file" id="chatFileInput" class="d-none" accept="image/*,.pdf,.doc,.docx,.txt">
+                        <button class="btn btn-sm btn-outline-secondary" id="attachFileBtn">
+                            <i class="bi bi-paperclip"></i> Прикрепить файл
+                        </button>
+                        <span class="small text-muted ms-2" id="fileNameDisplay"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script>
+    AOS.init({ duration: 800, once: true });
+    
+    // Эффект скролла для navbar
+    window.addEventListener('scroll', function() {
+        const navbar = document.getElementById('navbar');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+    
+    // Инициализация Swiper
+    const swiper = new Swiper('.dishes-swiper', {
+        slidesPerView: 'auto',
+        spaceBetween: 20,
+        loop: true,
+        autoplay: {
+            delay: 3000,
+            disableOnInteraction: true,
+        },
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        breakpoints: {
+            320: { spaceBetween: 12 },
+            768: { spaceBetween: 20 }
+        }
+    });
+    
+    // ----- Чат поддержки (исправленная версия с автообновлением, без Bootstrap JS) -----
+    {% if user.is_authenticated %}
+    let chatUpdateInterval = null;
+    const chatModal = document.getElementById('supportChatModal');
+    const supportBtn = document.getElementById('supportBtn');
+    
+    function openModal() {
+        if (chatModal) {
+            chatModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            loadSupportMessages();
+            if (chatUpdateInterval) clearInterval(chatUpdateInterval);
+            chatUpdateInterval = setInterval(loadSupportMessages, 3000);
+        }
+    }
+    
+    function closeModal() {
+        if (chatModal) {
+            chatModal.classList.remove('show');
+            document.body.style.overflow = '';
+            if (chatUpdateInterval) {
+                clearInterval(chatUpdateInterval);
+                chatUpdateInterval = null;
+            }
+        }
+    }
+    
+    function loadSupportMessages() {
+        fetch('/api/support/messages/')
+            .then(res => {
+                if (!res.ok) throw new Error('Ошибка загрузки сообщений');
+                return res.json();
+            })
+            .then(data => {
+                const container = document.getElementById('chatMessages');
+                if (!container) return;
+                
+                if (data.messages && data.messages.length > 0) {
+                    container.innerHTML = '';
+                    data.messages.forEach(msg => {
+                        appendMessage(msg.text, msg.created_at, msg.file_url, msg.file_name, msg.is_admin || false);
+                    });
+                } else {
+                    container.innerHTML = '<div class="text-center text-muted py-4">💬 Нет сообщений. Напишите нам, и мы ответим в ближайшее время!</div>';
+                }
+                container.scrollTop = container.scrollHeight;
+            })
+            .catch(err => {
+                console.error('Ошибка загрузки сообщений:', err);
+                const container = document.getElementById('chatMessages');
+                if (container) {
+                    container.innerHTML = '<div class="text-center text-danger py-4">⚠️ Не удалось загрузить историю сообщений. Попробуйте позже.</div>';
+                }
+            });
+    }
+    
+    function appendMessage(text, time, fileUrl, fileName, isAdmin = false) {
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        
+        const placeholder = container.querySelector('.text-center');
+        if (placeholder && container.children.length === 1 && 
+            (placeholder.classList.contains('text-muted') || placeholder.classList.contains('text-danger'))) {
+            container.innerHTML = '';
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isAdmin ? 'support' : 'user'}`;
+        
+        let content = `<div class="message-bubble"><div>${escapeHtml(text || '')}</div>`;
+        if (fileUrl && fileName) {
+            content += `<div class="file-attachment"><a href="${fileUrl}" target="_blank"><i class="bi bi-paperclip"></i> ${escapeHtml(fileName)}</a></div>`;
+        }
+        let formattedTime = time || '';
+        if (time && time.includes(' ')) {
+            formattedTime = time.split(' ')[1] || time;
+        }
+        content += `<div class="message-time">${formattedTime}</div></div>`;
+        messageDiv.innerHTML = content;
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Отправка сообщения
+    const sendBtn = document.getElementById('sendMessageBtn');
+    const messageInput = document.getElementById('chatMessageInput');
+    const fileInput = document.getElementById('chatFileInput');
+    const attachBtn = document.getElementById('attachFileBtn');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    
+    if (sendBtn) {
+        sendBtn.addEventListener('click', function() {
+            const text = messageInput ? messageInput.value.trim() : '';
+            const file = fileInput ? fileInput.files[0] : null;
+            
+            if (!text && !file) {
+                alert('Введите текст или выберите файл');
+                return;
+            }
+            
+            const formData = new FormData();
+            if (text) formData.append('text', text);
+            if (file) formData.append('file', file);
+            
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            fetch('/api/support/send/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    loadSupportMessages();
+                    if (messageInput) messageInput.value = '';
+                    if (fileInput) fileInput.value = '';
+                    if (fileNameDisplay) fileNameDisplay.innerText = '';
+                } else {
+                    alert(data.message || 'Ошибка отправки сообщения');
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка отправки:', err);
+                alert('Не удалось отправить сообщение. Проверьте соединение.');
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="bi bi-send"></i>';
+            });
+        });
+    }
+    
+    // Прикрепление файла
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileNameDisplay) {
+                fileNameDisplay.innerText = fileName ? `📎 ${fileName}` : '';
+            }
+        });
+    }
+    
+    // Отправка по Enter (Ctrl+Enter для новой строки)
+    if (messageInput) {
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (sendBtn && !sendBtn.disabled) {
+                    sendBtn.click();
+                }
+            }
+        });
+    }
+    
+    // Обработчики для открытия/закрытия модалки
+    if (supportBtn) {
+        supportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
+        });
+    }
+    
+    if (chatModal) {
+        const closeBtn = chatModal.querySelector('[data-dismiss="modal"]');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        // Закрытие при клике на фон
+        chatModal.addEventListener('click', function(e) {
+            if (e.target === chatModal) {
+                closeModal();
+            }
+        });
+    }
+    
+    {% else %}
+    // Если пользователь не авторизован, показываем сообщение
+    const chatModal = document.getElementById('supportChatModal');
+    if (chatModal) {
+        chatModal.addEventListener('show.bs.modal', function () {
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                container.innerHTML = '<div class="text-center text-muted py-4">🔒 Для обращения в поддержку необходимо <a href="{% url "login" %}" class="text-warning">войти</a> в аккаунт</div>';
+            }
+        });
+    }
+    {% endif %}
+</script>
+
+<style>
+    .transition-hover {
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
+    .transition-hover:hover {
+        transform: translateY(-3px);
+        color: var(--ginza-gold) !important;
+    }
+</style>
+
+</body>
+</html>

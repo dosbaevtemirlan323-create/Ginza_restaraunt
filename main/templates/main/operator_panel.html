@@ -1,0 +1,1950 @@
+{% extends 'base.html' %}
+{% block title %}Панель управления — Ginza{% endblock %}
+
+{% block content %}
+<style>
+    /* Расширенные стили для панели оператора */
+    .op-card { transition: transform 0.2s, box-shadow 0.2s; border: none !important; }
+    .op-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .nav-pills .nav-link { color: #555; font-weight: 500; transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer; }
+    .nav-pills .nav-link.active { background-color: #212529 !important; color: #fff !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .badge-status { font-size: 0.75rem; padding: 0.5em 1em; }
+    .order-item-row { border-bottom: 1px dashed #dee2e6; padding: 10px 0; }
+    .order-item-row:last-child { border-bottom: none; }
+    .sticky-report-header { position: sticky; top: 0; background: white; z-index: 10; border-bottom: 2px solid #f8f9fa; }
+    
+    /* Стили для чата поддержки */
+    .support-chat-container {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    .support-users-list {
+        border-right: 1px solid #eee;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .support-user-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .support-user-item:hover {
+        background: #f8f9fa;
+    }
+    .support-user-item.active {
+        background: #fff9e6;
+        border-left: 3px solid #ffc107;
+    }
+    .support-user-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .support-user-last {
+        font-size: 11px;
+        color: #888;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .support-user-badge {
+        background: #dc3545;
+        color: white;
+        border-radius: 20px;
+        padding: 2px 8px;
+        font-size: 10px;
+        margin-left: 8px;
+    }
+    .chat-messages-area {
+        height: 60vh;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-message.operator {
+        align-items: flex-end;
+    }
+    .chat-message.client {
+        align-items: flex-start;
+    }
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+    }
+    .chat-message.operator .message-bubble {
+        background: #ffc107;
+        color: #000;
+        border-bottom-right-radius: 5px;
+    }
+    .chat-message.client .message-bubble {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 5px;
+    }
+    .message-time {
+        font-size: 10px;
+        color: #999;
+        margin-top: 5px;
+    }
+    .message-file {
+        margin-top: 8px;
+        font-size: 12px;
+    }
+    .message-file a {
+        color: #0d6efd;
+        text-decoration: none;
+    }
+    .chat-input-area {
+        padding: 15px;
+        border-top: 1px solid #eee;
+        background: white;
+    }
+    .user-info-header {
+        background: white;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    /* Стили для модальных окон на чистом CSS */
+    .modal-custom {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1060;
+        overflow-y: auto;
+    }
+    .modal-custom.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-custom .modal-dialog {
+        margin: 0.5rem;
+        pointer-events: auto;
+        max-width: 500px;
+        width: 100%;
+    }
+    .modal-custom .modal-dialog.modal-lg {
+        max-width: 800px;
+    }
+    .modal-custom .modal-content {
+        background: #fff;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+    }
+    .modal-custom .modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-custom .modal-body {
+        padding: 1rem;
+        flex: 1 1 auto;
+    }
+    .modal-custom .modal-footer {
+        padding: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    .modal-custom .btn-close-custom {
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+        opacity: 0.5;
+        width: 1em;
+        height: 1em;
+        padding: 0;
+        border: 0;
+        cursor: pointer;
+        background-color: transparent;
+    }
+    .btn-close-custom:hover {
+        opacity: 0.75;
+    }
+    
+    /* Стили для курьеров онлайн */
+    .courier-online-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin-bottom: 8px;
+    }
+    .online-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #28a745;
+        display: inline-block;
+        margin-right: 8px;
+        box-shadow: 0 0 5px #28a745;
+        animation: pulse-green 1.5s infinite;
+    }
+    .offline-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #dc3545;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.4); }
+        70% { box-shadow: 0 0 0 5px rgba(40,167,69,0); }
+        100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+    }
+    
+    /* Фильтры для истории заказов */
+    .history-filters {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .support-users-list {
+            border-right: none;
+            border-bottom: 1px solid #eee;
+            max-height: 40vh;
+        }
+        .chat-messages-area {
+            height: 50vh;
+        }
+        .modal-custom .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        .history-filters .row {
+            gap: 10px;
+        }
+        .nav-pills .nav-link {
+            font-size: 12px;
+            padding: 8px 4px;
+        }
+    }
+    
+    .modal-custom .sticky-report-header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    /* Анимация для плавного переключения табов */
+    .tab-pane {
+        transition: opacity 0.2s ease;
+        opacity: 1;
+    }
+    .tab-pane.fade {
+        opacity: 0;
+    }
+    .tab-pane.show {
+        opacity: 1;
+    }
+
+
+    /* ========== СТИЛИ ДЛЯ ВКЛАДОК (ТАБОВ) ========== */
+    .nav-pills {
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+        display: flex;
+        align-items: center;
+    }
+
+    .nav-pills .nav-link {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 40px !important;
+        padding: 6px 16px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        color: #212529 !important;
+        white-space: nowrap !important;
+        transition: all 0.2s ease;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1.2 !important;
+        height: auto !important;
+        min-height: 38px;
+        margin: 0 !important;
+    }
+
+    .nav-pills .nav-link.active {
+        background: #212529 !important;
+        color: #fff !important;
+        border-color: #212529 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    }
+
+    .nav-pills .nav-link .badge {
+        background: rgba(0,0,0,0.08);
+        color: #212529;
+        margin-left: 6px;
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        line-height: 1;
+    }
+
+    .nav-pills .nav-link.active .badge {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+    }
+
+    /* Адаптация для мобильных */
+    @media (max-width: 768px) {
+        .nav-pills .nav-link {
+            padding: 4px 12px !important;
+            font-size: 0.75rem !important;
+            min-height: 32px;
+        }
+        .nav-pills .nav-link .badge {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.4rem;
+            margin-left: 4px;
+        }
+    }
+
+</style>
+
+<div class="container mt-4 pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-speedometer2 text-primary"></i> Панель управления</h2>
+            <p class="text-muted small mb-0">Мониторинг заказов и управление персоналом в реальном времени</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'create_courier' %}" class="btn btn-outline-dark rounded-pill px-4 shadow-sm fw-bold">
+                <i class="bi bi-person-plus-fill me-2"></i> Курьер
+            </a>
+            <button class="btn btn-dark rounded-pill px-4 shadow-sm fw-bold" onclick="openModal('reportModal')">
+                <i class="bi bi-graph-up me-2"></i> Аналитика
+            </button>
+        </div>
+    </div>
+
+    <!-- Карточки статистики -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card op-card shadow-sm rounded-4 p-3 bg-white border-start border-success border-5 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="bi bi-cash-stack fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0" id="revenue-amount">{{ total_revenue|default:"0" }} ₽</h4>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Выручка</small>
+                    </div>
+                </div>
+                <div id="revenue-period" class="small text-muted mt-2 text-center">
+                    {% if start_date and end_date %}
+                        {{ start_date }} — {{ end_date }}
+                    {% else %}
+                        За сегодня
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card op-card shadow-sm rounded-4 p-3 bg-white border-start border-primary border-5 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="bi bi-bag-check fs-3 text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ today_count|default:"0" }}</h4>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Завершено заказов</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card op-card shadow-sm rounded-4 p-3 bg-white border-start border-warning border-5 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="bi bi-clock-history fs-3 text-warning"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ orders_new.count }}</h4>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Ожидают подтверждения</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card op-card shadow-sm rounded-4 p-3 bg-white border-start border-info border-5 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="bi bi-truck fs-3 text-info"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0" id="online-couriers-count">0</h4>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Курьеров онлайн</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Табы заказов -->
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded-pill shadow-sm border flex-nowrap overflow-auto" style="-webkit-overflow-scrolling: touch;" id="pills-tab" role="tablist">
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link active rounded-pill" onclick="showTab('tab-new')">
+                Новые <span class="badge rounded-pill bg-warning text-dark ms-1" id="badge-new">{{ orders_new.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-work')">
+                Готовка <span class="badge rounded-pill bg-primary ms-1" id="badge-work">{{ orders_cooking.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-ready')">
+                Готовы <span class="badge rounded-pill bg-success ms-1" id="badge-ready">{{ orders_ready.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-delivery')">
+                В пути <span class="badge rounded-pill bg-info ms-1" id="badge-delivery">{{ orders_delivering.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-products')">
+                <i class="bi bi-grid"></i> Товары
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-history')">Завершенные</button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-couriers')">
+                <i class="bi bi-people"></i> Курьеры
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill" onclick="showTab('tab-support')">
+                <i class="bi bi-chat-dots me-1"></i> Вопросы
+                <span id="unread-badge" class="badge bg-danger ms-1" style="display: none;">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        
+        <!-- Новые заказы -->
+        <div class="tab-pane show active" id="tab-new" role="tabpanel">
+            <div id="new-orders-container">
+                {% for order in orders_new %}
+                <div class="card mb-3 border-start border-warning border-5 shadow-sm rounded-4 op-card pulse-new" id="order-card-{{ order.id }}">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1 flex-wrap gap-2">
+                                <h5 class="mb-0 fw-bold">Заказ №{{ order.id }}</h5>
+                                <span class="badge bg-light text-dark border">{{ order.created_at|date:"H:i" }}</span>
+                                <span class="badge bg-warning text-dark">💰 {{ order.total_price }} ₽</span>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                <i class="bi bi-person me-1"></i> {{ order.user.username }} | 
+                                <i class="bi bi-geo-alt me-1"></i> {{ order.address|truncatechars:40 }}
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark rounded-pill px-3" onclick="openModal('modal-{{ order.id }}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button onclick="changeStatusAjax('{{ order.id }}', 'cooking', 'new')" class="btn btn-success rounded-pill px-4 fw-bold">
+                                <i class="bi bi-play-fill me-1"></i> В работу
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
+                    <p class="text-muted mt-2">Новых заказов пока нет. Отдыхаем!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- В работе -->
+        <div class="tab-pane" id="tab-work" role="tabpanel">
+            <div id="work-orders-container">
+                {% for order in orders_cooking %}
+                <div class="card mb-3 border-start border-primary border-5 shadow-sm rounded-4 op-card" id="work-order-card-{{ order.id }}">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1 fw-bold">Заказ №{{ order.id }} <small class="text-muted fw-normal fs-6">({{ order.user.username }})</small></h5>
+                            <p class="small text-muted mb-0"><i class="bi bi-clock me-1"></i> Принят в {{ order.created_at|date:"H:i" }}</p>
+                            <p class="small text-muted mb-0">💰 {{ order.total_price }} ₽ | 📍 {{ order.address|truncatechars:35 }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark rounded-pill" onclick="openModal('modal-{{ order.id }}')">Детали</button>
+                            <button onclick="changeStatusAjax('{{ order.id }}', 'ready', 'work')" class="btn btn-primary rounded-pill px-4 fw-bold">Готово</button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-5 text-muted">На кухне сейчас пусто</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Готовы -->
+        <div class="tab-pane" id="tab-ready" role="tabpanel">
+            <div id="ready-orders-container">
+                {% for order in orders_ready %}
+                <div class="card mb-3 border-start border-success border-5 shadow-sm rounded-4 op-card" id="ready-order-card-{{ order.id }}">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1 fw-bold">Заказ №{{ order.id }}</h5>
+                            <p class="small text-muted mb-0">📍 {{ order.address|truncatechars:50 }}</p>
+                            <p class="small text-muted mb-0">💰 {{ order.total_price }} ₽ | 👤 {{ order.user.username }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark rounded-pill" onclick="openModal('modal-{{ order.id }}')">Детали</button>
+                            <button class="btn btn-secondary rounded-pill px-4 fw-bold disabled" disabled>Ожидает курьера</button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-5 text-muted">Нет заказов, готовых к выдаче</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- В пути -->
+        <div class="tab-pane" id="tab-delivery" role="tabpanel">
+            <div id="delivery-orders-container">
+                {% for order in orders_delivering %}
+                <div class="card mb-3 border-start border-info border-5 shadow-sm rounded-4 op-card" id="delivery-order-card-{{ order.id }}">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1 fw-bold">Заказ №{{ order.id }} — <span class="text-info">Доставка</span></h5>
+                            <p class="small text-muted mb-0">
+                                <strong>Курьер:</strong> {{ order.courier.username|default:"Не назначен" }} | 
+                                <strong>Тел:</strong> {{ order.phone }}
+                            </p>
+                            <p class="small text-muted mb-0">📍 {{ order.address|truncatechars:40 }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark rounded-pill" onclick="openModal('modal-{{ order.id }}')">Детали</button>
+                            <button class="btn btn-secondary rounded-pill px-4 fw-bold disabled" disabled>Ожидает доставки</button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center py-5 text-muted">Сейчас нет активных доставок</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Управление товарами и категориями (оставляем как есть) -->
+        <div class="tab-pane" id="tab-products" role="tabpanel">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="category-manager shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0"><i class="bi bi-tags"></i> Категории</h5>
+                            <button class="btn btn-sm btn-warning rounded-pill" onclick="openModal('addCategoryModal')">
+                                <i class="bi bi-plus-lg"></i> Добавить
+                            </button>
+                        </div>
+                        <div id="categories-list">
+                            {% for category in categories %}
+                            <div class="category-item">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-badge status-active"></span>
+                                    <span class="fw-medium">{{ category.name }}</span>
+                                    <span class="badge bg-secondary rounded-pill">{{ category.products.count }}</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-link text-primary p-0 me-2" onclick="openModal('editCategoryModal{{ category.id }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    {% if category.products.count == 0 %}
+                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="openModal('deleteCategoryModal{{ category.id }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center py-3">Нет категорий</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="category-manager shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0"><i class="bi bi-box-seam"></i> Все товары</h5>
+                            <button class="btn btn-sm btn-warning rounded-pill" onclick="openModal('addProductModal')">
+                                <i class="bi bi-plus-lg"></i> Добавить блюдо
+                            </button>
+                        </div>
+                        <div style="max-height: 500px; overflow-y: auto;">
+                            {% for product in all_products %}
+                            <div class="product-item-admin">
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if product.image %}
+                                    <img src="{{ product.image.url }}" width="50" height="50" class="rounded-3 object-fit-cover">
+                                    {% else %}
+                                    <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-image text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ product.name }}</div>
+                                        <div class="small text-muted">{{ product.category.name }} • {{ product.weight }}г • {{ product.price }} ₽</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <span class="badge {% if product.is_active %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                        {% if product.is_active %}В наличии{% else %}Стоп-лист{% endif %}
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="openModal('editProductModal{{ product.id }}')">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <a href="{% url 'toggle_active' product.id %}" class="btn btn-sm {% if product.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %} rounded-pill">
+                                        {% if product.is_active %}<i class="bi bi-pause"></i> Стоп{% else %}<i class="bi bi-play"></i> Вкл{% endif %}
+                                    </a>
+                                    <a href="{% url 'delete_product' product.id %}?next={{ request.path }}" 
+                                    class="btn btn-sm btn-outline-danger rounded-pill" 
+                                    onclick="return confirm('Удалить блюдо «{{ product.name }}»? Это действие необратимо.')">
+                                        <i class="bi bi-trash"></i> Удалить
+                                    </a>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center py-3">Нет товаров</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- История заказов с фильтрами -->
+        <div class="tab-pane" id="tab-history" role="tabpanel">
+            <div class="history-filters">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3 col-6">
+                        <label class="small text-muted">Фильтр по статусу</label>
+                        <select id="history-status-filter" class="form-select form-select-sm rounded-pill" onchange="filterHistoryOrders()">
+                            <option value="all">Все заказы</option>
+                            <option value="completed">Завершенные</option>
+                            <option value="cancelled">Отмененные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="small text-muted">Сортировка</label>
+                        <select id="history-sort" class="form-select form-select-sm rounded-pill" onchange="sortHistoryOrders()">
+                            <option value="newest">Сначала новые</option>
+                            <option value="oldest">Сначала старые</option>
+                            <option value="price-high">По сумме (дорогие)</option>
+                            <option value="price-low">По сумме (дешевые)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="small text-muted">Поиск по № заказа</label>
+                        <input type="text" id="history-search" class="form-control form-control-sm rounded-pill" placeholder="№ заказа..." oninput="filterHistoryOrders()">
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <button class="btn btn-sm btn-outline-secondary w-100 rounded-pill" onclick="resetHistoryFilters()">Сбросить фильтры</button>
+                    </div>
+                </div>
+            </div>
+            <div id="history-orders-container">
+                <div class="row row-cols-1 row-cols-md-2 g-3" id="history-orders-list">
+                    {% for order in orders_history %}
+                    <div class="col history-order-item" data-order-id="{{ order.id }}" data-status="{{ order.status }}" data-price="{{ order.total_price }}" data-created="{{ order.created_at|date:'Y-m-d H:i:s' }}">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 opacity-85">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="fw-bold mb-1">№{{ order.id }} — {{ order.user.username }}</h6>
+                                    <p class="small text-muted mb-0">{{ order.created_at|date:"d.m.Y H:i" }}</p>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-primary">{{ order.total_price }} ₽</div>
+                                    <span class="badge bg-light text-dark border rounded-pill small">{{ order.get_status_display }}</span>
+                                </div>
+                            </div>
+                            <hr class="my-2 opacity-25">
+                            <button class="btn btn-sm btn-link text-decoration-none p-0 text-dark fw-bold" onclick="openModal('modal-{{ order.id }}')">
+                                <i class="bi bi-info-circle me-1"></i> Просмотреть детали
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка курьеров -->
+        <div class="tab-pane" id="tab-couriers" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow-sm rounded-4 border-0">
+                        <div class="card-header bg-dark text-white rounded-top-4">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-truck me-2"></i>Курьеры онлайн</h5>
+                        </div>
+                        <div class="card-body p-3" id="online-couriers-list">
+                            <div class="text-center py-4 text-muted">Загрузка...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm rounded-4 border-0">
+                        <div class="card-header bg-secondary text-white rounded-top-4">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-person-down me-2"></i>Все курьеры</h5>
+                        </div>
+                        <div class="card-body p-3" id="all-couriers-list" style="max-height: 400px; overflow-y: auto;">
+                            {% for courier in all_couriers %}
+                            <div class="courier-online-item">
+                                <div>
+                                    <span id="courier-status-{{ courier.id }}" class="{% if courier.is_online %}online-indicator{% else %}offline-indicator{% endif %}"></span>
+                                    <strong>{{ courier.username }}</strong>
+                                    <small class="text-muted ms-2">{{ courier.phone|default:"Телефон не указан" }}</small>
+                                </div>
+                                <span class="badge {% if courier.is_online %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                    {% if courier.is_online %}Онлайн{% else %}Офлайн{% endif %}
+                                </span>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center py-3">Нет зарегистрированных курьеров</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка поддержки (Вопросы) -->
+        <div class="tab-pane" id="tab-support" role="tabpanel">
+            <div class="support-chat-container">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <div class="support-users-list" id="support-users-list">
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-chat-dots fs-1 opacity-25"></i>
+                                <p class="mt-2">Загрузка пользователей...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div id="chat-area" style="display: none;">
+                            <div class="user-info-header" id="chat-user-info">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h5 class="fw-bold mb-0" id="chat-user-name">Выберите пользователя</h5>
+                                        <small class="text-muted" id="chat-user-phone"></small>
+                                    </div>
+                                    <span class="badge bg-warning text-dark rounded-pill">Активный чат</span>
+                                </div>
+                            </div>
+                            <div class="chat-messages-area" id="chat-messages-area">
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-chat-dots fs-1 opacity-25"></i>
+                                    <p class="mt-2">Выберите пользователя из списка слева</p>
+                                </div>
+                            </div>
+                            <div class="chat-input-area">
+                                <div class="d-flex gap-2">
+                                    <textarea class="form-control rounded-3" id="reply-message-input" rows="2" placeholder="Введите ответ..."></textarea>
+                                    <button class="btn btn-warning rounded-3" id="send-reply-btn" onclick="sendReply()">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="file" id="reply-file-input" class="d-none" accept="image/*,.pdf,.doc,.docx,.txt">
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('reply-file-input').click()">
+                                        <i class="bi bi-paperclip"></i> Прикрепить файл
+                                    </button>
+                                    <span class="small text-muted ms-2" id="reply-file-name"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="no-chat-selected" class="text-center py-5">
+                            <i class="bi bi-chat-dots fs-1 text-muted opacity-25"></i>
+                            <p class="mt-3 text-muted">Выберите пользователя, чтобы начать диалог</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалки для управления категориями (оставляем как есть) -->
+<div class="modal-custom" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Новая категория</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addCategoryModal')"></button>
+            </div>
+            <form method="post" action="{% url 'add_category' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control rounded-pill" placeholder="Название категории" required>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for category in categories %}
+<div class="modal-custom" id="editCategoryModal{{ category.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Редактировать категорию</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('editCategoryModal{{ category.id }}')"></button>
+            </div>
+            <form method="post" action="{% url 'edit_category' category.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control rounded-pill" value="{{ category.name }}" required>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if category.products.count == 0 %}
+<div class="modal-custom" id="deleteCategoryModal{{ category.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold text-danger">Удалить категорию?</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('deleteCategoryModal{{ category.id }}')"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить категорию <strong>"{{ category.name }}"</strong>?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill" onclick="closeModal('deleteCategoryModal{{ category.id }}')">Отмена</button>
+                <a href="{% url 'delete_category' category.id %}" class="btn btn-danger rounded-pill">Удалить</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- Модалка добавления товара -->
+<div class="modal-custom" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Новое блюдо</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addProductModal')"></button>
+            </div>
+            <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" name="name" class="form-control rounded-pill" placeholder="Название блюда" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="number" step="0.01" name="price" class="form-control rounded-pill" placeholder="Цена ₽" required>
+                        </div>
+                        <div class="col">
+                            <input type="number" name="weight" class="form-control rounded-pill" placeholder="Вес г">
+                        </div>
+                        <div class="col">
+                            <input type="number" name="calories" class="form-control rounded-pill" placeholder="Калории ккал" min="0" max="2000" step="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <textarea name="description" class="form-control rounded-3" rows="3" placeholder="Описание блюда"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <select name="category" class="form-select rounded-pill" required>
+                            <option value="" disabled selected>Выберите категорию</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <input type="file" name="image" class="form-control rounded-pill" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for product in all_products %}
+<div class="modal-custom" id="editProductModal{{ product.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Редактировать: {{ product.name }}</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('editProductModal{{ product.id }}')"></button>
+            </div>
+            <form method="post" action="{% url 'edit_product' product.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" name="name" class="form-control rounded-pill" value="{{ product.name }}" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="number" step="0.01" name="price" class="form-control rounded-pill" value="{{ product.price }}" required>
+                        </div>
+                        <div class="col">
+                            <input type="number" name="weight" class="form-control rounded-pill" value="{{ product.weight }}">
+                        </div>
+                        <div class="col">
+                            <input type="number" name="calories" class="form-control rounded-pill" value="{{ product.calories|default:0 }}" placeholder="Калории ккал" min="0" max="2000" step="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <textarea name="description" class="form-control rounded-3" rows="3">{{ product.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <select name="category" class="form-select rounded-pill">
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if cat.id == product.category.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="activeSwitch{{ product.id }}" {% if product.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="activeSwitch{{ product.id }}">В наличии</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <input type="file" name="image" class="form-control rounded-pill" accept="image/*">
+                        {% if product.image %}
+                        <div class="mt-2 small text-muted">Текущее фото: {{ product.image.name }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+{% for order in all_orders %}
+<div class="modal-custom" id="modal-{{ order.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 bg-light rounded-top-4">
+                <h5 class="modal-title fw-bold">Заказ №{{ order.id }}</h5>
+                <span class="badge bg-dark ms-3 rounded-pill">{{ order.get_status_display }}</span>
+                <button type="button" class="btn-close-custom" onclick="closeModal('modal-{{ order.id }}')"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="print-area-{{ order.id }}">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="small text-uppercase fw-bold text-muted">Клиент</label>
+                            <p class="fw-bold">{{ order.user.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-uppercase fw-bold text-muted">Телефон</label>
+                            <p class="fw-bold">{{ order.phone }}</p>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="small text-uppercase fw-bold text-muted">Адрес доставки</label>
+                        <p class="fw-medium border-start border-3 ps-2">{{ order.address }}</p>
+                    </div>
+                    
+                    <label class="small text-uppercase fw-bold text-muted mb-2">Позиции</label>
+                    <div id="order-items-{{ order.id }}">
+                        {% for item in order.items.all %}
+                        <div class="order-item-row d-flex justify-content-between align-items-center border-bottom py-2" id="order-item-{{ item.id }}">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ item.product.name }}</div>
+                                <div class="small text-muted">💰 {{ item.price }} ₽</div>
+                                {% if item.comment %}
+                                <div class="small text-warning mt-1"><i class="bi bi-chat-dots"></i> {{ item.comment }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="updateOrderItemQuantity({{ item.id }}, 'decrease')">-</button>
+                                <span class="fw-bold min-width-40 text-center" id="item-qty-{{ item.id }}">{{ item.quantity }}</span>
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="updateOrderItemQuantity({{ item.id }}, 'increase')">+</button>
+                                <!-- КНОПКА УДАЛЕНИЯ БЛЮДА УБРАНА ПО ТРЕБОВАНИЮ -->
+                            </div>
+                            <div class="ms-3 fw-bold min-width-80 text-end" id="item-total-{{ item.id }}">{{ item.get_cost }} ₽</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-3">
+                        <h5 class="fw-bold mb-0">Итого:</h5>
+                        <h4 class="fw-bold mb-0 text-primary" id="order-total-{{ order.id }}">{{ order.total_price }} ₽</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <div class="row w-100 g-2">
+                    <div class="col-4">
+                        <button onclick="printThermal('{{ order.id }}')" class="btn btn-outline-dark w-100 rounded-pill fw-bold">Чек</button>
+                    </div>
+                    <div class="col-4">
+                        <button onclick="saveOrderChanges({{ order.id }})" class="btn btn-warning w-100 rounded-pill fw-bold">Сохранить</button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-secondary w-100 rounded-pill fw-bold" onclick="closeModal('modal-{{ order.id }}')">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Модалка аналитики -->
+<div class="modal-custom" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 sticky-report-header p-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bar-chart-fill text-warning me-2"></i> Аналитика продаж</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('reportModal')"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <form method="get" class="row g-2 mb-4 bg-light p-3 rounded-4 border" id="reportForm">
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="bi bi-calendar-event"></i></span>
+                            <input type="date" name="start_date" id="report_start_date" class="form-control border-start-0 rounded-end-pill" value="{{ start_date|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="bi bi-calendar-check"></i></span>
+                            <input type="date" name="end_date" id="report_end_date" class="form-control border-start-0 rounded-end-pill" value="{{ end_date|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" onclick="applyReportFilter()" class="btn btn-dark btn-sm w-100 rounded-pill fw-bold text-uppercase" style="font-size: 0.7rem;">Ок</button>
+                    </div>
+                </form>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-white shadow-sm text-center">
+                            <h6 class="text-muted small text-uppercase fw-bold">Хит продаж</h6>
+                            {% if most_popular %}
+                                <div class="text-warning fs-4 fw-bold mb-0">{{ most_popular.product__name }}</div>
+                                <div class="badge bg-warning text-dark rounded-pill">Продано: {{ most_popular.total_qty }} ед.</div>
+                            {% else %}
+                                <p class="mb-0 text-muted">Нет данных</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-white shadow-sm text-center">
+                            <h6 class="text-muted small text-uppercase fw-bold">Средний чек</h6>
+                            <div class="text-success fs-4 fw-bold">{{ avg_check }} ₽</div>
+                            <small class="text-muted">Всего {{ today_count }} заказов</small>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3">Рейтинг товаров:</h6>
+                <div class="table-responsive" style="max-height: 300px;">
+                    <table class="table table-hover align-middle">
+                        <tbody id="popular-items-table">
+                            {% for item in popular_items_full %}
+                              <tr>
+                                <td style="width: 40%">{{ item.product__name }}</td>
+                                <td style="width: 45%">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: {{ item.total_qty|floatformat:0 }}%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">{{ item.total_qty }} шт.</td>
+                              </tr>
+                            {% empty %}
+                              <td><td colspan="3" class="text-center py-4 text-muted">Информации о продажах пока нет</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4">
+                <button onclick="window.print()" class="btn btn-outline-dark w-100 rounded-pill fw-bold">
+                    <i class="bi bi-file-earmark-pdf me-2"></i> Сформировать PDF-отчет
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Звук для новых заказов -->
+<audio id="new-order-sound" preload="auto">
+    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// Функции для работы с модальными окнами на чистом JS
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Закрытие модалки по клику на фон
+window.onclick = function(event) {
+    if (event.target.classList && event.target.classList.contains('modal-custom')) {
+        closeModal(event.target.id);
+    }
+};
+
+// Функции для переключения табов (плавно, без перезагрузки)
+function showTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('show', 'active');
+    });
+    const activePane = document.getElementById(tabId);
+    if (activePane) {
+        activePane.classList.add('show', 'active');
+    }
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('onclick') === `showTab('${tabId}')`) {
+            link.classList.add('active');
+        }
+    });
+    
+    // Если открыли вкладку курьеров, обновляем список
+    if (tabId === 'tab-couriers') {
+        loadOnlineCouriers();
+    }
+}
+
+// Воспроизведение звука
+function playNewOrderSound() {
+    const sound = document.getElementById('new-order-sound');
+    if (sound) {
+        sound.play().catch(e => console.log('Звук не воспроизведён:', e));
+    }
+}
+
+// Добавление нового заказа в интерфейс
+function addNewOrderToUI(order) {
+    const container = document.getElementById('new-orders-container');
+    if (!container) return;
+
+    // Проверяем, нет ли уже такого заказа
+    if (document.getElementById(`order-card-${order.id}`)) return;
+
+    // Формируем HTML новой карточки
+    const orderHtml = `
+        <div class="card mb-3 border-start border-warning border-5 shadow-sm rounded-4 op-card pulse-new" id="order-card-${order.id}">
+            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-1 flex-wrap gap-2">
+                        <h5 class="mb-0 fw-bold">Заказ №${order.id}</h5>
+                        <span class="badge bg-light text-dark border">${order.created_at}</span>
+                        <span class="badge bg-warning text-dark">💰 ${order.total_price} ₽</span>
+                    </div>
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-person me-1"></i> ${order.user} | 
+                        <i class="bi bi-geo-alt me-1"></i> ${order.address}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-dark rounded-pill px-3" onclick="openModal('modal-${order.id}')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button onclick="changeStatusAjax('${order.id}', 'cooking', 'new')" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="bi bi-play-fill me-1"></i> В работу
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Добавляем в начало контейнера (сверху)
+    container.insertAdjacentHTML('afterbegin', orderHtml);
+    
+    // Обновляем счётчик в табе
+    updateBadge('badge-new', 1);
+    
+    // Воспроизводим звук
+    playNewOrderSound();
+}
+
+// Проверка новых заказов
+function checkNewOrders() {
+    fetch('/api/operator/new-orders/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.orders && data.orders.length > 0) {
+                // Получаем текущие ID заказов в DOM
+                const existingIds = new Set();
+                document.querySelectorAll('#new-orders-container .card[id^="order-card-"]').forEach(card => {
+                    const id = card.id.replace('order-card-', '');
+                    existingIds.add(id);
+                });
+                
+                // Перебираем новые заказы (они уже отсортированы по убыванию created_at)
+                data.orders.forEach(order => {
+                    if (!existingIds.has(String(order.id))) {
+                        addNewOrderToUI(order);
+                    }
+                });
+            }
+        })
+        .catch(err => console.error('Ошибка при проверке новых заказов:', err));
+}
+
+// Функции для смены статуса с плавным обновлением (без перезагрузки страницы)
+function changeStatusAjax(orderId, newStatus, sourceTab) {
+    const url = `/order/status/${orderId}/${newStatus}/`;
+    const btn = event.currentTarget;
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(url, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            // Данные заказа (предполагаем, что сервер возвращает их в data.order)
+            const orderData = data.order || null;
+
+            // Обновляем счётчики и перемещаем карточку
+            if (sourceTab === 'new') {
+                updateBadge('badge-new', -1);
+                if (orderData) addOrderToTab(orderData, 'work');
+                else {
+                    // fallback: парсим из DOM
+                    const card = document.getElementById('order-card-' + orderId);
+                    const extracted = extractOrderDataFromCard(card);
+                    if (extracted) addOrderToTab(extracted, 'work');
+                }
+                removeCardWithAnimation('order-card-' + orderId);
+            } 
+            else if (sourceTab === 'work') {
+                updateBadge('badge-work', -1);
+                updateBadge('badge-ready', +1);
+                if (orderData) addOrderToTab(orderData, 'ready');
+                else {
+                    const card = document.getElementById('work-order-card-' + orderId);
+                    const extracted = extractOrderDataFromCard(card);
+                    if (extracted) addOrderToTab(extracted, 'ready');
+                }
+                removeCardWithAnimation('work-order-card-' + orderId);
+            } 
+            else if (sourceTab === 'ready') {
+                updateBadge('badge-ready', -1);
+                updateBadge('badge-delivery', +1);
+                if (orderData) addOrderToTab(orderData, 'delivery');
+                else {
+                    const card = document.getElementById('ready-order-card-' + orderId);
+                    const extracted = extractOrderDataFromCard(card);
+                    if (extracted) addOrderToTab(extracted, 'delivery');
+                }
+                removeCardWithAnimation('ready-order-card-' + orderId);
+            } 
+            else if (sourceTab === 'delivery') {
+                updateBadge('badge-delivery', -1);
+                removeCardWithAnimation('delivery-order-card-' + orderId);
+                // Можно обновить историю заказов
+            }
+
+            showToast(data.message || 'Статус заказа обновлен', 'success');
+        } else {
+            alert('Ошибка при смене статуса');
+        }
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    });
+}
+
+function removeCardWithAnimation(cardId) {
+    const card = document.getElementById(cardId);
+    if (card) {
+        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(50px)';
+        setTimeout(() => card.remove(), 300);
+    }
+}
+
+// Вспомогательная функция для извлечения данных заказа из карточки
+function extractOrderDataFromCard(card) {
+    if (!card) return null;
+    const idMatch = card.id.match(/\d+$/);
+    const id = idMatch ? idMatch[0] : null;
+
+    // Ищем имя пользователя
+    let user = '';
+    // Вариант: в <h5> есть <small>(username)</small> (как в "Готовка")
+    const userSmall = card.querySelector('h5 small');
+    if (userSmall) {
+        user = userSmall.innerText.replace(/[()]/g, '').trim();
+    }
+    if (!user) {
+        // Вариант: рядом с иконкой би-персон
+        const userIconSpan = card.querySelector('.bi-person');
+        if (userIconSpan && userIconSpan.parentNode) {
+            const text = userIconSpan.parentNode.innerText;
+            const parts = text.split('|');
+            user = parts[0].replace('👤', '').trim();
+        }
+    }
+    if (!user) {
+        // Если имя в <h5> просто как текст (например, в "Новые" после номера)
+        const h5 = card.querySelector('h5');
+        if (h5 && h5.innerText.includes('Заказ №')) {
+            // в "Новые" имя отдельно не выводится, возьмём из .small.text-muted
+            const smallText = card.querySelector('.small.text-muted');
+            if (smallText && smallText.innerText.includes('👤')) {
+                user = smallText.innerText.split('|')[0].replace('👤', '').trim();
+            }
+        }
+    }
+
+    // Ищем адрес
+    let address = '';
+    const addrIconSpan = card.querySelector('.bi-geo-alt');
+    if (addrIconSpan && addrIconSpan.parentNode) {
+        const text = addrIconSpan.parentNode.innerText;
+        const parts = text.split('|');
+        address = parts.length > 1 ? parts[1].trim() : '';
+    }
+    if (!address) {
+        const addrPara = card.querySelector('.small.text-muted:not(:has(.bi-clock))');
+        if (addrPara && addrPara.innerText.includes('📍')) {
+            address = addrPara.innerText.split('📍')[1]?.trim() || '';
+        }
+    }
+
+    // Ищем сумму
+    let total_price = '0';
+    const priceBadge = card.querySelector('.badge.bg-warning');
+    if (priceBadge) total_price = priceBadge.innerText.replace('💰', '').trim();
+    if (!total_price || total_price === '0') {
+        const priceSpan = card.querySelector('.fw-bold.text-primary');
+        if (priceSpan) total_price = priceSpan.innerText.trim();
+    }
+
+    // Ищем время
+    let created_at = '';
+    const timeBadge = card.querySelector('.badge.bg-light.text-dark.border');
+    if (timeBadge) created_at = timeBadge.innerText.trim();
+    if (!created_at) {
+        const clockSpan = card.querySelector('.bi-clock');
+        if (clockSpan && clockSpan.parentNode) {
+            created_at = clockSpan.parentNode.innerText.replace('🕒', '').trim();
+        }
+    }
+
+    return { id, user, address, total_price, created_at };
+}
+
+// Добавляет заказ в указанную вкладку (targetTab: 'work', 'ready', 'delivery')
+function addOrderToTab(order, targetTab) {
+    let containerId = '';
+    let statusClass = '';
+    let statusText = '';
+    let buttonHtml = '';
+    let timeHtml = '';
+
+    if (targetTab === 'work') {
+        containerId = 'work-orders-container';
+        statusClass = 'border-primary';
+        statusText = `<small class="text-muted fw-normal fs-6">(${escapeHtml(order.user)})</small>`;
+        buttonHtml = `<button onclick="changeStatusAjax('${order.id}', 'ready', 'work')" class="btn btn-primary rounded-pill px-4 fw-bold">Готово</button>`;
+        timeHtml = `<p class="small text-muted mb-0"><i class="bi bi-clock me-1"></i> ${escapeHtml(order.created_at)}</p>`;
+    } 
+    else if (targetTab === 'ready') {
+        containerId = 'ready-orders-container';
+        statusClass = 'border-success';
+        statusText = '';
+        // Кнопка "Ожидает курьера" (неактивная)
+        buttonHtml = `<button class="btn btn-secondary rounded-pill px-4 fw-bold disabled" disabled>Ожидает курьера</button>`;
+        timeHtml = ''; // Время не выводим, как в исходном шаблоне
+    } 
+    else if (targetTab === 'delivery') {
+        containerId = 'delivery-orders-container';
+        statusClass = 'border-info';
+        statusText = `<span class="text-info">Доставка</span>`;
+        buttonHtml = `<button class="btn btn-secondary rounded-pill px-4 fw-bold disabled" disabled>Ожидает доставки</button>`;
+        timeHtml = '';
+    }
+
+    const orderHtml = `
+        <div class="card mb-3 border-start ${statusClass} border-5 shadow-sm rounded-4 op-card" id="${targetTab}-order-card-${order.id}">
+            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <h5 class="mb-1 fw-bold">Заказ №${order.id} ${statusText}</h5>
+                    ${timeHtml}
+                    <p class="small text-muted mb-0">💰 ${escapeHtml(order.total_price)} ₽ | 📍 ${escapeHtml(order.address)}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-dark rounded-pill" onclick="openModal('modal-${order.id}')">Детали</button>
+                    ${buttonHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.insertAdjacentHTML('afterbegin', orderHtml);
+    }
+}
+
+function updateBadge(badgeId, delta) {
+    const badge = document.getElementById(badgeId);
+    if (badge) {
+        let current = parseInt(badge.innerText);
+        let newValue = current + delta;
+        if (newValue < 0) newValue = 0;
+        badge.innerText = newValue;
+    }
+}
+
+// Фильтры для истории заказов
+function filterHistoryOrders() {
+    const status = document.getElementById('history-status-filter').value;
+    const search = document.getElementById('history-search').value.toLowerCase();
+    const items = document.querySelectorAll('#history-orders-list .history-order-item');
+    
+    items.forEach(item => {
+        let show = true;
+        if (status !== 'all' && item.dataset.status !== status) show = false;
+        if (search && !item.dataset.orderId.includes(search)) show = false;
+        item.style.display = show ? '' : 'none';
+    });
+}
+
+function sortHistoryOrders() {
+    const sort = document.getElementById('history-sort').value;
+    const container = document.getElementById('history-orders-list');
+    const items = Array.from(container.querySelectorAll('.history-order-item'));
+    
+    items.sort((a, b) => {
+        if (sort === 'newest') {
+            return new Date(b.dataset.created) - new Date(a.dataset.created);
+        } else if (sort === 'oldest') {
+            return new Date(a.dataset.created) - new Date(b.dataset.created);
+        } else if (sort === 'price-high') {
+            return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+        } else if (sort === 'price-low') {
+            return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+        }
+        return 0;
+    });
+    
+    items.forEach(item => container.appendChild(item));
+}
+
+function resetHistoryFilters() {
+    document.getElementById('history-status-filter').value = 'all';
+    document.getElementById('history-sort').value = 'newest';
+    document.getElementById('history-search').value = '';
+    filterHistoryOrders();
+    sortHistoryOrders();
+}
+
+// Загрузка онлайн курьеров
+function loadOnlineCouriers() {
+    fetch('/api/online-couriers/')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('online-couriers-list');
+            const countElem = document.getElementById('online-couriers-count');
+            if (data.couriers && data.couriers.length > 0) {
+                container.innerHTML = '';
+                data.couriers.forEach(courier => {
+                    container.innerHTML += `
+                        <div class="courier-online-item">
+                            <div>
+                                <span class="online-indicator"></span>
+                                <strong>${escapeHtml(courier.username)}</strong>
+                                <small class="text-muted ms-2">${courier.phone || 'Телефон не указан'}</small>
+                            </div>
+                            <span class="badge bg-success rounded-pill">Онлайн</span>
+                        </div>
+                    `;
+                });
+                if (countElem) countElem.innerText = data.couriers.length;
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted">Нет курьеров онлайн</div>';
+                if (countElem) countElem.innerText = '0';
+            }
+        })
+        .catch(err => {
+            console.error('Ошибка загрузки курьеров:', err);
+            document.getElementById('online-couriers-list').innerHTML = '<div class="text-center py-4 text-danger">Ошибка загрузки</div>';
+        });
+}
+
+// Применение фильтра аналитики
+function applyReportFilter() {
+    const startDate = document.getElementById('report_start_date').value;
+    const endDate = document.getElementById('report_end_date').value;
+    if (startDate && endDate) {
+        window.location.href = `/operator/?start_date=${startDate}&end_date=${endDate}`;
+    }
+}
+
+// Остальные функции (getCookie, showToast, escapeHtml, updateOrderItemQuantity, removeOrderItem, saveOrderChanges, printThermal, loadSupportUsers, selectUser, loadUserMessages, sendReply) остаются без изменений
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = 'ginza-toast shadow-lg';
+    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+    toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 600);
+    }, 3000);
+}
+
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function updateOrderItemQuantity(itemId, action) {
+    fetch(`/order-item/update/${itemId}/${action}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            document.getElementById(`item-qty-${itemId}`).innerText = data.quantity;
+            document.getElementById(`item-total-${itemId}`).innerText = data.total + ' ₽';
+            document.getElementById(`order-total-${data.order_id}`).innerText = data.order_total + ' ₽';
+        }
+    });
+}
+
+function removeOrderItem(itemId) {
+    if (confirm('Удалить позицию из заказа?')) {
+        fetch(`/order-item/remove/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById(`order-item-${itemId}`).remove();
+                document.getElementById(`order-total-${data.order_id}`).innerText = data.order_total + ' ₽';
+            }
+        });
+    }
+}
+
+function saveOrderChanges(orderId) {
+    showToast('Изменения сохранены', 'success');
+}
+
+function printThermal(orderId) {
+    const content = document.getElementById('print-area-' + orderId).innerHTML;
+    const printWindow = window.open('', '', 'height=600,width=400');
+    
+    const style = `
+        <style>
+            @page { margin: 0; }
+            body { font-family: 'Courier New', monospace; width: 72mm; padding: 4mm; font-size: 12px; line-height: 1.2; }
+            .header { text-align: center; margin-bottom: 5mm; }
+            .header h2 { margin: 0; font-size: 18px; }
+            .line { border-bottom: 1px dashed #000; margin: 3mm 0; }
+            .item { display: flex; justify-content: space-between; margin-bottom: 1mm; }
+            .total { font-size: 16px; font-weight: bold; margin-top: 4mm; display: flex; justify-content: space-between; }
+            .footer { text-align: center; margin-top: 5mm; font-size: 10px; }
+            .comment { background: #eee; padding: 1mm; margin-bottom: 2mm; font-style: italic; font-size: 10px; }
+            .no-print, button, .btn, .badge { display: none !important; }
+        </style>
+    `;
+
+    printWindow.document.write('<html><head>' + style + '</head><body>');
+    printWindow.document.write('<div class="header"><h2>GINZA</h2><p>Доставка еды</p>Заказ №' + orderId + '</div>');
+    printWindow.document.write('<div class="line"></div>');
+    printWindow.document.write(content);
+    printWindow.document.write('<div class="line"></div>');
+    printWindow.document.write('<div class="footer">Спасибо за заказ!<br>www.ginzaproject.ru<br>+7 (705) 729-05-41</div>');
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
+}
+
+// Загрузка пользователей поддержки
+function loadSupportUsers() {
+    fetch('/api/support/admin/users/')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('support-users-list');
+            if (!container) return;
+            
+            if (data.users && data.users.length > 0) {
+                container.innerHTML = '';
+                data.users.forEach(user => {
+                    const unreadBadge = user.unread_count > 0 ? `<span class="support-user-badge">${user.unread_count} нов.</span>` : '';
+                    const userHtml = `
+                        <div class="support-user-item" onclick="selectUser(${user.id}, '${escapeHtml(user.username)}')" data-user-id="${user.id}">
+                            <div class="support-user-name">
+                                ${escapeHtml(user.username)} ${unreadBadge}
+                                <small class="text-muted ms-2">ID: ${user.id}</small>
+                            </div>
+                            <div class="support-user-last">
+                                <i class="bi bi-chat-text"></i> ${escapeHtml(user.last_message || 'Нет сообщений')}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-clock"></i> ${user.last_time || ''}
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', userHtml);
+                });
+                
+                const totalUnread = data.users.reduce((sum, u) => sum + u.unread_count, 0);
+                const badge = document.getElementById('unread-badge');
+                if (badge) {
+                    badge.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+                    if (totalUnread > 0) badge.innerText = totalUnread;
+                }
+            } else {
+                container.innerHTML = '<div class="text-center py-5 text-muted">Нет обращений в поддержку</div>';
+            }
+        })
+        .catch(err => {
+            console.error('Ошибка загрузки пользователей:', err);
+            const container = document.getElementById('support-users-list');
+            if (container) {
+                container.innerHTML = '<div class="text-center py-5 text-danger">Ошибка загрузки</div>';
+            }
+        });
+}
+
+let currentUserId = null;
+let supportChatInterval = null;
+let currentSupportUserId = null;
+
+function selectUser(userId, userName) {
+    // Останавливаем предыдущий интервал
+    if (supportChatInterval) {
+        clearInterval(supportChatInterval);
+        supportChatInterval = null;
+    }
+    currentUserId = userId;
+    currentSupportUserId = userId;
+    
+    document.querySelectorAll('.support-user-item').forEach(el => {
+        el.classList.remove('active');
+        if (el.dataset.userId == userId) {
+            el.classList.add('active');
+            const badge = el.querySelector('.support-user-badge');
+            if (badge) badge.remove();
+        }
+    });
+    
+    document.getElementById('chat-user-name').innerText = userName;
+    document.getElementById('chat-area').style.display = 'block';
+    document.getElementById('no-chat-selected').style.display = 'none';
+    
+    loadUserMessages(userId);
+    
+    // Запускаем интервал обновления
+    supportChatInterval = setInterval(() => {
+        if (currentSupportUserId) loadUserMessages(currentSupportUserId, true); // silent update
+    }, 3000);
+}
+
+function loadUserMessages(userId, silent = false) {
+    fetch(`/api/support/admin/messages/${userId}/`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('chat-messages-area');
+            if (!container) return;
+            
+            if (data.messages && data.messages.length > 0) {
+                // Полностью перерисовываем, чтобы избежать дублей
+                container.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const isOperator = msg.is_admin; // или msg.is_admin – как приходит с сервера
+                    const messageHtml = `
+                        <div class="chat-message ${isOperator ? 'operator' : 'client'}">
+                            <div class="message-bubble">
+                                <div>${escapeHtml(msg.text)}</div>
+                                ${msg.file_url ? `<div class="message-file"><a href="${msg.file_url}" target="_blank"><i class="bi bi-paperclip"></i> ${escapeHtml(msg.file_name)}</a></div>` : ''}
+                                <div class="message-time">${msg.created_at}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', messageHtml);
+                });
+                container.scrollTop = container.scrollHeight;
+            } else if (container.children.length === 0 && !silent) {
+                container.innerHTML = '<div class="text-center py-5 text-muted">Нет сообщений. Напишите что-нибудь пользователю.</div>';
+            }
+        });
+}
+
+function sendReply() {
+    if (!currentUserId) {
+        alert('Выберите пользователя');
+        return;
+    }
+    
+    const messageInput = document.getElementById('reply-message-input');
+    const fileInput = document.getElementById('reply-file-input');
+    const text = messageInput.value.trim();
+    const file = fileInput.files[0];
+    
+    if (!text && !file) {
+        alert('Введите текст или прикрепите файл');
+        return;
+    }
+    
+    const sendBtn = document.getElementById('send-reply-btn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    const formData = new FormData();
+    formData.append('user_id', currentUserId);
+    if (text) formData.append('text', text);
+    if (file) formData.append('file', file);
+    
+    fetch('/api/support/admin/reply/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            messageInput.value = '';
+            fileInput.value = '';
+            document.getElementById('reply-file-name').innerText = '';
+            // Принудительно загружаем свежие сообщения с сервера
+            loadUserMessages(currentUserId);
+        } else {
+            alert(data.message || 'Ошибка отправки');
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка:', err);
+        alert('Не удалось отправить сообщение');
+    })
+    .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-send"></i>';
+    });
+}
+
+document.getElementById('reply-file-input')?.addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name;
+    document.getElementById('reply-file-name').innerText = fileName ? `📎 ${fileName}` : '';
+});
+
+// При переключении на вкладку поддержки загружаем список пользователей
+document.querySelectorAll('.nav-link').forEach(btn => {
+    if (btn.getAttribute('onclick') === "showTab('tab-support')") {
+        btn.addEventListener('click', function() {
+            loadSupportUsers();
+        });
+    }
+});
+
+// Функция для перемещения карточки заказа между вкладками
+function moveOrderCard(orderId, oldStatus, newStatus) {
+    let oldContainerId, newContainerId, cardId;
+    
+    // Определяем ID контейнера и ID карточки по старому статусу
+    if (oldStatus === 'cooking') {
+        oldContainerId = 'work-orders-container';
+        cardId = `work-order-card-${orderId}`;
+    } else if (oldStatus === 'ready') {
+        oldContainerId = 'ready-orders-container';
+        cardId = `ready-order-card-${orderId}`;
+    } else if (oldStatus === 'delivering') {
+        oldContainerId = 'delivery-orders-container';
+        cardId = `delivery-order-card-${orderId}`;
+    } else {
+        return; // Неизвестный старый статус
+    }
+    
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    
+    // Извлекаем данные заказа из карточки (функция уже есть в коде)
+    const orderData = extractOrderDataFromCard(card);
+    if (!orderData) return;
+    
+    // Удаляем старую карточку с анимацией
+    removeCardWithAnimation(cardId);
+    
+    // Определяем целевую вкладку по новому статусу
+    let targetTab;
+    if (newStatus === 'cooking') targetTab = 'work';
+    else if (newStatus === 'ready') targetTab = 'ready';
+    else if (newStatus === 'delivering') targetTab = 'delivery';
+    else return;
+    
+    // Добавляем карточку в новую вкладку
+    addOrderToTab(orderData, targetTab);
+}
+
+// Функция обновления счётчиков и получения новых заказов (polling)
+function updateDashboard() {
+    // Обновляем счётчики статусов
+    fetch('/api/operator/counts/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.counts) {
+                for (let [status, count] of Object.entries(data.counts)) {
+                    const badge = document.getElementById(`badge-${status}`);
+                    if (badge) badge.innerText = count;
+                }
+            }
+        })
+        .catch(err => console.error('Ошибка обновления счётчиков:', err));
+    
+    // Проверяем новые заказы
+    checkNewOrders();
+}
+
+// Запускаем polling каждые 5 секунд
+setInterval(updateDashboard, 3000);
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('start_date')) {
+        openModal('reportModal');
+        const periodText = document.getElementById('revenue-period');
+        if (periodText) {
+            periodText.innerHTML = `${urlParams.get('start_date')} — ${urlParams.get('end_date')}`;
+        }
+    }
+    
+    if (document.getElementById('tab-support')?.classList.contains('active')) {
+        loadSupportUsers();
+    }
+    
+    // Инициализация фильтров истории
+    filterHistoryOrders();
+    sortHistoryOrders();
+    
+    // Запускаем проверку новых заказов каждые 10 секунд
+    setInterval(checkNewOrders, 10000);
+    
+    // Обновление статуса курьеров каждые 30 секунд
+    setInterval(() => {
+        if (document.getElementById('tab-couriers')?.classList.contains('active')) {
+            loadOnlineCouriers();
+        }
+    }, 30000);
+});
+</script>
+{% endblock %}

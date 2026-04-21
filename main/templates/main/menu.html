@@ -1,0 +1,1475 @@
+{% extends 'base.html' %}
+{% load cart_tags %}
+
+{% block title %}Меню Ginza — Доставка еды{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Основные переменные и фон */
+    :root {
+        --ginza-gold: #ffc107;
+        --ginza-dark: #1a1a1a;
+        --radius-lg: 20px;
+        --radius-md: 12px;
+    }
+
+    body {
+        background-color: #f8f9fa;
+    }
+
+    /* Навигация категорий и фильтры */
+    .category-nav {
+        position: sticky;
+        top: 72px; 
+        z-index: 1010;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .filter-container {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+        padding-bottom: 5px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    .filter-container::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+        padding: 8px 20px;
+        border-radius: 50px;
+        background: #fff;
+        color: #555;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 1px solid #ddd;
+        font-weight: 500;
+        font-size: 0.85rem;
+        display: inline-block;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    
+    .filter-btn:hover {
+        border-color: var(--ginza-gold);
+        color: #000;
+        transform: translateY(-1px);
+    }
+
+    .filter-btn.active {
+        background: var(--ginza-gold);
+        border-color: var(--ginza-gold);
+        color: #000;
+        font-weight: 700;
+        box-shadow: 0 2px 10px rgba(255, 193, 7, 0.3);
+    }
+
+    /* Сетка товаров */
+    .dish-grid {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        transition: all 0.3s ease;
+    }
+
+    /* Мобильный вид: 2 в ряд с улучшенными кнопками */
+    @media (max-width: 576px) {
+        .dish-grid {
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+        .dish-grid.compact-view {
+            grid-template-columns: 1fr !important;
+        }
+        .dish-grid.compact-view .card-img-top {
+            height: 120px !important;
+        }
+        .dish-grid.compact-view .card-body {
+            padding: 8px !important;
+        }
+        .dish-grid.compact-view .product-name {
+            font-size: 0.8rem !important;
+            height: 36px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .dish-grid.compact-view .product-desc {
+            display: none !important;
+        }
+        .dish-grid.compact-view .price-text {
+            font-size: 0.85rem !important;
+            font-weight: bold;
+        }
+        .dish-grid.compact-view .qty-btn-circle {
+            width: 26px;
+            height: 26px;
+            font-size: 12px;
+        }
+        .dish-grid.compact-view .btn-add-to-cart {
+            font-size: 11px !important;
+            padding: 5px 8px !important;
+            white-space: nowrap;
+            min-width: 65px;
+        }
+        .dish-grid.compact-view .qty-controls {
+            padding: 1px;
+        }
+        .dish-grid.compact-view .qty-controls span {
+            font-size: 12px;
+            margin: 0 4px !important;
+        }
+        .dish-grid.compact-view .rating-stars i {
+            font-size: 9px;
+        }
+        .dish-grid.compact-view .rating-value {
+            font-size: 8px;
+        }
+        .dish-grid.compact-view .weight-text {
+            font-size: 9px;
+        }
+        .dish-grid.compact-view .calories-text {
+            font-size: 9px;
+        }
+    }
+
+    /* Стили для цены с символом рубля */
+    .price-text {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 1px;
+    }
+
+    /* Карточка товара */
+    .product-card {
+        border: none;
+        border-radius: var(--radius-lg);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        background: #fff;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .card-img-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .card-img-top {
+        transition: transform 0.5s ease;
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .product-card:hover .card-img-top {
+        transform: scale(1.05);
+    }
+
+    /* Звезды рейтинга */
+    .rating-stars {
+        display: inline-flex;
+        gap: 2px;
+        align-items: center;
+        margin-top: 5px;
+    }
+    .rating-stars i {
+        font-size: 12px;
+        color: #ddd;
+    }
+    .rating-stars i.filled {
+        color: #ffc107;
+    }
+    .rating-value {
+        font-size: 11px;
+        color: #666;
+        margin-left: 5px;
+    }
+
+    /* Кнопки управления */
+    .qty-controls {
+        display: flex;
+        align-items: center;
+        background: #f1f3f5;
+        border-radius: 50px;
+        padding: 2px;
+    }
+
+    .qty-btn-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .qty-btn-circle:active { transform: scale(0.95); }
+
+    /* Кнопка добавления в корзину */
+    .btn-add-to-cart {
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        font-size: 0.85rem;
+        padding: 6px 14px;
+    }
+    .btn-add-to-cart:active {
+        transform: scale(0.96);
+    }
+
+    /* Сортировка */
+    .sort-select {
+        border-radius: 12px;
+        border: 1px solid #eee;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        outline: none;
+        background: white;
+        cursor: pointer;
+    }
+    .sort-select:focus {
+        border-color: var(--ginza-gold);
+        box-shadow: 0 0 0 2px rgba(255,193,7,0.2);
+    }
+    
+    /* Мобильные фильтры */
+    .filter-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    
+    /* Фильтр по калориям */
+    .calories-filter {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        padding: 4px 12px;
+        border-radius: 50px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .calories-filter i {
+        color: #ffc107;
+        font-size: 14px;
+    }
+    .calories-filter span {
+        font-size: 12px;
+        color: #666;
+    }
+    .calories-filter input {
+        width: 70px;
+        border: none;
+        padding: 4px 0;
+        text-align: center;
+        font-size: 12px;
+        background: transparent;
+    }
+    .calories-filter input:focus {
+        outline: none;
+    }
+    .calories-filter input::placeholder {
+        color: #ccc;
+    }
+    @media (max-width: 576px) {
+        .calories-filter {
+            padding: 2px 8px;
+            gap: 4px;
+        }
+        .calories-filter input {
+            width: 55px;
+            font-size: 10px;
+        }
+        .calories-filter span {
+            font-size: 10px;
+        }
+        .calories-filter i {
+            font-size: 12px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .sort-select {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+        .filter-row {
+            justify-content: space-between;
+        }
+        .btn-add-to-cart {
+            font-size: 0.7rem !important;
+            padding: 4px 8px !important;
+            min-width: 65px;
+        }
+        .qty-btn-circle {
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 12px !important;
+        }
+        .qty-controls span {
+            font-size: 12px !important;
+            margin: 0 4px !important;
+        }
+        .price-text {
+            font-size: 0.85rem !important;
+        }
+    }
+    
+    /* Отзывы в модалке */
+    .reviews-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .review-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    .review-user {
+        font-weight: bold;
+        font-size: 13px;
+    }
+    .review-text {
+        font-size: 13px;
+        color: #555;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+    .review-date {
+        font-size: 10px;
+        color: #999;
+        margin-top: 5px;
+    }
+    
+    /* Админские бейджи */
+    .admin-badge-container {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        display: flex;
+        gap: 6px;
+    }
+    .status-badge-admin {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: bold;
+    }
+    .status-active-badge {
+        background: #28a745;
+        color: white;
+    }
+    .status-inactive-badge {
+        background: #dc3545;
+        color: white;
+    }
+    .product-inactive {
+        opacity: 0.7;
+        filter: grayscale(0.2);
+        background: #f8f9fa;
+    }
+    .product-inactive .btn-warning {
+        opacity: 0.5;
+        pointer-events: none;
+        background: #6c757d;
+        border-color: #6c757d;
+    }
+    .product-inactive .qty-controls {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    /* Плавный скролл для всей страницы */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Кнопка быстрого добавления */
+    .add-category-fab {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        z-index: 1050;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    }
+    .add-category-fab:hover {
+        transform: scale(1.1);
+    }
+    @media (max-width: 768px) {
+        .add-category-fab {
+            bottom: 80px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+        }
+        .add-category-fab i {
+            font-size: 1.2rem;
+        }
+    }
+    
+    .info-badge {
+        background: #f8f9fa;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    .modal-header-img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+    }
+    @media (max-width: 576px) {
+        .modal-header-img {
+            height: 180px;
+        }
+        .info-badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+        }
+    }
+    
+    /* Стили для кастомных модальных окон */
+    .modal-custom {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1060;
+        overflow-y: auto;
+    }
+    .modal-custom.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-custom .modal-dialog {
+        margin: 0.5rem;
+        pointer-events: auto;
+        max-width: 500px;
+        width: 100%;
+    }
+    .modal-custom .modal-dialog.modal-lg {
+        max-width: 800px;
+    }
+    .modal-custom .modal-content {
+        background: #fff;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+    }
+    .modal-custom .modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-custom .modal-body {
+        padding: 1rem;
+        flex: 1 1 auto;
+    }
+    .modal-custom .modal-footer {
+        padding: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    .modal-custom .btn-close-custom {
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+        opacity: 0.5;
+        width: 1em;
+        height: 1em;
+        padding: 0;
+        border: 0;
+        cursor: pointer;
+        background-color: transparent;
+    }
+    .btn-close-custom:hover {
+        opacity: 0.75;
+    }
+    @media (max-width: 768px) {
+        .modal-custom .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3 mt-md-4">
+    <div class="row align-items-center g-2 g-md-3">
+        <div class="col-12 col-md-6">
+            <div class="search-container">
+                <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                    <span class="input-group-text bg-white border-0 ps-3 ps-md-4">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" id="menuSearch" class="form-control border-0 py-2 py-md-3 ps-2" placeholder="Что хотите заказать?">
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="filter-row justify-content-between justify-content-md-end">
+                <!-- Фильтр по калориям -->
+                <div class="calories-filter shadow-sm">
+                    <i class="bi bi-fire"></i>
+                    <span>до</span>
+                    <input type="number" id="caloriesFilter" placeholder="ккал" value="" oninput="filterByCalories()" min="0" max="2000" maxlength="4" step="1">
+                    <span>ккал</span>
+                </div>
+                
+                <select class="sort-select shadow-sm" id="sortSelect">
+                    <option value="default">По умолчанию</option>
+                    <option value="price-asc">💰 Сначала дешевле</option>
+                    <option value="price-desc">💰 Сначала дороже</option>
+                    <option value="rating-desc">⭐ С высоким рейтингом</option>
+                    <option value="popular">🔥 Самые популярные</option>
+                    <option value="calories-asc">🔥 По калориям (низкие)</option>
+                    <option value="calories-desc">🔥 По калориям (высокие)</option>
+                </select>
+                
+                <button class="btn btn-white shadow-sm rounded-3 d-sm-none" onclick="toggleGridView()">
+                    <i id="viewIcon" class="bi bi-grid-fill text-warning"></i>
+                </button>
+
+                {% if user.is_staff %}
+                <button class="btn btn-success rounded-pill px-3 px-md-4 shadow-sm" onclick="openModal('addProductModal')">
+                    <i class="bi bi-plus-lg me-1 me-md-2"></i>Добавить
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="category-nav mt-2 mt-md-4">
+    <div class="container">
+        <div class="filter-container" id="categoryLinks">
+            <a href="#" class="filter-btn active" data-cat="all">🔥 Все меню</a>
+            {% for category in categories %}
+                <a href="#cat-{{ category.id }}" class="filter-btn" data-cat="{{ category.id }}">
+                    {{ category.name }}
+                    {% if user.is_staff %}
+                    <span class="ms-1 small opacity-50">({{ category.products.count }})</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+            {% if user.is_staff %}
+            <button class="filter-btn" style="background: #f0f0f0;" onclick="openModal('addCategoryModal')">
+                <i class="bi bi-plus-lg"></i> Категория
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5 mt-3 mt-md-4">
+    {% for category in categories %}
+    <div class="category-section" id="cat-{{ category.id }}" data-category-name="{{ category.name }}">
+        <div class="d-flex align-items-center mb-3 mb-md-4">
+            <h2 class="fw-bold mb-0 fs-4 fs-md-3">{{ category.name }}</h2>
+            <div class="ms-3 flex-grow-1 border-bottom opacity-25"></div>
+            {% if user.is_staff %}
+            <div class="ms-2 ms-md-3">
+                <button class="btn btn-sm btn-outline-primary rounded-circle" onclick="openModal('editCategoryModal{{ category.id }}')">
+                    <i class="bi bi-pencil fs-6"></i>
+                </button>
+                {% if category.products.count == 0 %}
+                <button class="btn btn-sm btn-outline-danger rounded-circle ms-1" onclick="openModal('deleteCategoryModal{{ category.id }}')">
+                    <i class="bi bi-trash fs-6"></i>
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="dish-grid mb-4 mb-md-5" id="grid-{{ category.id }}">
+            {% for product in category.products.all %}
+                <div class="product-item" 
+                     data-price="{{ product.price }}" 
+                     data-name="{{ product.name|lower }}"
+                     data-order="{{ forloop.counter }}"
+                     data-rating="{{ product.get_rating|default:0 }}"
+                     data-popular="{{ product.orderitem__count|default:0 }}"
+                     data-calories="{{ product.calories|default:0 }}">
+                    
+                    <div class="card product-card shadow-sm h-100 position-relative {% if not product.is_active %}product-inactive{% endif %}" 
+                        onclick="{% if product.is_active %}openProductModal('{{ product.id }}'){% endif %}">
+                        
+                        {% if user.is_staff %}
+                        <div class="admin-badge-container" onclick="event.stopPropagation()">
+                            <a href="{% url 'edit_product' product.id %}" class="btn btn-primary btn-sm rounded-circle p-2 shadow">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'toggle_active' product.id %}" 
+                            class="btn {% if product.is_active %}btn-success{% else %}btn-secondary{% endif %} btn-sm rounded-circle p-2 shadow"
+                            onclick="return confirm('{% if product.is_active %}Сделать блюдо временно недоступным?{% else %}Вернуть блюдо в продажу?{% endif %}')">
+                                <i class="bi {% if product.is_active %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+                            </a>
+                            <a href="{% url 'delete_product' product.id %}?next={{ request.path }}" 
+                                class="btn btn-danger btn-sm rounded-circle p-2 shadow" 
+                                onclick="return confirm('Удалить блюдо «{{ product.name }}»? Это действие необратимо.');">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <div class="card-img-container">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="bi bi-camera text-muted fs-1"></i>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user.is_authenticated and not user.is_staff and product.is_active %}
+                            <button class="btn border-0 bg-white rounded-circle shadow-sm position-absolute top-0 end-0 m-2 m-md-3 p-2" 
+                                    onclick="toggleFavorite('{{ product.id }}', this); event.stopPropagation();">
+                                <i class="bi {% if product.id in user_favorites %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} fs-6"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body p-3 p-md-4" style="display: flex;flex-direction: column;">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <h5 class="fw-bold product-name mb-0 fs-6 fs-md-5">{{ product.name }}</h5>
+                                <span class="text-muted small ms-2">{{ product.weight }}г</span>
+                            </div>
+                            
+                            <!-- Звезды рейтинга -->
+                            <div class="rating-stars">
+                                {% with rating=product.get_rating|default:0 %}
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= rating|floatformat:0 %}
+                                            <i class="bi bi-star-fill filled"></i>
+                                        {% else %}
+                                            <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="rating-value">({{ rating|floatformat:1 }})</span>
+                                {% endwith %}
+                            </div>
+                            
+                            <!-- Калорийность -->
+                            <div class="mt-1">
+                                <span class="small text-muted calories-text"><i class="bi bi-fire text-warning me-1"></i> {{ product.calories|default:"—" }} ккал</span>
+                            </div>
+                            
+                            <p class="text-muted small product-desc mb-2 mt-2">
+                                {{ product.description|truncatechars:60 }}
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                                <span class="fw-bold fs-5 price-text">
+                                    {{ product.price }}<span class="currency-symbol">₽</span>
+                                </span>
+                                
+                                <div id="cart-container-{{ product.id }}" onclick="event.stopPropagation()">
+                                    {% if product.is_active %}
+                                        {% get_cart_item_quantity cart product.id as item_qty %}
+                                        {% if item_qty > 0 %}
+                                            <div class="qty-controls">
+                                                <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'subtract'); return false;" class="qty-btn-circle">−</button>
+                                                <span class="mx-2 fw-bold">{{ item_qty }}</span>
+                                                <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'add'); return false;" class="qty-btn-circle">+</button>
+                                            </div>
+                                        {% else %}
+                                            <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'add'); return false;" class="btn btn-warning rounded-pill btn-add-to-cart fw-bold shadow-sm">
+                                                В корзину
+                                            </button>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill px-2 px-md-3 py-2">⛔ Нет</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if product.is_active %}
+                    <div class="modal-custom" id="productDetailModal{{ product.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+                            <div class="modal-content">
+                                <div class="modal-header border-0">
+                                    <h5 class="modal-title fw-bold">{{ product.name }}</h5>
+                                    <button type="button" class="btn-close-custom" onclick="closeModal('productDetailModal{{ product.id }}')"></button>
+                                </div>
+                                <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
+                                    {% if product.image %}
+                                        <img src="{{ product.image.url }}" class="modal-header-img" alt="{{ product.name }}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px;">
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-start mb-2 mt-3">
+                                        <h3 class="fw-bold mb-0 fs-4">{{ product.name }}</h3>
+                                        <span class="fs-4 fw-bold text-warning">{{ product.price }} ₽</span>
+                                    </div>
+                                    
+                                    <div class="rating-stars mb-3">
+                                        {% with rating=product.get_rating|default:0 %}
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= rating|floatformat:0 %}
+                                                    <i class="bi bi-star-fill filled fs-6"></i>
+                                                {% else %}
+                                                    <i class="bi bi-star fs-6"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <span class="rating-value">({{ rating|floatformat:1 }} из 5)</span>
+                                        {% endwith %}
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                                        <div class="info-badge"><i class="bi bi-scale me-1"></i> {{ product.weight }}г</div>
+                                        <div class="info-badge"><i class="bi bi-fire me-1 text-warning"></i> {{ product.calories|default:"—" }} ккал</div>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-2">Описание</h6>
+                                    <p class="text-muted mb-3">{{ product.description|default:"Описание отсутствует" }}</p>
+
+                                    <!-- КНОПКА ДОБАВЛЕНИЯ ПЕРЕМЕЩЕНА СЮДА (ВВЕРХ ОТЗЫВОВ) -->
+                                    <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'add'); closeModal('productDetailModal{{ product.id }}');" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-2 py-md-3 shadow mb-4">
+                                        Добавить за {{ product.price }} ₽
+                                    </button>
+
+                                    <h6 class="fw-bold mb-2">Отзывы покупателей</h6>
+                                    <div class="reviews-list" style="max-height: 200px; overflow-y: auto;">
+                                        {% with reviews=product.reviews.all %}
+                                            {% if reviews %}
+                                                {% for review in reviews %}
+                                                <div class="review-item">
+                                                    <div class="review-user">{{ review.user.username }}</div>
+                                                    <div class="rating-stars mb-1">
+                                                        {% for i in "12345"|make_list %}
+                                                            {% if forloop.counter <= review.rating %}
+                                                                <i class="bi bi-star-fill filled" style="font-size: 10px;"></i>
+                                                            {% else %}
+                                                                <i class="bi bi-star" style="font-size: 10px;"></i>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div class="review-text">{{ review.text }}</div>
+                                                    <div class="review-date">{{ review.created_at|date:"d.m.Y" }}</div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p class="text-muted small text-center py-3">Нет отзывов. Будьте первым!</p>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Модалки добавления -->
+{% if user.is_staff %}
+<div class="modal-custom" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Новое блюдо</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addProductModal')"></button>
+            </div>
+            <form action="{% url 'add_product' %}" method="post" enctype="multipart/form-data" onsubmit="return submitProductForm(event)">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <select name="category" class="form-select rounded-pill" required>
+                            <option value="" disabled selected>Выберите категорию</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" name="name" class="form-control rounded-pill" placeholder="Название блюда" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="number" step="0.01" name="price" class="form-control rounded-pill" placeholder="Цена ₽" required>
+                        </div>
+                        <div class="col">
+                            <input type="number" name="weight" class="form-control rounded-pill" placeholder="Вес г">
+                        </div>
+                        <div class="col">
+                            <input type="number" name="calories" class="form-control rounded-pill" placeholder="Калории ккал" min="0" max="2000" step="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <textarea name="description" class="form-control rounded-3" rows="3" placeholder="Состав и описание"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-muted mb-2">Фотография блюда</label>
+                        <input type="file" name="image" class="form-control rounded-pill" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold py-2">Добавить в меню</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка добавления категории -->
+<div class="modal-custom" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold"><i class="bi bi-tag me-2"></i>Новая категория</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addCategoryModal')"></button>
+            </div>
+            <form method="post" action="{% url 'add_category' %}" onsubmit="return submitCategoryForm(event)">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control rounded-pill" placeholder="Название категории" required>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалки редактирования категорий -->
+{% for category in categories %}
+<div class="modal-custom" id="editCategoryModal{{ category.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Редактировать категорию</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('editCategoryModal{{ category.id }}')"></button>
+            </div>
+            <form method="post" action="{% url 'edit_category' category.id %}" onsubmit="return submitEditCategoryForm(event, {{ category.id }})">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="name" class="form-control rounded-pill" value="{{ category.name }}" required>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if category.products.count == 0 %}
+<div class="modal-custom" id="deleteCategoryModal{{ category.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold text-danger">Удалить категорию?</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('deleteCategoryModal{{ category.id }}')"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить категорию <strong>"{{ category.name }}"</strong>?</p>
+                <p class="text-muted small">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill" onclick="closeModal('deleteCategoryModal{{ category.id }}')">Отмена</button>
+                <a href="{% url 'delete_category' category.id %}" class="btn btn-danger rounded-pill" onclick="closeModal('deleteCategoryModal{{ category.id }}')">Удалить</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- Модалки редактирования товаров -->
+{% for product in all_products %}
+<div class="modal-custom" id="editProductModal{{ product.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold">Редактировать: {{ product.name }}</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('editProductModal{{ product.id }}')"></button>
+            </div>
+            <form method="post" action="{% url 'edit_product' product.id %}" enctype="multipart/form-data" onsubmit="return submitEditProductForm(event, {{ product.id }})">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" name="name" class="form-control rounded-pill" value="{{ product.name }}" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <input type="number" step="0.01" name="price" class="form-control rounded-pill" value="{{ product.price }}" required>
+                        </div>
+                        <div class="col">
+                            <input type="number" name="weight" class="form-control rounded-pill" value="{{ product.weight }}">
+                        </div>
+                        <div class="col">
+                            <input type="number" name="calories" class="form-control rounded-pill" value="{{ product.calories|default:0 }}" placeholder="Калории ккал" min="0" max="2000" step="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <textarea name="description" class="form-control rounded-3" rows="3">{{ product.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <select name="category" class="form-select rounded-pill">
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if cat.id == product.category.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="activeSwitch{{ product.id }}" {% if product.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="activeSwitch{{ product.id }}">В наличии (видно в меню)</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <input type="file" name="image" class="form-control rounded-pill" accept="image/*">
+                        {% if product.image %}
+                        <div class="mt-2 small text-muted">Текущее фото: {{ product.image.name }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Кнопка быстрого добавления -->
+<button class="btn btn-success add-category-fab shadow-lg" onclick="openModal('addProductModal')">
+    <i class="bi bi-plus-lg fs-4"></i>
+</button>
+{% endif %}
+
+<script>
+// Функции для работы с модальными окнами на чистом JS
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Закрытие модалки по клику на фон
+window.onclick = function(event) {
+    if (event.target.classList && event.target.classList.contains('modal-custom')) {
+        closeModal(event.target.id);
+    }
+};
+
+// Открытие модалки товара
+function openProductModal(productId) {
+    openModal('productDetailModal' + productId);
+}
+
+// Функция фильтрации по калориям
+function filterByCalories() {
+    let input = document.getElementById('caloriesFilter');
+    let maxCalories = parseInt(input.value);
+    
+    // Ограничиваем значение
+    if (isNaN(maxCalories)) {
+        maxCalories = 0;
+        input.value = 0;
+    }
+    if (maxCalories > 2000) {
+        maxCalories = 2000;
+        input.value = 2000;
+    }
+    if (maxCalories < 0) {
+        maxCalories = 0;
+        input.value = 0;
+    }
+    
+    const products = document.querySelectorAll('.product-item');
+    
+    products.forEach(product => {
+        const calories = parseInt(product.dataset.calories);
+        if (maxCalories > 0 && !isNaN(maxCalories) && calories > maxCalories) {
+            product.style.display = 'none';
+        } else if (product.style.display !== 'none') {
+            product.style.display = 'block';
+        }
+    });
+    
+    // Обновляем видимость категорий
+    document.querySelectorAll('.category-section').forEach(section => {
+        const visibleProducts = section.querySelectorAll('.product-item[style="display: block;"]').length;
+        if (visibleProducts === 0 && maxCalories > 0) {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+        }
+    });
+}
+
+// Функции для отправки форм без перезагрузки страницы
+function submitProductForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            closeModal('addProductModal');
+            showToast('Блюдо успешно добавлено!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Ошибка при добавлении блюда');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка:', err);
+        alert('Ошибка при добавлении блюда');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+    
+    return false;
+}
+
+function submitCategoryForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            closeModal('addCategoryModal');
+            showToast('Категория успешно создана!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Ошибка при создании категории');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка:', err);
+        alert('Ошибка при создании категории');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+    
+    return false;
+}
+
+function submitEditCategoryForm(event, categoryId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            closeModal('editCategoryModal' + categoryId);
+            showToast('Категория обновлена!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Ошибка при обновлении категории');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка:', err);
+        alert('Ошибка при обновлении категории');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+    
+    return false;
+}
+
+function submitEditProductForm(event, productId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            closeModal('editProductModal' + productId);
+            showToast('Блюдо обновлено!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Ошибка при обновлении блюда');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error('Ошибка:', err);
+        alert('Ошибка при обновлении блюда');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+    
+    return false;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = 'ginza-toast shadow-lg';
+    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+    toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 600);
+    }, 3000);
+}
+
+// Переключение вида сетки (мобилки)
+function toggleGridView() {
+    const grids = document.querySelectorAll('.dish-grid');
+    const icon = document.getElementById('viewIcon');
+    
+    grids.forEach(grid => {
+        // Проверяем, есть ли класс compact-view
+        if (grid.classList.contains('compact-view')) {
+            // Переключаем на обычный вид (2 колонки на мобильных, 4 на десктопе)
+            grid.classList.remove('compact-view');
+            if (icon) {
+                icon.classList.remove('bi-list-ul');
+                icon.classList.add('bi-grid-fill');
+            }
+            // Сохраняем выбор пользователя
+            localStorage.setItem('menuViewMode', 'grid');
+        } else {
+            // Включаем компактный вид (1 колонка на мобильных, 2 на десктопе)
+            grid.classList.add('compact-view');
+            if (icon) {
+                icon.classList.remove('bi-grid-fill');
+                icon.classList.add('bi-list-ul');
+            }
+            localStorage.setItem('menuViewMode', 'compact');
+        }
+    });
+}
+
+// При загрузке страницы восстанавливаем выбранный режим
+document.addEventListener('DOMContentLoaded', function() {
+    const savedMode = localStorage.getItem('menuViewMode');
+    if (savedMode === 'compact') {
+        document.querySelectorAll('.dish-grid').forEach(grid => {
+            grid.classList.add('compact-view');
+        });
+        const icon = document.getElementById('viewIcon');
+        if (icon) {
+            icon.classList.remove('bi-grid-fill');
+            icon.classList.add('bi-list-ul');
+        }
+    }
+});
+
+// Живой поиск
+const searchInput = document.getElementById('menuSearch');
+if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        const products = document.querySelectorAll('.product-item');
+        
+        products.forEach(product => {
+            const name = product.dataset.name;
+            if (name && name.includes(query)) {
+                product.style.display = 'block';
+            } else {
+                product.style.display = 'none';
+            }
+        });
+        
+        document.querySelectorAll('.category-section').forEach(section => {
+            const visibleProducts = section.querySelectorAll('.product-item[style="display: block;"]').length;
+            if (visibleProducts === 0 && query !== '') {
+                section.style.display = 'none';
+            } else {
+                section.style.display = 'block';
+            }
+        });
+    });
+}
+
+// Сортировка
+const sortSelect = document.getElementById('sortSelect');
+if (sortSelect) {
+    sortSelect.addEventListener('change', function() {
+        const val = this.value;
+        const grids = document.querySelectorAll('.dish-grid');
+        
+        grids.forEach(grid => {
+            const items = Array.from(grid.querySelectorAll('.product-item'));
+            
+            items.sort((a, b) => {
+                if (val === 'price-asc') {
+                    return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                } else if (val === 'price-desc') {
+                    return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                } else if (val === 'rating-desc') {
+                    return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
+                } else if (val === 'popular') {
+                    return parseFloat(b.dataset.popular) - parseFloat(a.dataset.popular);
+                } else if (val === 'calories-asc') {
+                    return parseFloat(a.dataset.calories) - parseFloat(b.dataset.calories);
+                } else if (val === 'calories-desc') {
+                    return parseFloat(b.dataset.calories) - parseFloat(a.dataset.calories);
+                } else {
+                    return parseInt(a.dataset.order) - parseInt(b.dataset.order);
+                }
+            });
+            
+            items.forEach(item => grid.appendChild(item));
+        });
+    });
+}
+
+// Функция для обновления активной кнопки категории
+function updateActiveCategoryButton(categoryId) {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        const btnCatId = btn.dataset.cat;
+        if (btnCatId === categoryId || (categoryId === 'all' && btnCatId === 'all')) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// Функция для скролла к категории
+function scrollToCategory(categoryId) {
+    if (categoryId === 'all') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateActiveCategoryButton('all');
+        return;
+    }
+    
+    const targetSection = document.getElementById(`cat-${categoryId}`);
+    if (targetSection) {
+        const navHeight = document.querySelector('.category-nav')?.offsetHeight || 72;
+        const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - navHeight - 10;
+        
+        window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+        });
+        
+        updateActiveCategoryButton(categoryId);
+    }
+}
+
+// Обработка кликов по кнопкам категорий
+const filterBtns = document.querySelectorAll('.filter-btn');
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const catId = this.dataset.cat;
+        
+        updateActiveCategoryButton(catId);
+        
+        if (catId === 'all') {
+            document.querySelectorAll('.category-section').forEach(section => {
+                section.style.display = 'block';
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            document.querySelectorAll('.category-section').forEach(section => {
+                if (section.id === `cat-${catId}`) {
+                    section.style.display = 'block';
+                    setTimeout(() => scrollToCategory(catId), 50);
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        }
+    });
+});
+
+// Подсветка активной категории при скролле
+const observerOptions = {
+    threshold: 0.3,
+    rootMargin: '-80px 0px -50% 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const catId = entry.target.id.replace('cat-', '');
+            updateActiveCategoryButton(catId);
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.category-section').forEach(section => {
+    if (section.style.display !== 'none') {
+        observer.observe(section);
+    }
+});
+
+// При загрузке страницы определяем видимую категорию
+function setInitialActiveCategory() {
+    const sections = document.querySelectorAll('.category-section');
+    let activeFound = false;
+    
+    for (const section of sections) {
+        if (section.style.display !== 'none') {
+            const rect = section.getBoundingClientRect();
+            const navHeight = document.querySelector('.category-nav')?.offsetHeight || 72;
+            
+            if (rect.top <= navHeight + 100 && rect.bottom >= navHeight) {
+                const catId = section.id.replace('cat-', '');
+                updateActiveCategoryButton(catId);
+                activeFound = true;
+                break;
+            }
+        }
+    }
+    
+    if (!activeFound) {
+        updateActiveCategoryButton('all');
+    }
+}
+
+setTimeout(setInitialActiveCategory, 150);
+
+let scrollTimeout;
+window.addEventListener('scroll', function() {
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(setInitialActiveCategory, 100);
+});
+</script>
+{% endblock %}

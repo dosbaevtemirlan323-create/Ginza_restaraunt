@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация — Ginza</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-card {
+            background-color: #2d2d2d;
+            border-radius: 25px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .auth-title {
+            font-weight: 800;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            margin-left: 5px;
+        }
+
+        .required-star { color: #ffc107; margin-left: 3px; }
+
+        .form-control {
+            background-color: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 15px;
+            transition: 0.3s;
+        }
+
+        .form-control:focus {
+            background-color: #444;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.15);
+            color: #fff;
+        }
+
+        /* Ошибки валидации */
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            background-image: none;
+        }
+
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.75rem;
+            margin-left: 5px;
+            margin-top: 5px;
+        }
+
+        .btn-login {
+            background-color: #ffc107;
+            border: none;
+            color: #000;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 14px;
+            width: 100%;
+            margin-top: 20px;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        .btn-login:hover {
+            background-color: #e5ac00;
+            transform: translateY(-2px);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 0.85rem;
+        }
+
+        .auth-footer a {
+            color: #ffc107;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        
+        /* Стиль для текста помощи (парольные требования) */
+        .help-text {
+            font-size: 0.7rem;
+            color: #777;
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+        
+        /* Стиль для списка требований к паролю */
+        .password-requirements {
+            font-size: 0.7rem;
+            color: #777;
+            margin-top: 8px;
+            padding-left: 5px;
+            list-style: none;
+        }
+        .password-requirements li {
+            margin-bottom: 3px;
+        }
+        .password-requirements li.valid {
+            color: #28a745;
+        }
+        .password-requirements li.invalid {
+            color: #dc3545;
+        }
+        .password-requirements i {
+            margin-right: 5px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container d-flex justify-content-center">
+    <div class="auth-card">
+        <div class="auth-title">GINZA<span style="color:#ffc107">.</span></div>
+        <div class="auth-subtitle">Добро пожаловать в доставку</div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="required-star">*</span>{% endif %}
+                </label>
+                
+                {% if field.name == 'password1' %}
+                    <input type="password" 
+                           name="{{ field.html_name }}"
+                           id="{{ field.id_for_label }}"
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           placeholder="Придумайте надежный пароль"
+                           value="{{ field.value|default:'' }}"
+                           required>
+                    <!-- Список требований к паролю -->
+                    <ul class="password-requirements" id="password-requirements">
+                        <li id="req-length"><i class="bi bi-circle"></i> Минимум 8 символов</li>
+                        <li id="req-upper"><i class="bi bi-circle"></i> Заглавная буква (A-Z)</li>
+                        <li id="req-lower"><i class="bi bi-circle"></i> Строчная буква (a-z)</li>
+                        <li id="req-digit"><i class="bi bi-circle"></i> Цифра (0-9)</li>
+                        <li id="req-special"><i class="bi bi-circle"></i> Спецсимвол (!@#$%^&*)</li>
+                    </ul>
+                {% elif field.name == 'password2' %}
+                    <input type="password" 
+                           name="{{ field.html_name }}"
+                           id="{{ field.id_for_label }}"
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           placeholder="Повторите пароль"
+                           value="{{ field.value|default:'' }}"
+                           required>
+                {% else %}
+                    <input type="{{ field.field.widget.input_type|default:'text' }}" 
+                           name="{{ field.html_name }}"
+                           id="{{ field.id_for_label }}"
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           placeholder="{{ field.label }}"
+                           value="{{ field.value|default:'' }}"
+                           required>
+                {% endif %}
+
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if field.help_text and field.name != 'password1' %}
+                    <div class="help-text">{{ field.help_text|striptags }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-login">Зарегистрироваться</button>
+        </form>
+
+        <div class="auth-footer">
+            Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>
+        </div>
+        
+        <a href="{% url 'start' %}" class="back-link">Вернуться на главную</a>
+    </div>
+</div>
+
+<script>
+// Клиентская валидация пароля с визуальной обратной связью
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.querySelector('input[name="password1"]');
+    const password2Input = document.querySelector('input[name="password2"]');
+    
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            // Проверка длины
+            const lengthValid = password.length >= 8;
+            updateRequirement('req-length', lengthValid);
+            
+            // Проверка заглавной буквы
+            const upperValid = /[A-Z]/.test(password);
+            updateRequirement('req-upper', upperValid);
+            
+            // Проверка строчной буквы
+            const lowerValid = /[a-z]/.test(password);
+            updateRequirement('req-lower', lowerValid);
+            
+            // Проверка цифры
+            const digitValid = /\d/.test(password);
+            updateRequirement('req-digit', digitValid);
+            
+            // Проверка спецсимвола
+            const specialValid = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            updateRequirement('req-special', specialValid);
+        });
+    }
+    
+    function updateRequirement(elementId, isValid) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            if (isValid) {
+                element.classList.add('valid');
+                element.classList.remove('invalid');
+                element.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + element.innerText.replace(/[✓✗]/, '').trim();
+            } else {
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+                element.innerHTML = '<i class="bi bi-circle"></i> ' + element.innerText.replace(/[✓✗]/, '').trim();
+            }
+        }
+    }
+});
+</script>
+
+</body>
+</html>

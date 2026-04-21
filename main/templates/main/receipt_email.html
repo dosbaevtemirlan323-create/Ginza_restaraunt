@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Электронный чек GINZA</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .email-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .receipt {
+            padding: 20px;
+        }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .hr { border-top: 1px dashed #ccc; margin: 12px 0; }
+        .line { display: flex; justify-content: space-between; margin: 5px 0; }
+        .total { font-size: 24px; font-weight: bold; margin: 10px 0; }
+        .qr { text-align: center; margin: 15px 0; }
+        .qr img { width: 100px; height: 100px; }
+        .footer { background: #f8f8f8; padding: 12px; text-align: center; font-size: 11px; color: #666; }
+        @media (max-width: 600px) {
+            .receipt { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="receipt">
+            <div class="center">
+                <div class="bold" style="font-size: 18px;">🍣 GINZA</div>
+                <div style="font-size: 11px;">ЯПОНСКАЯ КУХНЯ</div>
+                <div style="font-size: 11px;">г. Байконур, ул. Янгеля, 5А</div>
+            </div>
+            
+            <div class="hr"></div>
+            
+            <div class="line">
+                <span>{{ order.created_at|date:"d.m.Y H:i" }}</span>
+                <span>КАССА #01</span>
+            </div>
+            <div class="line">
+                <span>ЧЕК: {{ order.id }}</span>
+                <span>ОПЕРАТОР: Жолдасбеков Г.К.</span>
+            </div>
+            
+            <div class="hr"></div>
+            
+            <div class="center bold">ВАШ ЗАКАЗ</div>
+            
+            <div class="hr"></div>
+            
+            {% for item in order.items.all %}
+            <div style="margin-bottom: 12px;">
+                <div class="bold">{{ item.product.name }}</div>
+                <div class="line">
+                    <span>{{ item.product.weight|default:"—" }}г x {{ item.quantity }}</span>
+                    <span class="bold">{{ item.get_cost|floatformat:2 }} ₽</span>
+                </div>
+                {% if item.comment %}
+                <div style="color: #e67e22; font-size: 10px;">💬 {{ item.comment }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="hr"></div>
+            
+            <div class="line">
+                <span>СУММА ЗАКАЗА:</span>
+                <span class="bold">{{ order.total_price }} ₽</span>
+            </div>
+            <div class="line">
+                <span>СПОСОБ ОПЛАТЫ:</span>
+                <span class="bold">{% if order.payment_method == 'card' %}БАНКОВСКАЯ КАРТА{% else %}НАЛИЧНЫМИ{% endif %}</span>
+            </div>
+            
+            <div class="hr"></div>
+            
+            <div class="center total">
+                {{ order.total_price }} ₽
+            </div>
+            
+            <div class="qr">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://lkzp.nalog.ru/check-receipt?fn={{ order.fiscal_fn|default:'999944030001122' }}&fd={{ order.fiscal_fd|default:'1326' }}&fp={{ order.fiscal_fp|default:'779678095' }}&sum={{ order.total_price }}&s=1">
+            </div>
+            
+            <div class="center" style="font-size: 11px; margin: 10px 0;">
+                <span class="bold">БЛАГОДАРИМ ЗА ЗАКАЗ!</span><br>
+                Ждем вас снова в GINZA
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div>🍣 ginzaproject.ru | 📞 +7 (705) 729-05-41</div>
+            <div style="font-size: 10px; margin-top: 5px;">Для проверки чека: www.nalog.gov.ru</div>
+            <div style="font-size: 9px; margin-top: 5px;">Это электронный чек, он имеет ту же юридическую силу, что и бумажный</div>
+        </div>
+    </div>
+</body>
+</html>

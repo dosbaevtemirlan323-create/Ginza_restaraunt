@@ -1,0 +1,12 @@
+meta:
+  environment: python
+  toolchain:
+    name: pip
+    version: 3.10
+build:
+  requirementsPath: requirements.txt
+run:
+  persistenceMounts:
+    - name: data
+      path: /data
+  command: daphne -b 0.0.0.0 -p 8080 restaurant.asgi:application

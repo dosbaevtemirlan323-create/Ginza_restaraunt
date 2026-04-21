@@ -1,0 +1,690 @@
+{% load cart_tags %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ginza Delivery{% endblock %}</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        .nav-link-custom {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.3s;
+        }
+
+        .nav-link-custom:hover {
+            color: var(--ginza-gold);
+        }
+
+        .logout-btn-custom {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            color: #ff6b6b;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .logout-btn-custom:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .nav-link-custom span { display: none; }
+            .header-profile-nav { gap: 15px; }
+        }
+
+        :root { --ginza-gold: #ffc107; --ginza-dark: #212529; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .navbar { background: #000 !important; padding: 15px 0; z-index: 1030; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+        
+        .floating-cart { position: fixed; bottom: 30px; right: 30px; z-index: 1050; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 25px rgba(0,0,0,0.2); transition: 0.3s; border: none; }
+        .floating-cart:hover { transform: scale(1.1) rotate(5deg); }
+        .cart-badge-floating { position: absolute; top: 0; right: 0; background: #dc3545; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid white; }
+        .cart-btn-hidden { opacity: 0 !important; pointer-events: none; transform: scale(0.8); }
+        
+        .qty-controls { display: flex; align-items: center; background: #f1f1f1; border-radius: 50px; padding: 5px; width: fit-content; }
+        .qty-btn, .qty-btn-circle { width: 32px; height: 32px; border-radius: 50%; border: none; background: white; color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.2s; }
+        .qty-btn:hover, .qty-btn-circle:hover { background: var(--ginza-gold); }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .ginza-toast {
+            background: #212529; color: white; padding: 15px 25px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 10px;
+            display: flex; align-items: center; border-left: 5px solid #ffc107;
+            animation: slideIn 0.5s ease forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        @media (max-width: 576px) {
+            .toast-container {
+                right: 10px;
+                left: 10px;
+                top: 10px;
+            }
+            .ginza-toast {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+        
+        /* Стили для плавающей кнопки меню */
+        .floating-menu-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 1050;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .floating-menu-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, #ff9800, #ffc107);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+        }
+        
+        .floating-menu-btn i {
+            font-size: 28px;
+            color: #000;
+        }
+        
+        /* Анимация пульсации */
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        
+        .floating-menu-btn {
+            animation: pulse-gold 2s infinite;
+        }
+        
+        @media (max-width: 768px) {
+            .floating-menu-btn {
+                bottom: 90px;
+                left: 20px;
+                width: 50px;
+                height: 50px;
+            }
+            .floating-menu-btn i {
+                font-size: 24px;
+            }
+        }
+
+        /* Улучшенные hover-эффекты */
+        .btn, .product-card, .order-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .product-card:hover, .order-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.1) !important;
+        }
+        /* Адаптивные кнопки на мобильных */
+        @media (max-width: 576px) {
+            .btn, .qty-btn-circle {
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="toast-container" id="toast-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="ginza-toast">
+                <i class="bi bi-info-circle-fill me-3 text-warning"></i>
+                <div>{{ message }}</div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold fs-3" href="{% url 'start' %}">GINZA <span class="text-warning">DELIVERY</span></a>
+        
+        <div class="d-flex align-items-center">
+            <a href="{% url 'menu' %}" class="nav-link text-white me-3">Меню</a>
+            
+            {% if user.is_staff %}
+                <a href="{% url 'operator_panel' %}" class="btn btn-primary btn-sm rounded-pill px-3 me-3">Заказы</a>
+            {% endif %}
+
+            <a href="{% url 'cart_detail' %}" class="nav-link text-white position-relative me-4">
+                <i class="bi bi-bag-heart fs-4"></i>
+                <span id="nav-cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not cart|length %}d-none{% endif %}">
+                    {{ cart|length }}
+                </span>
+            </a>
+
+            {% if user.is_authenticated %}
+                <div class="d-none d-md-flex align-items-center gap-3 me-3">
+                    <a href="{% url 'profile' %}" class="nav-link-custom">
+                        <i class="bi bi-person"></i> Профиль
+                    </a>
+                    {% if not user.is_staff %}
+                        <a href="{% url 'favorites_list' %}" class="nav-link-custom">
+                            <i class="bi bi-heart"></i> Избранное
+                        </a>
+                    {% endif %}
+                </div>
+
+                <form action="{% url 'logout' %}" method="post" class="m-0 me-2">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn-custom">
+                        <i class="bi bi-box-arrow-right"></i> Выход
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold">Войти</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<button id="float-cart-btn" 
+        class="btn btn-warning floating-cart shadow {% if not cart %}d-none{% endif %}" 
+        type="button" 
+        data-bs-toggle="offcanvas" 
+        data-bs-target="#offcanvasCart">
+    <i class="bi bi-cart3 fs-2"></i>
+    <span id="float-cart-count" class="cart-badge-floating">{{ cart|length }}</span>
+</button>
+
+<div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="offcanvasCart">
+    <div class="offcanvas-header border-bottom px-4">
+        <h5 class="offcanvas-title fw-bold">ВАШ ЗАКАЗ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-4">
+        <div id="sidebar-items-container">
+            {% for item in cart %}
+            <div class="cart-item-sidebar mb-4 p-3 bg-light rounded-4" id="sidebar-item-row-{{ item.product.id }}">
+                <div class="d-flex justify-content-between mb-2">
+                    <div class="fw-bold">{{ item.product.name }}</div>
+                    <button type="button" onclick="updateCartQuantity('{{ item.product.id }}', 'remove'); return false;" class="btn btn-link text-danger p-0 border-0 shadow-none">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-3">
+                    <input type="text" 
+                           class="form-control form-control-sm rounded-pill border-0 px-3 bg-white" 
+                           placeholder="Комментарий к блюду" 
+                           value="{{ item.comment|default:'' }}"
+                           onchange="saveComment('{{ item.product.id }}', this.value)">
+                </div>
+
+                <div class="mb-2">
+                    <span class="fw-bold text-dark" id="sidebar-item-total-{{ item.product.id }}">{{ item.total_price }}</span> <span class="fw-bold">₽</span>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="qty-controls">
+                        <button type="button" onclick="updateCartQuantity('{{ item.product.id }}', 'subtract'); return false;" class="qty-btn">−</button>
+                        <span id="sidebar-qty-{{ item.product.id }}" class="mx-3 fw-bold">{{ item.quantity }}</span>
+                        <button type="button" onclick="updateCartQuantity('{{ item.product.id }}', 'add'); return false;" class="qty-btn">+</button>
+                    </div>
+                    <small class="text-muted">{{ item.product.price }} ₽/шт</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="sidebar-empty-msg" class="text-center py-5 {% if cart %}d-none{% endif %}">
+            <i class="bi bi-cart-x text-muted display-1 opacity-25"></i>
+            <p class="mt-3 text-muted">Корзина пуста</p>
+            <a href="{% url 'menu' %}" class="btn btn-outline-warning rounded-pill mt-2">В меню</a>
+        </div>
+
+        <div id="sidebar-footer" class="mt-4 border-top pt-4 {% if not cart %}d-none{% endif %}">
+            <div class="d-flex justify-content-between mb-3">
+                <span class="fw-bold">Итого к оплате:</span>
+                <span id="side-cart-total" class="fw-bold fs-4 text-warning">{{ cart.get_total_price }} ₽</span>
+            </div>
+            <a href="{% url 'cart_detail' %}" class="btn btn-warning w-100 py-3 rounded-pill fw-bold shadow-sm">Оформить заказ</a>
+        </div>
+    </div>
+</div>
+
+<!-- Плавающая кнопка меню (показывается на всех страницах, кроме самого меню) -->
+{% if request.resolver_match.url_name != 'menu' %}
+<a href="{% url 'menu' %}" class="floating-menu-btn shadow-lg" title="Перейти в меню">
+    <i class="bi bi-grid-3x3-gap-fill"></i>
+</a>
+{% endif %}
+
+<script>
+    const userIsAuthenticated = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+    let lastKnownStatus = null;
+    let lastKnownOrderId = null;
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function saveComment(productId, text) {
+        const formData = new FormData();
+        formData.append('comment', text);
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+
+        fetch(`/update_comment/${productId}/`, { 
+            method: 'POST', 
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status !== 'ok') console.error("Ошибка сохранения комментария");
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updateCartQuantity(productId, action) {
+        let url;
+        if (action === 'add') {
+            url = `/cart/add/${productId}/`;
+        } else if (action === 'subtract') {
+            url = `/cart/subtract/${productId}/`;
+        } else if (action === 'remove') {
+            url = `/cart/remove/${productId}/`;
+        }
+
+        fetch(url, { 
+            method: 'POST', 
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            } 
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok' || data.status === 'removed') {
+                // ========== 1. ОБНОВЛЯЕМ САЙДБАР ==========
+                const sideRow = document.getElementById(`sidebar-item-row-${productId}`);
+                const sidebarContainer = document.getElementById('sidebar-items-container');
+                const emptyMsg = document.getElementById('sidebar-empty-msg');
+                const footer = document.getElementById('sidebar-footer');
+                
+                if (data.item_quantity > 0 && data.product_name) {
+                    if (sideRow) {
+                        const qtySpan = document.getElementById(`sidebar-qty-${productId}`);
+                        const totalSpan = document.getElementById(`sidebar-item-total-${productId}`);
+                        if (qtySpan) qtySpan.innerText = data.item_quantity;
+                        if (totalSpan) totalSpan.innerText = data.item_total_price;
+                    } else if (sidebarContainer) {
+                        const newRowHtml = `
+                            <div class="cart-item-sidebar mb-4 p-3 bg-light rounded-4" id="sidebar-item-row-${productId}">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div class="fw-bold">${escapeHtml(data.product_name)}</div>
+                                    <button type="button" onclick="updateCartQuantity('${productId}', 'remove'); return false;" class="btn btn-link text-danger p-0 border-0 shadow-none">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" 
+                                           class="form-control form-control-sm rounded-pill border-0 px-3 bg-white" 
+                                           placeholder="Комментарий к блюду" 
+                                           value=""
+                                           onchange="saveComment('${productId}', this.value)">
+                                </div>
+                                <div class="mb-2">
+                                    <span class="fw-bold text-dark" id="sidebar-item-total-${productId}">${data.item_total_price}</span> <span class="fw-bold">₽</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="qty-controls">
+                                        <button type="button" onclick="updateCartQuantity('${productId}', 'subtract'); return false;" class="qty-btn">−</button>
+                                        <span id="sidebar-qty-${productId}" class="mx-3 fw-bold">${data.item_quantity}</span>
+                                        <button type="button" onclick="updateCartQuantity('${productId}', 'add'); return false;" class="qty-btn">+</button>
+                                    </div>
+                                    <small class="text-muted">${data.product_price} ₽/шт</small>
+                                </div>
+                            </div>
+                        `;
+                        sidebarContainer.insertAdjacentHTML('beforeend', newRowHtml);
+                    }
+                    
+                    if (emptyMsg) emptyMsg.classList.add('d-none');
+                    if (footer) footer.classList.remove('d-none');
+                    
+                } else {
+                    if (sideRow) sideRow.remove();
+                    
+                    const remainingItems = document.querySelectorAll('#sidebar-items-container .cart-item-sidebar').length;
+                    if (remainingItems === 0) {
+                        if (emptyMsg) emptyMsg.classList.remove('d-none');
+                        if (footer) footer.classList.add('d-none');
+                    }
+                }
+                
+                // ========== 2. ОБНОВЛЯЕМ СЧЕТЧИКИ ==========
+                const badges = document.querySelectorAll('#nav-cart-count, #float-cart-count, #mobile-cart-count, .cart-count-badge');
+                badges.forEach(b => {
+                    if (b) {
+                        b.innerText = data.cart_total_quantity;
+                        if (data.cart_total_quantity === 0) {
+                            b.classList.add('d-none');
+                        } else {
+                            b.classList.remove('d-none');
+                        }
+                    }
+                });
+                
+                // ========== 3. ОБНОВЛЯЕМ ПЛАВАЮЩУЮ КНОПКУ ==========
+                const floatBtn = document.getElementById('float-cart-btn');
+                if (floatBtn) {
+                    if (data.cart_total_quantity === 0) {
+                        floatBtn.classList.add('d-none');
+                    } else {
+                        floatBtn.classList.remove('d-none');
+                    }
+                }
+                
+                // ========== 4. ОБНОВЛЯЕМ КНОПКУ В МЕНЮ ==========
+                const menuContainer = document.getElementById(`cart-container-${productId}`);
+                if (menuContainer) {
+                    if (data.item_quantity > 0) {
+                        menuContainer.innerHTML = `
+                            <div class="qty-controls">
+                                <button type="button" onclick="updateCartQuantity('${productId}', 'subtract'); return false;" class="qty-btn-circle">−</button>
+                                <span class="mx-3 fw-bold">${data.item_quantity}</span>
+                                <button type="button" onclick="updateCartQuantity('${productId}', 'add'); return false;" class="qty-btn-circle">+</button>
+                            </div>`;
+                    } else {
+                        menuContainer.innerHTML = `<button type="button" onclick="updateCartQuantity('${productId}', 'add'); return false;" class="btn btn-warning rounded-pill px-4 fw-bold">В корзину</button>`;
+                    }
+                }
+                
+                // ========== 5. ОБНОВЛЯЕМ ОБЩУЮ СУММУ ==========
+                const sideTotal = document.getElementById('side-cart-total');
+                if (sideTotal) sideTotal.innerText = data.total_price + ' ₽';
+                
+                // ========== 6. ОБНОВЛЯЕМ СТРАНИЦУ КОРЗИНЫ ==========
+                if (window.location.pathname.includes('/cart/')) {
+                    const row = document.getElementById(`row-${productId}`);
+                    if (data.item_quantity > 0) {
+                        if (row) {
+                            const qtySpan = document.getElementById(`quantity-${productId}`);
+                            const totalSpan = document.getElementById(`item-total-${productId}`);
+                            if (qtySpan) qtySpan.innerText = data.item_quantity;
+                            if (totalSpan) totalSpan.innerText = data.item_total_price + ' ₽';
+                        }
+                    } else {
+                        if (row) row.remove();
+                    }
+                    
+                    const totalPriceSpan = document.getElementById('total-price-display');
+                    const basePriceSpan = document.getElementById('base-price');
+                    const sideTotal = document.getElementById('side-cart-total');
+                    if (totalPriceSpan) totalPriceSpan.innerText = data.total_price + ' ₽';
+                    if (basePriceSpan) {
+                        basePriceSpan.innerText = data.total_price + ' ₽';
+                        basePriceSpan.dataset.raw = data.total_price;
+                    }
+                    if (sideTotal) sideTotal.innerText = data.total_price + ' ₽';
+                    
+                    if (data.cart_total_quantity === 0) {
+                        const cartContent = document.getElementById('cart-content');
+                        if (cartContent) {
+                            cartContent.innerHTML = `
+                                <div class="text-center py-5">
+                                    <i class="bi bi-cart-x display-1 text-muted opacity-25"></i>
+                                    <p class="mt-3 fs-5 text-muted">Ваша корзина пока пуста</p>
+                                    <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-4">В меню за покупками</a>
+                                </div>
+                            `;
+                        }
+                        const orderFormContainer = document.getElementById('order-form-container');
+                        if (orderFormContainer) {
+                            orderFormContainer.innerHTML = `
+                                <div class="text-center py-4">
+                                    <p class="text-muted">Добавьте товары в корзину</p>
+                                    <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-4">В меню</a>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                // ========== 7. ПЕРЕСЧИТЫВАЕМ БАЛЛЫ ==========
+                if (typeof recalculateTotals === 'function') recalculateTotals();
+            }
+        })
+        .catch(err => console.error("Ошибка корзины:", err));
+    }
+
+    function toggleFavorite(productId, btn) {
+        if (!userIsAuthenticated) { window.location.href = "{% url 'login' %}"; return; }
+        fetch(`/toggle-favorite/${productId}/`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const icon = btn.querySelector('i');
+                if (data.is_favorite) {
+                    icon.classList.replace('bi-heart', 'bi-heart-fill');
+                    icon.classList.add('text-danger');
+                } else {
+                    icon.classList.replace('bi-heart-fill', 'bi-heart');
+                    icon.classList.remove('text-danger');
+                }
+            }
+        });
+    }
+
+
+    let lastOrderState = null; // { id, status }
+
+    function checkOrderStatus() {
+        if (!userIsAuthenticated) return;
+        fetch('/api/check-last-order-status/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status && data.status !== 'no_orders') {
+                    const currentState = { id: data.order_id, status: data.status };
+                    
+                    if (lastOrderState === null) {
+                        // Первый заказ
+                        lastOrderState = currentState;
+                        showStatusNotification(`✅ Заказ №${data.order_id} создан! Статус: ${data.status_display}`, data.order_id);
+                    } 
+                    else if (lastOrderState.id !== currentState.id) {
+                        // Новый заказ
+                        lastOrderState = currentState;
+                        showStatusNotification(`🆕 Новый заказ №${data.order_id} (статус: ${data.status_display})`, data.order_id);
+                    }
+                    else if (lastOrderState.status !== currentState.status) {
+                        // Изменился статус существующего заказа
+                        lastOrderState.status = currentState.status;
+                        showStatusNotification(`🔄 Заказ №${data.order_id} → ${data.status_display}`, data.order_id);
+                    }
+                    // else – ничего не менялось, уведомление НЕ показываем
+                } else {
+                    lastOrderState = null;
+                }
+            })
+            .catch(err => console.error("Polling error:", err));
+    }
+
+
+    function showStatusNotification(message, orderId = null) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        toast.innerHTML = `<i class="bi bi-bell-fill me-3 text-warning"></i><div>${message}</div>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 5000);
+    }
+
+    // Запускаем проверку каждые 5 секунд
+    setInterval(checkOrderStatus, 5000);
+
+    function playNotificationSound() {
+        // Используем Web Audio API для короткого звука
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.3;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+        } catch(e) { console.log("Sound error", e); }
+    }
+
+    
+    const offcanvasEl = document.getElementById('offcanvasCart');
+    const floatBtnEl = document.getElementById('float-cart-btn');
+    if(offcanvasEl && floatBtnEl) {
+        offcanvasEl.addEventListener('show.bs.offcanvas', () => floatBtnEl.classList.add('cart-btn-hidden'));
+        offcanvasEl.addEventListener('hide.bs.offcanvas', () => floatBtnEl.classList.remove('cart-btn-hidden'));
+    }
+
+
+    // Автоматическое обновление при выходе из аккаунта в другой вкладке
+    let lastUserCheck = null;
+    function checkUserSession() {
+        fetch('/api/check-last-order-status/')  // любой protected endpoint
+            .then(res => {
+                if (res.status === 403 || res.status === 401) {
+                    if (document.body.innerText.includes('Вы вышли')) {
+                        location.reload();
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+    setInterval(checkUserSession, 3000);
+
+</script>
+
+{% block extra_js %}{% endblock %}
+
+<style>
+    .mobile-bottom-nav { display: none; }
+    @media (max-width: 991.98px) {
+        .mobile-bottom-nav {
+            display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
+            background: #ffffff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1060;
+            justify-content: space-around; align-items: center; border-top: 1px solid #eee;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #666; font-size: 11px; position: relative; }
+        .nav-item i { font-size: 20px; margin-bottom: 2px; }
+        .nav-item:active, .nav-item.active { color: #ffc107; }
+        .cart-count-badge { position: absolute; top: -5px; right: 5px; background: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; }
+        body { padding-bottom: 75px; }
+        #float-cart-btn { display: none !important; }
+    }
+</style>
+
+<nav class="mobile-bottom-nav d-lg-none">
+    <a href="{% url 'start' %}" class="nav-item">
+        <i class="bi bi-house-door"></i>
+        <span>Главная</span>
+    </a>
+    <a href="{% url 'menu' %}" class="nav-item">
+        <i class="bi bi-search"></i>
+        <span>Меню</span>
+    </a>
+    <a href="{% url 'cart_detail' %}" class="nav-item">
+        <i class="bi bi-basket"></i>
+        <span>Корзина</span>
+        {% if cart|length > 0 %}
+            <span class="cart-count-badge" id="mobile-cart-count">{{ cart|length }}</span>
+        {% endif %}
+    </a>
+    <a href="{% url 'profile' %}" class="nav-item">
+        <i class="bi bi-person"></i>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let initialNotifications = document.querySelectorAll('.ginza-toast');
+        initialNotifications.forEach(el => {
+            setTimeout(() => {
+                el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+                el.style.opacity = "0";
+                el.style.transform = "translateX(20px)";
+                setTimeout(() => el.remove(), 600);
+            }, 4000);
+        });
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
+
+
+</body>
+</html>

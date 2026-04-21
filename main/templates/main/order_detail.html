@@ -1,0 +1,924 @@
+{% extends 'base.html' %}
+{% block title %}Заказ №{{ order.id }} - Детали{% endblock %}
+
+{% block extra_css %}
+<style>
+    .transition-hover { transition: all 0.3s; }
+    .transition-hover:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    
+    /* Чат */
+    .chat-container {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        height: 450px;
+        background: white;
+        z-index: 1050;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .chat-messages { 
+        flex-grow: 1; 
+        overflow-y: auto; 
+        background: #fdfdfd; 
+        scroll-behavior: smooth;
+        padding: 15px;
+    }
+    .chat-message {
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-message.user {
+        align-items: flex-end;
+    }
+    .chat-message.courier {
+        align-items: flex-start;
+    }
+    .message-bubble {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 18px;
+        position: relative;
+        word-wrap: break-word;
+    }
+    .chat-message.user .message-bubble {
+        background: #ffc107;
+        color: #000;
+        border-bottom-right-radius: 5px;
+    }
+    .chat-message.courier .message-bubble {
+        background: #f1f1f1;
+        color: #333;
+        border-bottom-left-radius: 5px;
+    }
+    .message-time {
+        font-size: 10px;
+        color: #999;
+        margin-top: 4px;
+        text-align: right;
+    }
+    .chat-message.courier .message-time {
+        text-align: left;
+    }
+    .chat-input-area {
+        padding: 12px;
+        border-top: 1px solid #eee;
+        background: white;
+    }
+    
+    /* Отзывы */
+    .review-form {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+    }
+    .rating-input {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0;
+    }
+    .rating-star {
+        font-size: 28px;
+        cursor: pointer;
+        color: #ddd;
+        transition: all 0.2s;
+    }
+    .rating-star:hover,
+    .rating-star.active {
+        color: #ffc107;
+        transform: scale(1.1);
+    }
+    .review-item {
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+        border: 1px solid #eee;
+        transition: all 0.2s;
+    }
+    .review-item:hover {
+        border-color: #ffc107;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .review-user {
+        font-weight: bold;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .review-stars {
+        display: inline-flex;
+        gap: 2px;
+    }
+    .review-stars i {
+        font-size: 12px;
+        color: #ffc107;
+    }
+    .review-text {
+        font-size: 13px;
+        color: #555;
+        margin-top: 8px;
+        line-height: 1.4;
+    }
+    .review-date {
+        font-size: 10px;
+        color: #999;
+        margin-top: 5px;
+    }
+    .has-review {
+        background: #fff9e6;
+        border-color: #ffc107;
+    }
+    .product-item-review {
+        border-bottom: 1px solid #f0f0f0;
+        padding: 12px 0;
+    }
+    .product-item-review:last-child {
+        border-bottom: none;
+    }
+    .product-review-status {
+        font-size: 11px;
+    }
+    
+    @media (max-width: 576px) {
+        .chat-container { 
+            width: calc(100% - 40px); 
+            height: 70%; 
+            bottom: 10px; 
+            right: 20px;
+            left: 20px;
+            margin: 0 auto;
+        }
+        .rating-star {
+            font-size: 24px;
+        }
+    }
+    
+    .order-filters {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .filter-chip {
+        padding: 6px 16px;
+        border-radius: 50px;
+        background: white;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 13px;
+    }
+    .filter-chip.active {
+        background: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+        font-weight: 500;
+    }
+    .filter-chip:hover {
+        border-color: #ffc107;
+    }
+    .order-stats {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+        color: #000;
+        border-radius: 16px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .order-stats h3 {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .order-stats p {
+        margin: 0;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'profile' %}" class="text-dark text-decoration-none opacity-50">Личный кабинет</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark">Заказ №{{ order.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold mb-0">№{{ order.id }}</h3>
+                    <span class="badge rounded-pill" id="order-status-badge"
+                        {% if order.status == 'completed' %}bg-success
+                        {% elif order.status == 'delivering' %}bg-info
+                        {% elif order.status == 'cooking' %}bg-primary
+                        {% elif order.status == 'ready' %}bg-success
+                        {% else %}bg-warning text-dark{% endif %} px-3 py-2">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+
+                <!-- ========= БЛОК ДЛЯ КЛИЕНТА (показываем курьера) ========= -->
+                {% if not is_courier and order.courier and order.status == 'delivering' %}
+                    <div class="mb-4 p-3 rounded-4 border" style="background-color: #f8f9fa;">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 45px; height: 45px;">
+                                <i class="bi bi-bicycle text-dark fs-5"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="text-muted small mb-0 text-uppercase fw-bold" style="font-size: 10px;">Ваш курьер:</p>
+                                <h6 class="fw-bold mb-0">{{ order.courier.get_full_name|default:order.courier.username }}</h6>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {% if order.courier.profile.phone %}
+                                <a href="tel:{{ order.courier.profile.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="btn btn-success rounded-3 fw-bold py-2 shadow-sm transition-hover">
+                                    <i class="bi bi-telephone-fill me-2"></i> Позвонить курьеру
+                                </a>
+                            {% else %}
+                                <button class="btn btn-light disabled rounded-3 small">Номер не указан</button>
+                            {% endif %}
+
+                            <button class="btn btn-dark rounded-3 fw-bold py-2 shadow-sm transition-hover" onclick="toggleChat()">
+                                <i class="bi bi-chat-dots-fill me-2 text-warning"></i> Написать курьеру
+                            </button>
+                        </div>
+                    </div>
+
+                <!-- ========= БЛОК ДЛЯ КУРЬЕРА (показываем клиента) ========= -->
+                {% elif is_courier and order.status == 'delivering' %}
+                    <div class="mb-4 p-3 rounded-4 border" style="background-color: #f8f9fa;">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-info rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 45px; height: 45px;">
+                                <i class="bi bi-person text-white fs-5"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="text-muted small mb-0 text-uppercase fw-bold" style="font-size: 10px;">Клиент:</p>
+                                <h6 class="fw-bold mb-0">{{ order.user.get_full_name|default:order.user.username }}</h6>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {% if order.user.profile.phone %}
+                                <a href="tel:{{ order.user.profile.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="btn btn-success rounded-3 fw-bold py-2 shadow-sm transition-hover">
+                                    <i class="bi bi-telephone-fill me-2"></i> Позвонить клиенту
+                                </a>
+                            {% else %}
+                                <button class="btn btn-light disabled rounded-3 small">Номер не указан</button>
+                            {% endif %}
+
+                            <button class="btn btn-dark rounded-3 fw-bold py-2 shadow-sm transition-hover" onclick="toggleChat()">
+                                <i class="bi bi-chat-dots-fill me-2 text-warning"></i> Написать клиенту
+                            </button>
+                        </div>
+                    </div>
+
+                <!-- Заказ завершен - показываем только историю чата -->
+                {% elif order.status == 'completed' and order.courier %}
+                    <div class="mb-4 p-3 rounded-4 border bg-light">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center" style="width: 45px; height: 45px;">
+                                <i class="bi bi-check-circle text-white fs-5"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="text-muted small mb-0">Доставлен курьером:</p>
+                                <h6 class="fw-bold mb-0">{{ order.courier.get_full_name|default:order.courier.username }}</h6>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-dark w-100 rounded-3 py-2" onclick="toggleChat()">
+                            <i class="bi bi-chat-dots me-2"></i> История переписки
+                        </button>
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <p class="text-muted small mb-1 text-uppercase fw-bold">📍 Адрес доставки:</p>
+                    <h5 id="client-address" class="fw-bold text-dark">{{ order.address }}</h5>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-muted small mb-1 text-uppercase fw-bold">📞 Ваш телефон:</p>
+                    <h5 class="fw-bold text-dark">{{ order.phone }}</h5>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-muted small mb-1 text-uppercase fw-bold">📅 Дата заказа:</p>
+                    <h5 class="fw-bold text-dark">{{ order.created_at|date:"d.m.Y H:i" }}</h5>
+                </div>
+
+                <hr class="opacity-50">
+
+                <h5 class="fw-bold mb-3">Состав заказа:</h5>
+                <div class="order-items-list mb-4">
+                    {% for item in order.items.all %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">{{ item.product.name }} <small>x{{ item.quantity }}</small></span>
+                        <span class="fw-bold">{{ item.price|floatformat:2 }} ₽</span>
+                    </div>
+                    {% if item.comment %}
+                    <div class="small text-warning mb-2"><i class="bi bi-chat-dots"></i> {{ item.comment }}</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="fs-5 text-muted">Итого:</span>
+                    <span class="fs-3 fw-bold text-warning">{{ order.total_price|floatformat:2 }} ₽</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Карта и чат -->
+            <div id="map-container" class="position-relative mb-4">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="bg-dark p-3 text-white d-flex justify-content-between align-items-center">
+                        <span class="small"><i class="bi bi-truck me-2 text-warning"></i>МАРШРУТ</span>
+                        <span id="route-data" class="text-warning small fw-bold">Загрузка навигации...</span>
+                    </div>
+                    <div id="map" style="width: 100%; height: 450px; background-color: #f8f9fa;"></div>
+                </div>
+
+                <div id="chat-window" class="chat-container shadow-lg border-0 d-none">
+                    <div class="chat-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-chat-dots me-2 text-warning"></i> 
+                            {% if order.status == 'delivering' %}
+                                {% if is_courier %}Чат с клиентом{% else %}Чат с курьером{% endif %}
+                            {% else %}История переписки{% endif %}
+                        </span>
+                        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        {% if order.messages.all %}
+                            {% for msg in order.messages.all %}
+                                <div class="chat-message {% if msg.sender == request.user %}user{% else %}courier{% endif %}">
+                                    <div class="message-bubble">
+                                        <div>{{ msg.text }}</div>
+                                        <div class="message-time">{{ msg.created_at|date:"H:i" }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center my-5 placeholder-chat">
+                                <i class="bi bi-chat-dots text-muted fs-1"></i>
+                                <p class="text-muted small mt-2">
+                                    {% if order.status == 'delivering' %}
+                                        Чат защищен. Напишите сообщение!
+                                    {% else %}
+                                        История переписки пуста
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if order.status == 'delivering' %}
+                    <div class="chat-input-area">
+                        <div class="input-group">
+                            {% csrf_token %}
+                            <input type="text" id="chatInput" class="form-control rounded-pill border-0 bg-light px-3" placeholder="Ваше сообщение...">
+                            <button onclick="sendMessage()" class="btn btn-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Фильтры и статистика для завершенных заказов -->
+            {% if order.status == 'completed' %}
+            <div class="order-stats mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ order.items.count }}</h3>
+                        <p>блюда в заказе</p>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ order.created_at|date:"d.m.Y" }}</h3>
+                        <p>дата заказа</p>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ order.total_price|floatformat:0 }} ₽</h3>
+                        <p>общая сумма</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Отзывы на блюда (только для завершенных заказов) -->
+            {% if order.status == 'completed' %}
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-star-fill me-2 text-warning"></i>Оцените блюда</h5>
+                    <p class="small text-white-50 mb-0 mt-1">Ваше мнение поможет другим покупателям</p>
+                </div>
+                <div class="card-body p-4">
+                    {% for item in order.items.all %}
+                        {% with product=item.product %}
+                        {% with user_review=product.reviews.all|dictsort:"user.id"|first %}
+                        <div class="product-item-review" id="review-item-{{ product.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="fw-bold mb-0">{{ product.name }}</h6>
+                                        <span class="badge bg-light text-dark rounded-pill">x{{ item.quantity }}</span>
+                                        <span class="text-muted small">{{ product.weight }}г</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">{{ product.price|floatformat:2 }} ₽</div>
+                                </div>
+                                <div id="review-status-{{ product.id }}" class="product-review-status">
+                                    {% if user_review and user_review.user == request.user %}
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Оценено
+                                        </span>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-warning rounded-pill" onclick="openReviewModal('{{ product.id }}', '{{ product.name|escapejs }}')">
+                                            <i class="bi bi-star me-1"></i> Оставить отзыв
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if user_review and user_review.user == request.user %}
+                            <div class="mt-2 p-2 bg-light rounded-3">
+                                <div class="review-stars">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= user_review.rating %}
+                                            <i class="bi bi-star-fill"></i>
+                                        {% else %}
+                                            <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="small mt-1">{{ user_review.text }}</div>
+                                <div class="text-muted small mt-1">{{ user_review.created_at|date:"d.m.Y" }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endwith %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для отзыва -->
+<div class="modal-custom" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0 bg-dark text-white rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-star-fill me-2 text-warning"></i>Оставить отзыв</h5>
+                <button type="button" class="btn-close-custom btn-close-white" onclick="closeReviewModal()"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <h6 class="fw-bold" id="reviewProductName"></h6>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Ваша оценка</label>
+                    <div class="rating-input" id="ratingStars">
+                        <i class="bi bi-star rating-star" data-rating="1"></i>
+                        <i class="bi bi-star rating-star" data-rating="2"></i>
+                        <i class="bi bi-star rating-star" data-rating="3"></i>
+                        <i class="bi bi-star rating-star" data-rating="4"></i>
+                        <i class="bi bi-star rating-star" data-rating="5"></i>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Ваш отзыв</label>
+                    <textarea id="reviewText" class="form-control rounded-3" rows="4" placeholder="Поделитесь впечатлениями о блюде..."></textarea>
+                </div>
+                <input type="hidden" id="reviewProductId">
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button class="btn btn-secondary rounded-pill" onclick="closeReviewModal()">Отмена</button>
+                <button class="btn btn-warning rounded-pill fw-bold px-4" onclick="submitReview()">Отправить отзыв</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-custom {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1060;
+    overflow-y: auto;
+}
+.modal-custom.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-custom .modal-dialog {
+    margin: 0.5rem;
+    pointer-events: auto;
+    max-width: 500px;
+    width: 100%;
+}
+.modal-custom .modal-content {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+}
+.modal-custom .modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-custom .modal-body {
+    padding: 1rem;
+    flex: 1 1 auto;
+}
+.modal-custom .modal-footer {
+    padding: 0.75rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.modal-custom .btn-close-custom {
+    background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+    opacity: 0.5;
+    width: 1em;
+    height: 1em;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background-color: transparent;
+}
+.btn-close-custom:hover {
+    opacity: 0.75;
+}
+.btn-close-white {
+    filter: brightness(0) invert(1);
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=2b6a7d3b-b4ef-4682-a0e0-69dda3376fba" type="text/javascript"></script>
+<script type="text/javascript">
+    let currentProductId = null;
+    let currentRating = 0;
+    let chatUpdateInterval = null;
+    let currentChatOrderId = null;
+    let currentOrderStatus = '{{ order.status }}';
+    let statusPollingInterval = null;
+    
+    // ========== ЧАТ ==========
+    function toggleChat() {
+        const chat = document.getElementById('chat-window');
+        chat.classList.toggle('d-none');
+        if (!chat.classList.contains('d-none')) {
+            // Чат открыт — запускаем обновление
+            currentChatOrderId = {{ order.id }};
+            if (chatUpdateInterval) clearInterval(chatUpdateInterval);
+            chatUpdateInterval = setInterval(() => {
+                if (currentChatOrderId) loadMessages(currentChatOrderId);
+            }, 3000);
+        } else {
+            // Чат закрыт — останавливаем обновление
+            if (chatUpdateInterval) {
+                clearInterval(chatUpdateInterval);
+                chatUpdateInterval = null;
+            }
+            currentChatOrderId = null;
+        }
+        const msgs = document.getElementById('chatMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Оптимистичное добавление своего сообщения
+        const chatMessages = document.getElementById('chatMessages');
+        const placeholder = chatMessages.querySelector('.placeholder-chat');
+        if (placeholder) placeholder.remove();
+
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+        const newMessage = `
+            <div class="chat-message user">
+                <div class="message-bubble">
+                    <div>${escapeHtml(text)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            </div>`;
+        chatMessages.insertAdjacentHTML('beforeend', newMessage);
+        input.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Отправка на сервер
+        const formData = new FormData();
+        formData.append('text', text);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch("{% url 'send_message' order.id %}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status !== 'ok') {
+                console.error('Ошибка отправки');
+            }
+        })
+        .catch(err => console.error('Ошибка:', err));
+    }
+
+    // Функция loadMessages с проверкой дублирования
+    function loadMessages(orderId) {
+        fetch(`/order/${orderId}/messages/`)
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('chatMessages');
+                if (!container) return;
+                const currentMessages = Array.from(container.querySelectorAll('.message-bubble div:first-child')).map(el => el.innerText);
+                let newMessagesAdded = false;
+                if (data.messages?.length) {
+                    data.messages.forEach(msg => {
+                        if (!currentMessages.includes(msg.text)) {
+                            const isCourier = msg.sender === '{{ request.user.username }}';
+                            const div = document.createElement('div');
+                            div.className = `chat-message ${isCourier ? 'courier' : 'client'}`;
+                            div.innerHTML = `<div class="message-bubble"><div>${escapeHtml(msg.text)}</div><div class="message-time">${escapeHtml(msg.time)}</div></div>`;
+                            container.appendChild(div);
+                            newMessagesAdded = true;
+                        }
+                    });
+                    if (newMessagesAdded) container.scrollTop = container.scrollHeight;
+                } else if (container.children.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4">Нет сообщений</div>';
+                }
+            });
+    }
+
+    // ========== ПОЛЛИНГ СТАТУСА ЗАКАЗА (без WebSocket) ==========
+    function pollOrderStatus() {
+        fetch(`/api/check-order-status/{{ order.id }}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status && data.status !== currentOrderStatus) {
+                    currentOrderStatus = data.status;
+                    // Обновляем бейдж статуса на странице
+                    const statusBadge = document.getElementById('order-status-badge');
+                    if (statusBadge) {
+                        statusBadge.innerText = data.status_display;
+                        // Обновляем классы для цвета
+                        statusBadge.className = 'badge rounded-pill px-3 py-2';
+                        if (data.status === 'completed') statusBadge.classList.add('bg-success');
+                        else if (data.status === 'delivering') statusBadge.classList.add('bg-info');
+                        else if (data.status === 'cooking') statusBadge.classList.add('bg-primary');
+                        else if (data.status === 'ready') statusBadge.classList.add('bg-success');
+                        else statusBadge.classList.add('bg-warning', 'text-dark');
+                    }
+                    // Показываем уведомление (тост)
+                    if (typeof showStatusNotification === 'function') {
+                        showStatusNotification(data.status_display, data.order_id);
+                    } else {
+                        showToast(`Статус заказа №${data.order_id} изменён на "${data.status_display}"`, 'info');
+                    }
+                }
+            })
+            .catch(err => console.error('Polling error:', err));
+    }
+
+    // Запускаем polling статуса каждые 5 секунд
+    if (statusPollingInterval) clearInterval(statusPollingInterval);
+    statusPollingInterval = setInterval(pollOrderStatus, 5000);
+
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // ========== ОТЗЫВЫ ==========
+    function openReviewModal(productId, productName) {
+        currentProductId = productId;
+        document.getElementById('reviewProductName').innerText = productName;
+        document.getElementById('reviewProductId').value = productId;
+        document.getElementById('reviewText').value = '';
+        currentRating = 0;
+        updateRatingStars(0);
+        openModal('reviewModal');
+    }
+
+    function closeReviewModal() {
+        closeModal('reviewModal');
+    }
+
+    function updateRatingStars(rating) {
+        const stars = document.querySelectorAll('#ratingStars .rating-star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.remove('bi-star');
+                star.classList.add('bi-star-fill');
+                star.classList.add('active');
+            } else {
+                star.classList.remove('bi-star-fill');
+                star.classList.remove('active');
+                star.classList.add('bi-star');
+            }
+        });
+    }
+
+    function submitReview() {
+        const productId = document.getElementById('reviewProductId').value;
+        const text = document.getElementById('reviewText').value.trim();
+        const rating = currentRating;
+        
+        if (rating === 0) {
+            alert('Пожалуйста, выберите оценку');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('rating', rating);
+        formData.append('text', text);
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        
+        fetch(`/product/${productId}/review/`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                closeReviewModal();
+                const reviewStatus = document.getElementById(`review-status-${productId}`);
+                const reviewItem = document.getElementById(`review-item-${productId}`);
+                if (reviewStatus) {
+                    reviewStatus.innerHTML = '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Оценено</span>';
+                }
+                if (reviewItem) {
+                    const reviewHtml = `
+                        <div class="mt-2 p-2 bg-light rounded-3">
+                            <div class="review-stars">
+                                ${'<i class="bi bi-star-fill"></i>'.repeat(rating)}${'<i class="bi bi-star"></i>'.repeat(5-rating)}
+                            </div>
+                            <div class="small mt-1">${escapeHtml(text || 'Без комментария')}</div>
+                            <div class="text-muted small mt-1">Только что</div>
+                        </div>
+                    `;
+                    reviewItem.insertAdjacentHTML('beforeend', reviewHtml);
+                }
+                showToast('Спасибо за отзыв!', 'success');
+            } else {
+                alert(data.message || 'Ошибка при отправке отзыва');
+            }
+        })
+        .catch(err => {
+            console.error('Ошибка:', err);
+            alert('Не удалось отправить отзыв');
+        });
+    }
+
+    // Инициализация звезд рейтинга
+    document.addEventListener('DOMContentLoaded', function() {
+        const stars = document.querySelectorAll('#ratingStars .rating-star');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                currentRating = parseInt(this.dataset.rating);
+                updateRatingStars(currentRating);
+            });
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                updateRatingStars(rating);
+            });
+            star.addEventListener('mouseleave', function() {
+                updateRatingStars(currentRating);
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 3000);
+    }
+
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList && event.target.classList.contains('modal-custom')) {
+            closeModal(event.target.id);
+        }
+    };
+
+    // ========== КАРТА ==========
+    ymaps.ready(function () {
+        function cleanAddress(addr) {
+            let a = addr.toLowerCase().split(/кв|квартира|под|подъезд/)[0];
+            return a.includes('байконур') ? a.trim() : 'Байконур, ' + a.trim();
+        }
+
+        var startPoint = [45.624828, 63.312162];
+        var endPoint = cleanAddress("{{ order.address }}");
+        var myMap = new ymaps.Map("map", { center: startPoint, zoom: 15, controls: ['zoomControl'] });
+        var multiRoute;
+
+        function buildRoute(fromPoint) {
+            if (multiRoute) myMap.geoObjects.remove(multiRoute);
+            multiRoute = new ymaps.multiRouter.MultiRoute({
+                referencePoints: [fromPoint, endPoint],
+                params: { routingMode: 'auto' }
+            }, { boundsAutoApply: true, routeActiveStrokeColor: "#ffc107", routeActiveStrokeWidth: 5 });
+            myMap.geoObjects.add(multiRoute);
+            multiRoute.model.events.add('requestsuccess', function() {
+                var activeRoute = multiRoute.getActiveRoute();
+                if (activeRoute) {
+                    var duration = activeRoute.properties.get("duration").text;
+                    document.getElementById('route-data').innerHTML = `<i class="bi bi-clock me-1"></i> ${duration}`;
+                }
+            });
+        }
+        buildRoute(startPoint);
+    });
+</script>
+{% endblock %}

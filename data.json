@@ -1,0 +1,5412 @@
+[
+{
+    "model": "auth.user",
+    "pk": 1,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$MGXjvxxc2g0SlukARJ1gVz$vSX1OMDL0PbS4m3Ocb50KobxGxTteMvSZMXJJTwEWnE=",
+        "last_login": "2026-03-30T11:22:19.753Z",
+        "is_superuser": false,
+        "username": "pink",
+        "first_name": "",
+        "last_name": "",
+        "email": "dosbaev2002@icloud.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-02-24T15:47:54.376Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 2,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$a2IFjx7nrUijHxiscIUgbz$p03E4w6Fr3u2plKKZ10DfyZ5eYQnWQAHmUFx9ywJHHc=",
+        "last_login": "2026-03-30T11:24:23.049Z",
+        "is_superuser": true,
+        "username": "admin",
+        "first_name": "",
+        "last_name": "",
+        "email": "admin@mail.ru",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-02-25T03:54:06.697Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 3,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$NOHDLgLkliVurEzXxfe8bR$9WUIMUIBq4/ao21WG0wsTNJbSg5dz5TUmLnr2zN9yu4=",
+        "last_login": "2026-02-27T19:21:15.853Z",
+        "is_superuser": false,
+        "username": "panthers",
+        "first_name": "",
+        "last_name": "",
+        "email": "pinkpanthers0@yandex.ru",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-02-27T18:52:26.251Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 4,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$9tII4esinU0xHRRc6FrxnD$ncBMuYbFtE6P/y2jNCvMlinN0RKxfCfhhjY2ff7uhno=",
+        "last_login": "2026-03-30T06:08:39.082Z",
+        "is_superuser": false,
+        "username": "Tima",
+        "first_name": "",
+        "last_name": "",
+        "email": "pinkpanthers0@yandex.ru",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-04T13:16:53.694Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 5,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$Z5hYLdGloPXc4BNmLGWOSy$drY0n+fG3ezXBnjTwJpQ7zA7+A8u+l/VFefDZbDqtqs=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "delivery",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-05T09:44:29.517Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 6,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$5W81QcgWIyMTKGQ6wmRD3s$AxrHL5IakM6LbWQ/KqPSCa0VNaYVUyIhAi7eOdb/QPE=",
+        "last_login": "2026-03-23T16:56:01.927Z",
+        "is_superuser": false,
+        "username": "courier_2301",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-05T09:51:47.450Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 7,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$OmaS4dIyKH1meeZlWC4ziu$CnYOPVNO6L8QpxV2RZBPjg6ca+4SeHOUzsSo6H3oYzM=",
+        "last_login": "2026-03-05T11:32:11.257Z",
+        "is_superuser": false,
+        "username": "Берден",
+        "first_name": "",
+        "last_name": "",
+        "email": "berdenz86@gmail.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-05T11:32:09.659Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 8,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$a4Ue3CehzgFC0ePLyLbKuc$IMKefyCsSIzypxAL20Cv14Nzh6WXK5XhX7V3z0QGTjI=",
+        "last_login": "2026-03-06T06:19:52.795Z",
+        "is_superuser": false,
+        "username": "Temirlan",
+        "first_name": "",
+        "last_name": "",
+        "email": "desine2207@7novels.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-06T06:19:51.013Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 9,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$upi7QvQKaMUObhYquUDESL$EdrpjrY9a3h9XtZiCinyH2I2AKNT3HhOHzKrLSnpCfs=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "courier_4257",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-06T06:36:18.029Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 10,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$o3j9k91a2lFEyqYntxwm11$OsxoXLb7SrjzGmBI5ARJbEB2xxuyV09bbusRhR6TeZc=",
+        "last_login": "2026-03-23T12:45:30.531Z",
+        "is_superuser": false,
+        "username": "diana",
+        "first_name": "",
+        "last_name": "",
+        "email": "diana.myrzaliyeva.03@bk.ru",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-22T15:17:26.914Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 11,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$Qq7suu13iaJEwf7bZQfiRi$BaG9KjYg4rMZB+FpQAcJV13wMHctMLx6K3leZNQT3kE=",
+        "last_login": "2026-03-22T16:46:53.620Z",
+        "is_superuser": false,
+        "username": "qwerty",
+        "first_name": "",
+        "last_name": "",
+        "email": "pinkpanthers0@yandex.ru",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-22T16:46:51.966Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 12,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$neawkwPGwwuBjx9C1PCp3U$TJAslvoBzSZro/dggXJyi1/QIz5cbVD1pwqyHUbu6tE=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "courier_2103",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-23T16:54:57.109Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 13,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$rZISdUGOlBbBasAIVtsuxf$QaEh2EgznCLi3qb075k6ysL++Tkz8vU69JL7mpU4mLo=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "Beru",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-30T08:27:45.856Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "auth.user",
+    "pk": 14,
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$svAxWrKybRDngsbYfuSu7r$4MEvl3Jcg2m6BQ0deve7IySTKAaHLt/PAahlDRkXhPc=",
+        "last_login": "2026-03-30T11:48:00.924Z",
+        "is_superuser": false,
+        "username": "Ber",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-03-30T08:34:42.739Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 1,
+    "fields": {
+        "user": 1,
+        "role": "client",
+        "phone": "+7 (705) 711-89-71",
+        "address": "",
+        "points": 94,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 2,
+    "fields": {
+        "user": 2,
+        "role": "client",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 3,
+    "fields": {
+        "user": 3,
+        "role": "client",
+        "phone": "+77057290541",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 4,
+    "fields": {
+        "user": 4,
+        "role": "client",
+        "phone": "",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 5,
+    "fields": {
+        "user": 5,
+        "role": "client",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 6,
+    "fields": {
+        "user": 6,
+        "role": "courier",
+        "phone": "+7 (705) 711-89-71",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 7,
+    "fields": {
+        "user": 7,
+        "role": "client",
+        "phone": "+77057118971",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 8,
+    "fields": {
+        "user": 8,
+        "role": "client",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 9,
+    "fields": {
+        "user": 9,
+        "role": "courier",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 10,
+    "fields": {
+        "user": 10,
+        "role": "client",
+        "phone": "+7 (705) 729-05-41",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 11,
+    "fields": {
+        "user": 11,
+        "role": "client",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 12,
+    "fields": {
+        "user": 12,
+        "role": "courier",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 13,
+    "fields": {
+        "user": 13,
+        "role": "client",
+        "phone": null,
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.profile",
+    "pk": 14,
+    "fields": {
+        "user": 14,
+        "role": "courier",
+        "phone": "+7 (777) 777-77-77",
+        "address": null,
+        "points": 0,
+        "last_lat": null,
+        "last_lng": null,
+        "last_updated": null
+    }
+},
+{
+    "model": "main.category",
+    "pk": 1,
+    "fields": {
+        "name": "Салаты"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 2,
+    "fields": {
+        "name": "Супы"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 3,
+    "fields": {
+        "name": "Горячие блюда"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 4,
+    "fields": {
+        "name": "Паста"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 5,
+    "fields": {
+        "name": "Шашлыки"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 6,
+    "fields": {
+        "name": "Пицца"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 7,
+    "fields": {
+        "name": "Фастфуд"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 8,
+    "fields": {
+        "name": "Гарниры"
+    }
+},
+{
+    "model": "main.category",
+    "pk": 9,
+    "fields": {
+        "name": "Напитки"
+    }
+},
+{
+    "model": "main.product",
+    "pk": 1,
+    "fields": {
+        "category": 1,
+        "name": "Цезарь с курицей",
+        "description": "",
+        "price": "500.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 2,
+    "fields": {
+        "category": 1,
+        "name": "Цезарь с семгой",
+        "description": "",
+        "price": "560.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 3,
+    "fields": {
+        "category": 1,
+        "name": "Цезарь с креветками",
+        "description": "салат айсберг, креветки, помидоры черри, соус “Цезарь”,\r\nсухарики, перепелиное яйцо, сыр пармезан",
+        "price": "550.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/salat-cezar-s-tigrovymi-krevetkami_1718835260_0_vj32fu6_max.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 4,
+    "fields": {
+        "category": 1,
+        "name": "Тайский салат",
+        "description": "говядина, огурцы, помидор, болгарский перец, чеснок,\r\nкинза, специи, соевый соус",
+        "price": "500.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "products/3fcXiR.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 5,
+    "fields": {
+        "category": 1,
+        "name": "Хе из говядины",
+        "description": "говядина, огурцы, морковча, лук, чеснок, соя, специи.",
+        "price": "550.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "products/maxresdefault_J2C1U3Z.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 6,
+    "fields": {
+        "category": 1,
+        "name": "Огурцы с мясом",
+        "description": "говядина, огурцы, кинза, чеснок, специи, соя",
+        "price": "400.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/3azZPW.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 7,
+    "fields": {
+        "category": 1,
+        "name": "Свежий салат",
+        "description": "огурцы, помидор, репчатый лук, специи",
+        "price": "410.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "products/c9eb10a3-56dc-475c-9e48-85e46ceec9fa.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 8,
+    "fields": {
+        "category": 1,
+        "name": "Греческий салат",
+        "description": "огурцы, помидоры, болгарский перец, салатный лист, сыр фетакса, маслины, лимон, оливковое масло, бальзамический соус",
+        "price": "450.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/3QTJnr.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 9,
+    "fields": {
+        "category": 2,
+        "name": "Рамен с курицей",
+        "description": "",
+        "price": "500.00",
+        "weight": 400,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 10,
+    "fields": {
+        "category": 2,
+        "name": "Рамен с говядиной",
+        "description": "",
+        "price": "550.00",
+        "weight": 400,
+        "calories": 0,
+        "image": "",
+        "is_active": false,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 11,
+    "fields": {
+        "category": 2,
+        "name": "Рамен с креветками",
+        "description": "",
+        "price": "600.00",
+        "weight": 400,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 12,
+    "fields": {
+        "category": 2,
+        "name": "Чечевичный суп",
+        "description": "",
+        "price": "350.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 13,
+    "fields": {
+        "category": 2,
+        "name": "Солянка",
+        "description": "",
+        "price": "450.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 14,
+    "fields": {
+        "category": 2,
+        "name": "Фрикадельки",
+        "description": "",
+        "price": "450.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 15,
+    "fields": {
+        "category": 3,
+        "name": "Рыба запеченная с овощами",
+        "description": "",
+        "price": "1200.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 16,
+    "fields": {
+        "category": 3,
+        "name": "Чикен с рисом",
+        "description": "",
+        "price": "950.00",
+        "weight": 400,
+        "calories": 0,
+        "image": "",
+        "is_active": false,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 17,
+    "fields": {
+        "category": 3,
+        "name": "Куриная отбивная",
+        "description": "",
+        "price": "900.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 18,
+    "fields": {
+        "category": 3,
+        "name": "Стейк Рибай",
+        "description": "",
+        "price": "1500.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 19,
+    "fields": {
+        "category": 3,
+        "name": "Филе миньон",
+        "description": "",
+        "price": "1800.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 20,
+    "fields": {
+        "category": 3,
+        "name": "Бефстроганов с пюре",
+        "description": "",
+        "price": "950.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 21,
+    "fields": {
+        "category": 3,
+        "name": "Котлеты по-киевски",
+        "description": "",
+        "price": "850.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 22,
+    "fields": {
+        "category": 4,
+        "name": "Фетучини с курицей и грибами",
+        "description": "",
+        "price": "750.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 23,
+    "fields": {
+        "category": 4,
+        "name": "Паста Карбонара",
+        "description": "",
+        "price": "700.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 24,
+    "fields": {
+        "category": 4,
+        "name": "Болоньезе (паста)",
+        "description": "",
+        "price": "750.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 25,
+    "fields": {
+        "category": 4,
+        "name": "Паста с семгой",
+        "description": "",
+        "price": "900.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 26,
+    "fields": {
+        "category": 5,
+        "name": "Шашлык из говядины",
+        "description": "",
+        "price": "850.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 27,
+    "fields": {
+        "category": 5,
+        "name": "Шашлык из баранины",
+        "description": "",
+        "price": "900.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 28,
+    "fields": {
+        "category": 5,
+        "name": "Куриный шашлык",
+        "description": "",
+        "price": "700.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 29,
+    "fields": {
+        "category": 5,
+        "name": "Люля-кебаб",
+        "description": "",
+        "price": "750.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 30,
+    "fields": {
+        "category": 6,
+        "name": "Пицца Ginza",
+        "description": "",
+        "price": "500.00",
+        "weight": 450,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 31,
+    "fields": {
+        "category": 6,
+        "name": "Болоньезе (пицца)",
+        "description": "",
+        "price": "490.00",
+        "weight": 450,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 32,
+    "fields": {
+        "category": 6,
+        "name": "Маргарита",
+        "description": "",
+        "price": "460.00",
+        "weight": 400,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 33,
+    "fields": {
+        "category": 6,
+        "name": "Четыре сезона",
+        "description": "",
+        "price": "550.00",
+        "weight": 500,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 34,
+    "fields": {
+        "category": 6,
+        "name": "Ассорти",
+        "description": "",
+        "price": "500.00",
+        "weight": 450,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 35,
+    "fields": {
+        "category": 6,
+        "name": "Халал (казы/язык)",
+        "description": "",
+        "price": "660.00",
+        "weight": 550,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 36,
+    "fields": {
+        "category": 7,
+        "name": "Гамбургер",
+        "description": "",
+        "price": "450.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 37,
+    "fields": {
+        "category": 7,
+        "name": "Чизбургер",
+        "description": "",
+        "price": "500.00",
+        "weight": 220,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 38,
+    "fields": {
+        "category": 7,
+        "name": "Клаб сэндвич",
+        "description": "",
+        "price": "650.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 39,
+    "fields": {
+        "category": 7,
+        "name": "Донер с говядиной",
+        "description": "",
+        "price": "650.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 40,
+    "fields": {
+        "category": 7,
+        "name": "Донер в лаваше",
+        "description": "",
+        "price": "700.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 41,
+    "fields": {
+        "category": 7,
+        "name": "Картофель фри",
+        "description": "",
+        "price": "300.00",
+        "weight": 150,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 42,
+    "fields": {
+        "category": 7,
+        "name": "Наггетсы",
+        "description": "",
+        "price": "450.00",
+        "weight": 180,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 43,
+    "fields": {
+        "category": 8,
+        "name": "Овощи на гриле",
+        "description": "",
+        "price": "250.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 44,
+    "fields": {
+        "category": 8,
+        "name": "Рис припущенный",
+        "description": "",
+        "price": "150.00",
+        "weight": 150,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 45,
+    "fields": {
+        "category": 8,
+        "name": "Картофель по-деревенски",
+        "description": "",
+        "price": "200.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 46,
+    "fields": {
+        "category": 1,
+        "name": "Цезарь с курицей",
+        "description": "салат айсберг, куриное филе, помидоры черри, соус\r\n“Цезарь”, сухарики, перепелиное яйцо, сыр пармезан\r\n",
+        "price": "500.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/35pC4A.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 47,
+    "fields": {
+        "category": 1,
+        "name": "Мужской каприз",
+        "description": "говядина, картофель, морковь, соленые огурцы, сыр,\r\nмайонез",
+        "price": "500.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/Salat_Mugskoy_kapriz_recept_klassicheskiy_s_govyadinoy_16-1000x667.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 48,
+    "fields": {
+        "category": 1,
+        "name": "Дамский каприз ",
+        "description": "куриное филе, картофель, яйцо, сыр, грецкий орех, ананас",
+        "price": "450.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/salat-damskii-_1765780349_0_6w6oujw_max.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 49,
+    "fields": {
+        "category": 1,
+        "name": "Хрустящий баклажан",
+        "description": "баклажан, болгарский перец, кинза, руккола, фетакса, помидоры черри, соус, sweet chill",
+        "price": "550.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/2-2.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 50,
+    "fields": {
+        "category": 1,
+        "name": "Ачучук",
+        "description": "помидор, лук, острый перец, базилик",
+        "price": "300.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/ach.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 51,
+    "fields": {
+        "category": 1,
+        "name": "Оливье",
+        "description": "картофель, морковь, соленые огурцы, горох, колбаса, зелень, соус",
+        "price": "400.00",
+        "weight": 300,
+        "calories": 0,
+        "image": "products/oliv-e-po-sovetski.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 52,
+    "fields": {
+        "category": 1,
+        "name": "Сельдь под шубой",
+        "description": "селедка, картофель, морковь, яйцо, свекла, майонез, зелень\r\n",
+        "price": "450.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/maxresdefault_1.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 53,
+    "fields": {
+        "category": 1,
+        "name": "Гнездо глухаря",
+        "description": "куриное филе, сыр, маринованные огурцы, соус, картофель пай, перепелиное яйцо\r\n",
+        "price": "470.00",
+        "weight": 350,
+        "calories": 0,
+        "image": "products/AwIk9pKmXT6H4fwGocBV7fZggHLHWYvEQ5wXGqvq_780.png",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 54,
+    "fields": {
+        "category": 1,
+        "name": "Бахор",
+        "description": "говяжий язык, помидор, огурцы, чеснок, соус",
+        "price": "400.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "products/4UnkqW.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 55,
+    "fields": {
+        "category": 1,
+        "name": "Острый салат с языком ",
+        "description": "говяжий язык, грибы, морковь, чеснок, майонез, грецкий орех\r\n",
+        "price": "400.00",
+        "weight": 250,
+        "calories": 0,
+        "image": "products/i.jfif",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.product",
+    "pk": 56,
+    "fields": {
+        "category": 1,
+        "name": "Совершенство",
+        "description": "говяжий язык, яйцо, грецкий орех, салатный лист, кукуруза, майонез",
+        "price": "420.00",
+        "weight": 200,
+        "calories": 0,
+        "image": "products/2121828_78332-710x550x.jpg",
+        "is_active": true,
+        "tags": []
+    }
+},
+{
+    "model": "main.address",
+    "pk": 1,
+    "fields": {
+        "user": 1,
+        "address_line": "Улица Горького дом 12 квартира 14",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-02-24T18:12:54.469Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 4,
+    "fields": {
+        "user": 1,
+        "address_line": "6а микрорайон дом 20 квартира 4",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-02-24T18:20:17.110Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 5,
+    "fields": {
+        "user": 3,
+        "address_line": "Носова 13 квартира 6",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-02-27T18:52:54.705Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 6,
+    "fields": {
+        "user": 4,
+        "address_line": "7мкр дом 10 кв 3\r\n",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-04T13:18:28.071Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 7,
+    "fields": {
+        "user": 7,
+        "address_line": "глушко 6 квартира 5",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-05T11:33:23.485Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 8,
+    "fields": {
+        "user": 8,
+        "address_line": "г.Байконур, ул. Янгеля, кв. 32",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-06T06:23:10.975Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 9,
+    "fields": {
+        "user": 8,
+        "address_line": "г.Байконур, ул. Янгеля, кв. 35",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-06T06:23:29.915Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 10,
+    "fields": {
+        "user": 8,
+        "address_line": "г. Байконур, ул. Янгеля, д. 18, кв.15",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-06T06:24:29.964Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 11,
+    "fields": {
+        "user": 8,
+        "address_line": "г. Байконур, ул. Янгеля, д. 20, кв.15",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-06T06:24:56.425Z"
+    }
+},
+{
+    "model": "main.address",
+    "pk": 12,
+    "fields": {
+        "user": 10,
+        "address_line": "Байконур, улица Неделина дом 7 квартира 14",
+        "lat": null,
+        "lng": null,
+        "created_at": "2026-03-22T15:18:35.413Z"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 1,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Горького 12 квартира 14",
+        "phone": "+7 771 499 2527",
+        "payment_method": "cash",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T16:54:29.715Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 2,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "2150.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T18:28:42.829Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 3,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "Картой",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T19:29:40.212Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 4,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "Картой",
+        "total_price": "4180.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T19:45:26.097Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 5,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "Наличными",
+        "total_price": "2120.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T19:55:53.607Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 6,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "Картой",
+        "total_price": "2110.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T20:22:45.930Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 7,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "Картой",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T20:23:21.721Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 8,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "350.00",
+        "points_used": 150,
+        "status": "completed",
+        "created_at": "2026-02-24T20:27:14.794Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 9,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "350.00",
+        "points_used": 150,
+        "status": "completed",
+        "created_at": "2026-02-24T20:27:17.394Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 10,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "350.00",
+        "points_used": 150,
+        "status": "completed",
+        "created_at": "2026-02-24T20:27:42.890Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 11,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "350.00",
+        "points_used": 150,
+        "status": "completed",
+        "created_at": "2026-02-24T20:30:23.833Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 12,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "350.00",
+        "points_used": 150,
+        "status": "completed",
+        "created_at": "2026-02-24T20:45:52.098Z",
+        "delivery_order_index": 0,
+        "payment_id": "313021c0-000f-5001-9000-13df7eececcf",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 13,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-24T20:47:14.018Z",
+        "delivery_order_index": 0,
+        "payment_id": "31302212-000f-5001-8000-1ca56fc637e4",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 14,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "412.00",
+        "points_used": 88,
+        "status": "completed",
+        "created_at": "2026-02-24T20:47:55.177Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130223b-000f-5000-b000-15b9c96b0614",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 15,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "2000.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T03:23:25.376Z",
+        "delivery_order_index": 0,
+        "payment_id": "31307eed-000f-5000-b000-1d0bebb8fbc6",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 16,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T04:04:39.569Z",
+        "delivery_order_index": 0,
+        "payment_id": "31308897-000f-5001-8000-13e86f4c4534",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 17,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T04:16:44.192Z",
+        "delivery_order_index": 0,
+        "payment_id": "31308b6c-000f-5001-8000-111139e8a0a3",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 18,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T04:26:46.547Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 19,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "475.00",
+        "points_used": 25,
+        "status": "completed",
+        "created_at": "2026-02-25T04:31:41.659Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 20,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-02-25T05:12:14.537Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130986e-000f-5000-8000-1768d779a34b",
+        "is_paid": true,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 21,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "477.00",
+        "points_used": 23,
+        "status": "completed",
+        "created_at": "2026-02-25T05:44:30.955Z",
+        "delivery_order_index": 1,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 22,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "477.00",
+        "points_used": 23,
+        "status": "new",
+        "created_at": "2026-02-25T05:44:31.193Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 23,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-02-25T05:44:48.971Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 24,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "452.00",
+        "points_used": 48,
+        "status": "new",
+        "created_at": "2026-02-25T05:45:03.036Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 25,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "452.00",
+        "points_used": 48,
+        "status": "new",
+        "created_at": "2026-02-25T05:45:29.433Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 26,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "452.00",
+        "points_used": 48,
+        "status": "ready",
+        "created_at": "2026-02-25T05:45:30.043Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 27,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-02-25T05:51:44.110Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130a1b2-000f-5000-8000-1a248e490562",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 28,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T05:51:44.443Z",
+        "delivery_order_index": 1,
+        "payment_id": "3130a1b2-000f-5000-8000-1a248e490562",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 29,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T06:01:50.167Z",
+        "delivery_order_index": 1,
+        "payment_id": "3130a413-000f-5001-9000-17b8fb24cab8",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 30,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T06:01:52.107Z",
+        "delivery_order_index": 1,
+        "payment_id": "3130a413-000f-5001-9000-17b8fb24cab8",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 31,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-25T06:02:02.717Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130a41b-000f-5001-9000-1dbe37240a74",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 32,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-25T06:02:03.123Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130a41b-000f-5001-9000-1dbe37240a74",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 33,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "456.00",
+        "points_used": 44,
+        "status": "completed",
+        "created_at": "2026-02-25T06:05:15.625Z",
+        "delivery_order_index": 1,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 34,
+    "fields": {
+        "user": 1,
+        "courier": 14,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "478.00",
+        "points_used": 22,
+        "status": "completed",
+        "created_at": "2026-02-25T06:05:54.106Z",
+        "delivery_order_index": 1,
+        "payment_id": "3130a503-000f-5001-9000-17d311617eb3",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 35,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T07:24:10.662Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 36,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T07:24:35.964Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 37,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "532.00",
+        "points_used": 28,
+        "status": "completed",
+        "created_at": "2026-02-25T07:25:07.947Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130b795-000f-5000-b000-14f04e54fef8",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 38,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T09:23:23.862Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 39,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-25T09:23:24.227Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 40,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-25T09:24:27.468Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130d38c-000f-5001-8000-151d8a64bd4f",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 41,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1000.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-25T09:24:27.670Z",
+        "delivery_order_index": 0,
+        "payment_id": "3130d38c-000f-5001-8000-151d8a64bd4f",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 42,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "2110.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T13:37:04.631Z",
+        "delivery_order_index": 0,
+        "payment_id": "31310ec2-000f-5000-b000-13c6c8c60d08",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 43,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "2110.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T13:37:05.310Z",
+        "delivery_order_index": 0,
+        "payment_id": "31310ec2-000f-5000-b000-13c6c8c60d08",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 44,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-25T15:27:11.678Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 45,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-26T04:29:57.296Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 46,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "505.00",
+        "points_used": 55,
+        "status": "completed",
+        "created_at": "2026-02-26T04:31:45.899Z",
+        "delivery_order_index": 0,
+        "payment_id": "3131e072-000f-5001-9000-1287970e3f5f",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 47,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "505.00",
+        "points_used": 55,
+        "status": "completed",
+        "created_at": "2026-02-26T04:31:46.220Z",
+        "delivery_order_index": 0,
+        "payment_id": "3131e072-000f-5001-9000-1287970e3f5f",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 48,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "cash",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-02-26T04:41:38.769Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 49,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1060.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T17:45:18.000Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133ebef-000f-5001-9000-199b2ee9a296",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 50,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1060.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T17:46:57.787Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133ec53-000f-5001-9000-140dd1fe9a8c",
+        "is_paid": true,
+        "fiscal_fd": "4998",
+        "fiscal_fp": "556170593",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 51,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T17:49:58.428Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133ed07-000f-5001-8000-1fd62ab54c17",
+        "is_paid": true,
+        "fiscal_fd": "9002",
+        "fiscal_fp": "718739285",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 52,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T17:52:51.508Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133edb4-000f-5001-8000-191165bc9f67",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 53,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1400.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:06:02.425Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f0cb-000f-5000-b000-1105a63e4112",
+        "is_paid": true,
+        "fiscal_fd": "9270",
+        "fiscal_fp": "139421090",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 54,
+    "fields": {
+        "user": 1,
+        "courier": 6,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:26:12.827Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f585-000f-5001-9000-167cdfe74c48",
+        "is_paid": true,
+        "fiscal_fd": "9429",
+        "fiscal_fp": "719720067",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 55,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:30:43.626Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f694-000f-5000-b000-120e899a8eea",
+        "is_paid": true,
+        "fiscal_fd": "3322",
+        "fiscal_fp": "155344823",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 56,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "2673.00",
+        "points_used": 27,
+        "status": "completed",
+        "created_at": "2026-02-27T18:32:57.354Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f71a-000f-5000-8000-105822ca13d5",
+        "is_paid": true,
+        "fiscal_fd": "1326",
+        "fiscal_fp": "779678095",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 57,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:37:28.960Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f829-000f-5001-9000-1b4c2f864fca",
+        "is_paid": true,
+        "fiscal_fd": "9219",
+        "fiscal_fp": "148103456",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 58,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:38:40.547Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133f871-000f-5000-8000-10551067d47b",
+        "is_paid": true,
+        "fiscal_fd": "3661",
+        "fiscal_fp": "156167549",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 59,
+    "fields": {
+        "user": 3,
+        "courier": 6,
+        "address": "Носова 13 квартира 6",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "1110.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:53:10.093Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133fbd7-000f-5000-b000-15e3fa6f380d",
+        "is_paid": true,
+        "fiscal_fd": "5851",
+        "fiscal_fp": "450559807",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 60,
+    "fields": {
+        "user": 3,
+        "courier": null,
+        "address": "Носова 13 квартира 6",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "1460.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T18:56:24.051Z",
+        "delivery_order_index": 0,
+        "payment_id": "3133fc99-000f-5000-b000-1da4ac9aac7c",
+        "is_paid": true,
+        "fiscal_fd": "1950",
+        "fiscal_fp": "159717197",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 61,
+    "fields": {
+        "user": 3,
+        "courier": null,
+        "address": "Носова 13 квартира 6",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-02-27T19:16:57.065Z",
+        "delivery_order_index": 0,
+        "payment_id": "3134016a-000f-5001-8000-19a30ea5dc2c",
+        "is_paid": true,
+        "fiscal_fd": "8050",
+        "fiscal_fp": "561778239",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 62,
+    "fields": {
+        "user": 3,
+        "courier": 6,
+        "address": "Носова 13 квартира 6",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "1060.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-02T07:30:18.448Z",
+        "delivery_order_index": 0,
+        "payment_id": "3137504c-000f-5001-9000-12d8551cebec",
+        "is_paid": true,
+        "fiscal_fd": "2905",
+        "fiscal_fp": "703795067",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 63,
+    "fields": {
+        "user": 4,
+        "courier": 6,
+        "address": "7мкр дом 10 кв 3\r\n",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1060.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-04T13:18:42.303Z",
+        "delivery_order_index": 0,
+        "payment_id": "313a44f3-000f-5001-9000-1cef12ae7f08",
+        "is_paid": true,
+        "fiscal_fd": "9971",
+        "fiscal_fp": "610657940",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 64,
+    "fields": {
+        "user": 4,
+        "courier": null,
+        "address": "7мкр дом 10 кв 3\r\n",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1060.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-05T07:55:39.636Z",
+        "delivery_order_index": 0,
+        "payment_id": "313b4abb-000f-5001-9000-1014bd3f2d93",
+        "is_paid": true,
+        "fiscal_fd": "4552",
+        "fiscal_fp": "625299971",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 65,
+    "fields": {
+        "user": 7,
+        "courier": null,
+        "address": "глушко 6 квартира 5",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1110.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-05T11:33:34.021Z",
+        "delivery_order_index": 0,
+        "payment_id": "313b7dce-000f-5000-b000-152280664be2",
+        "is_paid": true,
+        "fiscal_fd": "3557",
+        "fiscal_fp": "937180937",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 66,
+    "fields": {
+        "user": 8,
+        "courier": 6,
+        "address": "г. Байконур, ул. Янгеля, д. 18, кв.15",
+        "phone": "+7 (705) 143-65-74",
+        "payment_method": "card",
+        "total_price": "2630.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-06T06:25:53.875Z",
+        "delivery_order_index": 2,
+        "payment_id": "313c8735-000f-5001-9000-1d1390d7bb14",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 67,
+    "fields": {
+        "user": 8,
+        "courier": 6,
+        "address": "г. Байконур, ул. Янгеля, д. 18, кв.15",
+        "phone": "+7 (705) 143-65-74",
+        "payment_method": "card",
+        "total_price": "2630.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-06T06:25:57.539Z",
+        "delivery_order_index": 0,
+        "payment_id": "313c8736-000f-5000-b000-138df735f817",
+        "is_paid": true,
+        "fiscal_fd": "2688",
+        "fiscal_fp": "508543409",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 68,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7 (705) 711-89-71",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-13T15:03:32.629Z",
+        "delivery_order_index": 0,
+        "payment_id": "31463b07-000f-5001-8000-15988a1c2301",
+        "is_paid": true,
+        "fiscal_fd": "5551",
+        "fiscal_fp": "101806482",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 69,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "1500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-22T15:19:01.300Z",
+        "delivery_order_index": 0,
+        "payment_id": "31521c27-000f-5001-8000-124b433d38d1",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 70,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7 (705) 729-05-41",
+        "payment_method": "card",
+        "total_price": "1500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-22T15:19:02.126Z",
+        "delivery_order_index": 0,
+        "payment_id": "31521c27-000f-5000-b000-1556e07f0bbb",
+        "is_paid": true,
+        "fiscal_fd": "6442",
+        "fiscal_fp": "222838286",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 71,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7 (705) 319-49-77",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-22T15:29:53.159Z",
+        "delivery_order_index": 0,
+        "payment_id": "31521eb1-000f-5001-8000-13f48c08de2c",
+        "is_paid": true,
+        "fiscal_fd": "4641",
+        "fiscal_fp": "305148925",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 72,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:49:52.989Z",
+        "delivery_order_index": 0,
+        "payment_id": "31523f82-000f-5001-9000-1db858841306",
+        "is_paid": true,
+        "fiscal_fd": "3565",
+        "fiscal_fp": "122038773",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 73,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:49:53.329Z",
+        "delivery_order_index": 0,
+        "payment_id": "31523f82-000f-5001-9000-1db858841306",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 74,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "cash",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:52:41.638Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": true,
+        "fiscal_fd": "2672",
+        "fiscal_fp": "548805986",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 75,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "cash",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:52:41.882Z",
+        "delivery_order_index": 0,
+        "payment_id": null,
+        "is_paid": true,
+        "fiscal_fd": "4362",
+        "fiscal_fp": "960518636",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 76,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:52:45.972Z",
+        "delivery_order_index": 0,
+        "payment_id": "3152402f-000f-5001-9000-179cbdfc1f21",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 77,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-22T17:52:46.222Z",
+        "delivery_order_index": 0,
+        "payment_id": "3152402f-000f-5001-9000-179cbdfc1f21",
+        "is_paid": true,
+        "fiscal_fd": "2808",
+        "fiscal_fp": "892205420",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 78,
+    "fields": {
+        "user": 10,
+        "courier": 6,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-22T17:53:51.176Z",
+        "delivery_order_index": 0,
+        "payment_id": "31524070-000f-5000-8000-13ada2aa9d2f",
+        "is_paid": true,
+        "fiscal_fd": "5292",
+        "fiscal_fp": "877350740",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 79,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "cooking",
+        "created_at": "2026-03-23T12:00:04.131Z",
+        "delivery_order_index": 0,
+        "payment_id": "31533f05-000f-5001-9000-1c5a5ca1a8da",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 80,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T12:00:04.387Z",
+        "delivery_order_index": 0,
+        "payment_id": "31533f05-000f-5001-9000-1c5a5ca1a8da",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 81,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T12:00:20.861Z",
+        "delivery_order_index": 0,
+        "payment_id": "31533f15-000f-5000-b000-1155beea5745",
+        "is_paid": true,
+        "fiscal_fd": "5163",
+        "fiscal_fp": "418174674",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 82,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T12:00:21.106Z",
+        "delivery_order_index": 0,
+        "payment_id": "31533f15-000f-5000-b000-1155beea5745",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 83,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1500.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T12:33:09.736Z",
+        "delivery_order_index": 0,
+        "payment_id": "315346c6-000f-5001-8000-124b2f74247e",
+        "is_paid": true,
+        "fiscal_fd": "4259",
+        "fiscal_fp": "426753240",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 84,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1500.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T12:33:09.983Z",
+        "delivery_order_index": 0,
+        "payment_id": "315346c6-000f-5001-8000-124b2f74247e",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 85,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "375.00",
+        "points_used": 25,
+        "status": "completed",
+        "created_at": "2026-03-23T15:14:07.447Z",
+        "delivery_order_index": 1,
+        "payment_id": "31536c80-000f-5001-9000-1456ffbd5da0",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 86,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "375.00",
+        "points_used": 25,
+        "status": "completed",
+        "created_at": "2026-03-23T15:14:07.735Z",
+        "delivery_order_index": 1,
+        "payment_id": "31536c80-000f-5001-9000-1456ffbd5da0",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 87,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-23T15:39:45.577Z",
+        "delivery_order_index": 1,
+        "payment_id": "31537284-000f-5000-8000-139da8f82056",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 88,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-23T15:39:47.586Z",
+        "delivery_order_index": 1,
+        "payment_id": "31537284-000f-5000-8000-139da8f82056",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 89,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "950.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-23T15:41:53.343Z",
+        "delivery_order_index": 1,
+        "payment_id": "31537302-000f-5001-8000-1b3c84c35761",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 90,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "950.00",
+        "points_used": 0,
+        "status": "completed",
+        "created_at": "2026-03-23T15:41:53.800Z",
+        "delivery_order_index": 2,
+        "payment_id": "31537302-000f-5001-8000-1b3c84c35761",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 91,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-23T15:46:41.611Z",
+        "delivery_order_index": 2,
+        "payment_id": "31537422-000f-5001-8000-1145fdf3ad27",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 92,
+    "fields": {
+        "user": 10,
+        "courier": 14,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "1050.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-23T15:46:42.004Z",
+        "delivery_order_index": 3,
+        "payment_id": "31537422-000f-5001-8000-1145fdf3ad27",
+        "is_paid": false,
+        "fiscal_fd": null,
+        "fiscal_fp": null,
+        "fiscal_fn": null,
+        "fiscal_kkt": null
+    }
+},
+{
+    "model": "main.order",
+    "pk": 93,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур,",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "2150.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T16:34:22.328Z",
+        "delivery_order_index": 0,
+        "payment_id": "31537f4f-000f-5001-8000-1024a2fa538c",
+        "is_paid": true,
+        "fiscal_fd": "5256",
+        "fiscal_fp": "344039954",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 94,
+    "fields": {
+        "user": 10,
+        "courier": null,
+        "address": "Байконур, улица Неделина дом 7 квартира 14",
+        "phone": "+7(705)729-05-41",
+        "payment_method": "card",
+        "total_price": "2150.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-23T16:34:22.973Z",
+        "delivery_order_index": 0,
+        "payment_id": "31537f4f-000f-5001-8000-1024a2fa538c",
+        "is_paid": true,
+        "fiscal_fd": "6626",
+        "fiscal_fp": "657961580",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 95,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Байконур, ул. Горького дом 12 квартира 14",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-28T15:31:26.513Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a080e-000f-5001-9000-15fef9bf01c0",
+        "is_paid": true,
+        "fiscal_fd": "1655",
+        "fiscal_fp": "545814350",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 98,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "300.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-28T16:50:54.625Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a1aaf-000f-5000-b000-188ab22be6e4",
+        "is_paid": true,
+        "fiscal_fd": "2392",
+        "fiscal_fp": "364165427",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 99,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-28T16:51:22.535Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a1acb-000f-5000-8000-1d0272cc96e4",
+        "is_paid": true,
+        "fiscal_fd": "9575",
+        "fiscal_fp": "117934190",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 100,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "1800.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-28T17:10:47.043Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a1f4b-000f-5000-8000-123a1c386d2c",
+        "is_paid": true,
+        "fiscal_fd": "6310",
+        "fiscal_fp": "524493862",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 101,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "550.00",
+        "points_used": 0,
+        "status": "delivering",
+        "created_at": "2026-03-28T17:11:36.367Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a1f81-000f-5000-8000-1ff42cde856a",
+        "is_paid": true,
+        "fiscal_fd": "9524",
+        "fiscal_fp": "426225712",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 102,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "433.00",
+        "points_used": 117,
+        "status": "delivering",
+        "created_at": "2026-03-28T17:16:56.145Z",
+        "delivery_order_index": 0,
+        "payment_id": "315a20bc-000f-5000-8000-148cece5d04a",
+        "is_paid": true,
+        "fiscal_fd": "1954",
+        "fiscal_fp": "403377643",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 103,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "6а микрорайон дом 20 квартира 4",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "560.00",
+        "points_used": 0,
+        "status": "ready",
+        "created_at": "2026-03-30T06:48:28.650Z",
+        "delivery_order_index": 0,
+        "payment_id": "315c3074-000f-5001-9000-1fe5b650ec4a",
+        "is_paid": true,
+        "fiscal_fd": "8320",
+        "fiscal_fp": "202484732",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 108,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "400.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-30T11:46:33.802Z",
+        "delivery_order_index": 0,
+        "payment_id": "315c7651-000f-5001-8000-170d0c23061a",
+        "is_paid": true,
+        "fiscal_fd": "8980",
+        "fiscal_fp": "172566958",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.order",
+    "pk": 109,
+    "fields": {
+        "user": 1,
+        "courier": null,
+        "address": "Улица Горького дом 12 квартира 14",
+        "phone": "+7(705)711-89-71",
+        "payment_method": "card",
+        "total_price": "500.00",
+        "points_used": 0,
+        "status": "new",
+        "created_at": "2026-03-30T11:47:16.526Z",
+        "delivery_order_index": 0,
+        "payment_id": "315c767b-000f-5000-8000-1a712ce5f000",
+        "is_paid": true,
+        "fiscal_fd": "3201",
+        "fiscal_fp": "566188321",
+        "fiscal_fn": "999944030001122",
+        "fiscal_kkt": "АТОЛ-30Ф (Эмулятор)"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 1,
+    "fields": {
+        "order": 1,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": null
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 2,
+    "fields": {
+        "order": 2,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "222"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 3,
+    "fields": {
+        "order": 2,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 3,
+        "comment": "222"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 4,
+    "fields": {
+        "order": 3,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "ы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 5,
+    "fields": {
+        "order": 4,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 3,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 6,
+    "fields": {
+        "order": 4,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 3,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 7,
+    "fields": {
+        "order": 4,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 8,
+    "fields": {
+        "order": 5,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 9,
+    "fields": {
+        "order": 5,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 10,
+    "fields": {
+        "order": 6,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 11,
+    "fields": {
+        "order": 6,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 12,
+    "fields": {
+        "order": 6,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 13,
+    "fields": {
+        "order": 7,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 14,
+    "fields": {
+        "order": 8,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 15,
+    "fields": {
+        "order": 9,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 16,
+    "fields": {
+        "order": 10,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 17,
+    "fields": {
+        "order": 11,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 18,
+    "fields": {
+        "order": 12,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 19,
+    "fields": {
+        "order": 13,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 20,
+    "fields": {
+        "order": 14,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 21,
+    "fields": {
+        "order": 15,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 4,
+        "comment": "ы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 22,
+    "fields": {
+        "order": 16,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 3,
+        "comment": "121212"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 23,
+    "fields": {
+        "order": 17,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "ыыы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 24,
+    "fields": {
+        "order": 17,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "11111"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 25,
+    "fields": {
+        "order": 18,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 26,
+    "fields": {
+        "order": 19,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 27,
+    "fields": {
+        "order": 20,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 28,
+    "fields": {
+        "order": 21,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 29,
+    "fields": {
+        "order": 22,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 30,
+    "fields": {
+        "order": 23,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 31,
+    "fields": {
+        "order": 24,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 32,
+    "fields": {
+        "order": 25,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 33,
+    "fields": {
+        "order": 26,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 34,
+    "fields": {
+        "order": 27,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 35,
+    "fields": {
+        "order": 28,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 36,
+    "fields": {
+        "order": 29,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 37,
+    "fields": {
+        "order": 30,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 38,
+    "fields": {
+        "order": 31,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 39,
+    "fields": {
+        "order": 32,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 40,
+    "fields": {
+        "order": 33,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 41,
+    "fields": {
+        "order": 34,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 42,
+    "fields": {
+        "order": 35,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 43,
+    "fields": {
+        "order": 36,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 44,
+    "fields": {
+        "order": 37,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 45,
+    "fields": {
+        "order": 38,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 46,
+    "fields": {
+        "order": 39,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 47,
+    "fields": {
+        "order": 40,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 48,
+    "fields": {
+        "order": 41,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 49,
+    "fields": {
+        "order": 42,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": "www"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 50,
+    "fields": {
+        "order": 42,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": "sss"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 51,
+    "fields": {
+        "order": 42,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "www"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 52,
+    "fields": {
+        "order": 42,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "111"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 53,
+    "fields": {
+        "order": 43,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": "www"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 54,
+    "fields": {
+        "order": 43,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": "sss"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 55,
+    "fields": {
+        "order": 43,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "www"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 56,
+    "fields": {
+        "order": 43,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "111"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 57,
+    "fields": {
+        "order": 44,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 58,
+    "fields": {
+        "order": 45,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 59,
+    "fields": {
+        "order": 46,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 60,
+    "fields": {
+        "order": 47,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 61,
+    "fields": {
+        "order": 48,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 62,
+    "fields": {
+        "order": 49,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 63,
+    "fields": {
+        "order": 49,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 64,
+    "fields": {
+        "order": 50,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 65,
+    "fields": {
+        "order": 50,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 66,
+    "fields": {
+        "order": 51,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 67,
+    "fields": {
+        "order": 52,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 68,
+    "fields": {
+        "order": 53,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 69,
+    "fields": {
+        "order": 53,
+        "product": 8,
+        "price": "450.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 70,
+    "fields": {
+        "order": 53,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 71,
+    "fields": {
+        "order": 54,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 72,
+    "fields": {
+        "order": 54,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 73,
+    "fields": {
+        "order": 55,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 74,
+    "fields": {
+        "order": 56,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": "ы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 75,
+    "fields": {
+        "order": 56,
+        "product": 16,
+        "price": "950.00",
+        "quantity": 1,
+        "comment": "ы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 76,
+    "fields": {
+        "order": 56,
+        "product": 15,
+        "price": "1200.00",
+        "quantity": 1,
+        "comment": "ы"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 77,
+    "fields": {
+        "order": 57,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 78,
+    "fields": {
+        "order": 58,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 79,
+    "fields": {
+        "order": 59,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 80,
+    "fields": {
+        "order": 59,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 81,
+    "fields": {
+        "order": 60,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 82,
+    "fields": {
+        "order": 60,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 83,
+    "fields": {
+        "order": 60,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 84,
+    "fields": {
+        "order": 61,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "2222"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 85,
+    "fields": {
+        "order": 62,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 86,
+    "fields": {
+        "order": 62,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 87,
+    "fields": {
+        "order": 63,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 88,
+    "fields": {
+        "order": 63,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 89,
+    "fields": {
+        "order": 64,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 90,
+    "fields": {
+        "order": 64,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 91,
+    "fields": {
+        "order": 65,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": "меньше соуса"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 92,
+    "fields": {
+        "order": 65,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": "больше креветок"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 93,
+    "fields": {
+        "order": 66,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 3,
+        "comment": "меньше майонеза"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 94,
+    "fields": {
+        "order": 66,
+        "product": 20,
+        "price": "950.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 95,
+    "fields": {
+        "order": 67,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 3,
+        "comment": "меньше майонеза"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 96,
+    "fields": {
+        "order": 67,
+        "product": 20,
+        "price": "950.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 97,
+    "fields": {
+        "order": 68,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 98,
+    "fields": {
+        "order": 68,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 99,
+    "fields": {
+        "order": 69,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 100,
+    "fields": {
+        "order": 69,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 101,
+    "fields": {
+        "order": 70,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 102,
+    "fields": {
+        "order": 70,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 103,
+    "fields": {
+        "order": 71,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 104,
+    "fields": {
+        "order": 71,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 105,
+    "fields": {
+        "order": 72,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 106,
+    "fields": {
+        "order": 72,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 107,
+    "fields": {
+        "order": 73,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 108,
+    "fields": {
+        "order": 73,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 109,
+    "fields": {
+        "order": 74,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 110,
+    "fields": {
+        "order": 75,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 111,
+    "fields": {
+        "order": 76,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 112,
+    "fields": {
+        "order": 77,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 113,
+    "fields": {
+        "order": 78,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 114,
+    "fields": {
+        "order": 79,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 115,
+    "fields": {
+        "order": 80,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 116,
+    "fields": {
+        "order": 81,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 117,
+    "fields": {
+        "order": 82,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 118,
+    "fields": {
+        "order": 83,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 3,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 119,
+    "fields": {
+        "order": 84,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 3,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 120,
+    "fields": {
+        "order": 85,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 121,
+    "fields": {
+        "order": 86,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 122,
+    "fields": {
+        "order": 87,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "1"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 123,
+    "fields": {
+        "order": 88,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": "1"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 124,
+    "fields": {
+        "order": 89,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 125,
+    "fields": {
+        "order": 89,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 126,
+    "fields": {
+        "order": 90,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 127,
+    "fields": {
+        "order": 90,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 128,
+    "fields": {
+        "order": 91,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 129,
+    "fields": {
+        "order": 91,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 130,
+    "fields": {
+        "order": 92,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 131,
+    "fields": {
+        "order": 92,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 132,
+    "fields": {
+        "order": 93,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 133,
+    "fields": {
+        "order": 93,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 134,
+    "fields": {
+        "order": 93,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 135,
+    "fields": {
+        "order": 94,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 2,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 136,
+    "fields": {
+        "order": 94,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 137,
+    "fields": {
+        "order": 94,
+        "product": 5,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 138,
+    "fields": {
+        "order": 95,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 141,
+    "fields": {
+        "order": 98,
+        "product": 50,
+        "price": "300.00",
+        "quantity": 1,
+        "comment": "1"
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 142,
+    "fields": {
+        "order": 99,
+        "product": 4,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 143,
+    "fields": {
+        "order": 100,
+        "product": 19,
+        "price": "1800.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 144,
+    "fields": {
+        "order": 101,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 145,
+    "fields": {
+        "order": 102,
+        "product": 3,
+        "price": "550.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 146,
+    "fields": {
+        "order": 103,
+        "product": 2,
+        "price": "560.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 151,
+    "fields": {
+        "order": 108,
+        "product": 6,
+        "price": "400.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.orderitem",
+    "pk": 152,
+    "fields": {
+        "order": 109,
+        "product": 1,
+        "price": "500.00",
+        "quantity": 1,
+        "comment": ""
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 1,
+    "fields": {
+        "user": 1,
+        "product": 1
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 6,
+    "fields": {
+        "user": 3,
+        "product": 1
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 7,
+    "fields": {
+        "user": 3,
+        "product": 2
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 8,
+    "fields": {
+        "user": 3,
+        "product": 3
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 9,
+    "fields": {
+        "user": 10,
+        "product": 4
+    }
+},
+{
+    "model": "main.favorite",
+    "pk": 10,
+    "fields": {
+        "user": 10,
+        "product": 5
+    }
+},
+{
+    "model": "main.ordermessage",
+    "pk": 1,
+    "fields": {
+        "order": 78,
+        "sender": 10,
+        "text": "1",
+        "created_at": "2026-03-23T11:56:48.600Z"
+    }
+},
+{
+    "model": "main.supportmessage",
+    "pk": 1,
+    "fields": {
+        "user": 1,
+        "text": "1",
+        "file": "",
+        "created_at": "2026-03-28T18:33:21.617Z",
+        "is_read": true
+    }
+},
+{
+    "model": "sites.site",
+    "pk": 1,
+    "fields": {
+        "domain": "127.0.0.1:8000",
+        "name": "Ginza"
+    }
+}
+]

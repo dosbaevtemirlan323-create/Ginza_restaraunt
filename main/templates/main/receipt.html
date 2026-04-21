@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Фискальный чек #{{ order.id }} | GINZA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px; 
+            margin: 0;
+            font-family: 'Courier New', 'Courier', monospace;
+        }
+        .receipt {
+            max-width: 380px;
+            width: 100%;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: #000;
+            font-size: 12px;
+            line-height: 1.3;
+            overflow: hidden;
+        }
+        .receipt-inner {
+            padding: 20px 18px;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .receipt {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            .receipt-inner {
+                padding: 8px;
+            }
+            .print-btn {
+                display: none !important;
+            }
+        }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .hr { 
+            border-top: 1px dashed #000; 
+            margin: 10px 0; 
+        }
+        .hr-solid {
+            border-top: 1px solid #000;
+            margin: 10px 0;
+        }
+        .line { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: baseline;
+            margin: 4px 0;
+        }
+        .total-amount { 
+            font-size: 22px; 
+            font-weight: bold; 
+            margin: 8px 0;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .qr-code img {
+            width: 110px;
+            height: 110px;
+            border: 1px solid #ddd;
+        }
+        .fiscal-data { 
+            font-size: 9px; 
+            line-height: 1.3;
+            color: #444;
+        }
+        .item {
+            margin-bottom: 8px;
+        }
+        .item-name {
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .item-details {
+            font-size: 10px;
+            color: #555;
+            margin: 2px 0;
+        }
+        .item-price-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+        .payment-method {
+            background: #f9f9f9;
+            padding: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #ffc107;
+        }
+        .footer-note {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+            font-size: 9px;
+            text-align: center;
+            color: #666;
+        }
+        .print-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ffc107;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 1000;
+            font-family: sans-serif;
+        }
+        .print-btn:hover {
+            transform: scale(1.05);
+            background: #ff9800;
+        }
+        @media (max-width: 480px) {
+            .receipt-inner {
+                padding: 15px;
+            }
+            .qr-code img {
+                width: 90px;
+                height: 90px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="receipt-inner">
+            <!-- Шапка -->
+            <div class="center">
+                <div class="bold" style="font-size: 16px; letter-spacing: 1px;">🍣 GINZA</div>
+                <div style="font-size: 9px;">ЯПОНСКАЯ КУХНЯ</div>
+                <div style="font-size: 9px; margin-top: 3px;">г. Байконур, ул. Янгеля, 5А</div>
+                <div style="font-size: 9px;">ИНН/БИН: 9901037740</div>
+            </div>
+            
+            <div class="hr"></div>
+            
+            <!-- Дата и время -->
+            <div class="line">
+                <span>{{ order.created_at|date:"d.m.Y H:i" }}</span>
+                <span>КАССА #01</span>
+            </div>
+            {% if order.delivery_time %}
+            <div class="line">
+                <span>Желаемое время:</span>
+                <span>{{ order.delivery_time|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% endif %}
+            <div class="line">
+                <span>ОПЕРАТОР: Жолдасбеков Г.К.</span>
+                <span>СМЕНА: 0042</span>
+            </div>
+            <div class="line">
+                <span>ЧЕК: {{ order.id }}</span>
+                <span>№{{ order.id|add:"100" }}</span>
+            </div>
+            
+            <div class="hr"></div>
+            
+            <div class="center bold">ВАШ ЗАКАЗ</div>
+            
+            <div class="hr"></div>
+            
+            <!-- Товары (исправлен вывод цены) -->
+            {% for item in order.items.all %}
+            <div class="item">
+                <div class="item-name">{{ item.product.name }}</div>
+                <div class="item-details">{{ item.product.weight|default:"—" }} г</div>
+                {% if item.comment %}
+                <div class="item-details" style="color: #e67e22;">💬 {{ item.comment }}</div>
+                {% endif %}
+                <div class="item-price-line">
+                    <span>{{ item.price|floatformat:2 }} ₽ × {{ item.quantity }}</span>
+                    <span class="bold">{{ item.get_cost|floatformat:2 }} ₽</span>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="hr"></div>
+            
+            <!-- Итоги -->
+            <div class="payment-method">
+                <div class="line">
+                    <span>СУММА ЗАКАЗА:</span>
+                    <span class="bold">{{ order.total_price|floatformat:2 }} ₽</span>
+                </div>
+                <div class="line">
+                    <span>СПОСОБ ОПЛАТЫ:</span>
+                    <span class="bold">{% if order.payment_method == 'card' %}💳 БАНКОВСКАЯ КАРТА{% else %}💰 НАЛИЧНЫМИ{% endif %}</span>
+                </div>
+                {% if order.points_used > 0 %}
+                <div class="line">
+                    <span>СПИСАНО БАЛЛОВ:</span>
+                    <span class="bold">-{{ order.points_used }} ₽</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="hr-solid"></div>
+            
+            <div class="center total-amount">
+                {{ order.total_price|floatformat:2 }} ₽
+            </div>
+            <div class="center" style="font-size: 10px; margin-top: -5px;">К ОПЛАТЕ</div>
+            
+            <div class="hr"></div>
+            
+            <!-- Фискальные данные (с проверкой на наличие) -->
+            <div class="fiscal-data">
+                <div class="line"><span>ФН (заводской номер):</span> <span>{{ order.fiscal_fn|default:"999944030001122" }}</span></div>
+                <div class="line"><span>ФД (номер документа):</span> <span>{{ order.fiscal_fd|default:"1326" }}</span></div>
+                <div class="line"><span>ФП (фискальный признак):</span> <span>{{ order.fiscal_fp|default:"779678095" }}</span></div>
+                <div class="line"><span>РН ККТ:</span> <span>0000000001042326</span></div>
+                <div class="line"><span>ЗН ККТ:</span> <span>0482390005036122</span></div>
+                <div class="line"><span>СНО:</span> <span>ОСН</span></div>
+                <div class="line"><span>НДС 0%:</span> <span>=0.00</span></div>
+            </div>
+            
+            <!-- QR-код -->
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=https://lkzp.nalog.ru/check-receipt?fn={{ order.fiscal_fn|default:'999944030001122' }}&fd={{ order.fiscal_fd|default:'1326' }}&fp={{ order.fiscal_fp|default:'779678095' }}&sum={{ order.total_price }}&s=1" 
+                     alt="QR-код для проверки чека">
+                <div style="font-size: 8px; margin-top: 5px;">Проверьте чек в приложении ФНС</div>
+            </div>
+            
+            <!-- Подпись и благодарность -->
+            <div class="center bold" style="margin: 10px 0 5px;">
+                БЛАГОДАРИМ ЗА ПОКУПКУ!
+            </div>
+            <div class="center" style="font-size: 10px;">
+                Ждем вас снова в GINZA
+            </div>
+            
+            <div class="footer-note">
+                <div>🍣 ginzaproject.ru</div>
+                <div>📞 +7 (705) 729-05-41</div>
+                <div>Для проверки чека: www.nalog.gov.ru</div>
+                <div style="margin-top: 5px; font-size: 8px;">Чек действителен при предъявлении QR-кода</div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="print-btn" onclick="window.print()">
+        🖨️ РАСПЕЧАТАТЬ ЧЕК
+    </button>
+</body>
+</html>

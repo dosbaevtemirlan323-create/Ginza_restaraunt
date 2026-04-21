@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load cart_tags %}
+
+{% block title %}Избранное — Ginza{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h1 class="fw-bold"><i class="bi bi-heart-fill text-danger me-2"></i> Избранные блюда</h1>
+        <a href="{% url 'menu' %}" class="btn btn-outline-dark rounded-pill px-4">
+            <i class="bi bi-arrow-left me-2"></i>В меню
+        </a>
+    </div>
+
+    {% if favorites %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            {% for favorite in favorites %}
+                {% with product=favorite.product %}
+                <div class="col" id="fav-card-{{ product.id }}">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 position-relative overflow-hidden">
+                        
+                        <button class="position-absolute top-0 end-0 m-3 border-0 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
+                                onclick="toggleFavorite('{{ product.id }}', this); removeCard('{{ product.id }}')" 
+                                style="z-index: 10; width: 35px; height: 35px;">
+                            <i class="bi bi-heart-fill text-danger"></i>
+                        </button>
+
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <span class="text-muted">Нет фото</span>
+                            </div>
+                        {% endif %}
+
+                        <div class="card-body p-3">
+                            <h5 class="fw-bold mb-1">{{ product.name }}</h5>
+                            <p class="text-muted small mb-3">{{ product.description|truncatechars:60 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <span class="fw-bold fs-5">{{ product.price }} ₽</span>
+                                
+                                <div id="cart-container-{{ product.id }}">
+                                    {% get_cart_item_quantity cart product.id as item_qty %}
+                                    {% if item_qty > 0 %}
+                                        <div class="qty-controls">
+                                            <button onclick="updateCartQuantity('{{ product.id }}', 'subtract')" class="qty-btn-circle">−</button>
+                                            <span class="mx-3 fw-bold">{{ item_qty }}</span>
+                                            <button onclick="updateCartQuantity('{{ product.id }}', 'add')" class="qty-btn-circle">+</button>
+                                        </div>
+                                    {% else %}
+                                        <button onclick="updateCartQuantity('{{ product.id }}', 'add')" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">
+                                            В корзину
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-heart text-muted" style="font-size: 5rem; opacity: 0.2;"></i>
+            </div>
+            <h3 class="fw-bold">Список избранного пуст</h3>
+            <p class="text-muted mb-4">Добавляйте любимые блюда, чтобы не искать их в меню.</p>
+            <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm">Перейти в меню</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Специальная функция для этой страницы, чтобы карточка исчезала при клике на сердечко
+    function removeCard(productId) {
+        const card = document.getElementById(`fav-card-${productId}`);
+        if (card) {
+            card.style.transition = '0.3s';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                card.remove();
+                // Если карточек больше нет, перезагрузим страницу, чтобы показать "Пусто"
+                const remainingCards = document.querySelectorAll('.col[id^="fav-card-"]');
+                if (remainingCards.length === 0) {
+                    location.reload();
+                }
+            }, 300);
+        }
+    }
+</script>
+<style>
+    /* Стили для кнопок +/- как в меню */
+    .qty-btn-circle {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .qty-btn-circle:hover { background: #ffc107; }
+</style>
+{% endblock %}

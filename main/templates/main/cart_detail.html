@@ -1,0 +1,1227 @@
+{% extends 'base.html' %}
+{% block title %}Корзина — Ginza Project{% endblock %}
+
+{% block content %}
+<div class="container py-3 py-md-5">
+    <div class="d-flex justify-content-between align-items-start mb-3 mb-md-4">
+        <h1 class="fw-bold fs-2 fs-md-1"><i class="bi bi-cart3"></i> Корзина</h1>
+        <a href="{% url 'menu' %}" class="btn btn-outline-dark rounded-pill px-3 px-md-4 py-1 py-md-2">
+            <i class="bi bi-arrow-left me-1 me-md-2"></i>Назад
+        </a>
+    </div>
+
+    <style>
+        /* Мобильные стили */
+        @media (max-width: 768px) {
+            .cart-table-mobile .table {
+                display: block;
+                width: 100%;
+            }
+            .cart-table-mobile thead {
+                display: none;
+            }
+            .cart-table-mobile tbody,
+            .cart-table-mobile tr {
+                display: block;
+                width: 100%;
+            }
+            .cart-table-mobile tr {
+                margin-bottom: 16px;
+                border: 1px solid #eee;
+                border-radius: 16px;
+                background: white;
+                padding: 12px;
+                position: relative;
+            }
+            .cart-table-mobile td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border: none;
+            }
+            .cart-table-mobile td:first-child {
+                padding-top: 0;
+            }
+            .cart-table-mobile td:last-child {
+                padding-bottom: 0;
+            }
+            .cart-table-mobile td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #6c757d;
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+            .cart-table-mobile .mobile-product-info {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            .cart-table-mobile .qty-controls {
+                margin-left: auto;
+            }
+            .mobile-delete-btn {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+            }
+            .address-item label {
+                font-size: 13px;
+                padding: 12px !important;
+            }
+            .address-selection-grid {
+                max-height: 250px;
+                overflow-y: auto;
+            }
+            .recommendation-card img {
+                height: 100px !important;
+            }
+            .cart-actions-sticky {
+                position: sticky;
+                bottom: 70px;
+                background: white;
+                padding: 12px;
+                border-radius: 20px;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+                margin-top: 16px;
+                z-index: 100;
+            }
+            /* Поправим модальное окно комментария на мобильных */
+            .comment-modal .modal-dialog {
+                margin: 0.5rem;
+                max-width: calc(100% - 1rem);
+            }
+            .comment-modal .modal-content {
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+        }
+
+        .floating-cart,
+        .fixed-cart,
+        .cart-float-link,
+        .floating-cart-btn,
+        [class*="floating-cart"], 
+        [class*="fixed-bottom"] {
+            display: none !important;
+        }
+        
+        /* Стили для комментариев */
+        .comment-badge {
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .comment-badge:hover {
+            background: #ffc10720;
+            color: #ffc107 !important;
+        }
+        .comment-badge.active {
+            background: #ffc10730;
+            color: #ffc107 !important;
+        }
+        .comment-preview {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: #ffc10710;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .comment-preview:hover {
+            background: #ffc10720;
+        }
+        
+        /* Модальное окно для комментария – используем Bootstrap стандартные классы */
+        .comment-modal .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+        .comment-modal .modal-header {
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            color: #000;
+        }
+        .comment-modal .modal-title {
+            font-weight: bold;
+        }
+        .comment-modal .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        .comment-modal .modal-footer {
+            border-top: 1px solid #eee;
+        }
+        
+        /* Кнопка удаления */
+        .delete-btn {
+            transition: all 0.2s;
+        }
+        .delete-btn:hover {
+            transform: scale(1.1);
+            color: #dc3545 !important;
+        }
+        
+        /* Анимация удаления строки */
+        .row-removing {
+            animation: fadeOut 0.3s ease forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-20px); }
+        }
+        
+        /* Пустая корзина */
+        .empty-cart-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        /* Стили для адреса */
+        .address-suggestion {
+            font-size: 11px;
+            padding: 6px 10px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+        .address-suggestion i {
+            margin-right: 5px;
+        }
+        .address-error {
+            font-size: 11px;
+            padding: 6px 10px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+        
+        /* Карточка товара для мобильного клика */
+        .clickable-item {
+            cursor: pointer;
+        }
+        .clickable-item:active {
+            transform: scale(0.98);
+        }
+        
+        /* Улучшенный вид мобильной кнопки комментария */
+        .mobile-comment-btn {
+            transition: all 0.2s;
+        }
+        .mobile-comment-btn:active {
+            transform: scale(0.97);
+        }
+        @media (max-width: 768px) {
+            .mobile-comment-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+
+    <div class="row g-3 g-md-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
+                <div id="cart-content">
+                    {% if cart %}
+                        <div class="cart-table-mobile">
+                            <div class="table-responsive d-none d-md-block">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr class="text-muted small text-uppercase">
+                                            <th>Блюдо</th>
+                                            <th class="text-center">Количество</th>
+                                            <th class="text-end">Сумма</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cart-items-tbody">
+                                        {% for item in cart %}
+                                        <tr id="row-{{ item.product.id }}" class="clickable-item" onclick="openProductModal('{{ item.product.id }}')">
+                                            <td data-label="Блюдо">
+                                                <div class="d-flex align-items-center">
+                                                    {% if item.product.image %}
+                                                    <img src="{{ item.product.image.url }}" width="50" height="50" class="rounded-3 me-3 object-fit-cover">
+                                                    {% endif %}
+                                                    <div>
+                                                        <div class="fw-bold">{{ item.product.name }}</div>
+                                                        <div class="small text-muted">{{ item.product.weight }}г</div>
+                                                        {% if item.comment %}
+                                                        <div class="mt-1">
+                                                            <span class="comment-preview" onclick="event.stopPropagation(); openCommentModal('{{ item.product.id }}', '{{ item.product.name }}', this)">
+                                                                <i class="bi bi-chat-dots"></i> {{ item.comment|truncatechars:30 }}
+                                                            </span>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center" data-label="Количество">
+                                                <div class="qty-controls d-inline-flex align-items-center bg-light rounded-pill p-1" onclick="event.stopPropagation()">
+                                                    <button type="button" 
+                                                            onclick="updateCartQuantity('{{ item.product.id }}', 'subtract'); return false;" 
+                                                            class="btn btn-sm btn-white rounded-circle shadow-sm" 
+                                                            style="width:30px; height:30px;">-</button>
+                                                    
+                                                    <span class="mx-3 fw-bold" id="quantity-{{ item.product.id }}">{{ item.quantity }}</span>
+                                                    
+                                                    <button type="button" 
+                                                            onclick="updateCartQuantity('{{ item.product.id }}', 'add'); return false;" 
+                                                            class="btn btn-sm btn-white rounded-circle shadow-sm" 
+                                                            style="width:30px; height:30px;">+</button>
+                                                </div>
+                                            </td>
+                                            <td class="text-end fw-bold" id="item-total-{{ item.product.id }}" data-label="Сумма">
+                                                {{ item.total_price }} ₽
+                                            </td>
+                                            <td class="text-end" onclick="event.stopPropagation()">
+                                                <button type="button" 
+                                                        onclick="event.stopPropagation(); openCommentModal('{{ item.product.id }}', '{{ item.product.name }}', this)" 
+                                                        class="btn btn-link text-secondary p-0 border-0 comment-badge me-2"
+                                                        title="Комментарий к блюду">
+                                                    <i class="bi bi-chat fs-5"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        onclick="removeCartItem('{{ item.product.id }}'); return false;" 
+                                                        class="btn btn-link text-danger p-0 border-0 delete-btn">
+                                                    <i class="bi bi-trash fs-5"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Мобильное отображение с комментариями -->
+                            <div class="d-md-none" id="mobile-cart-items">
+                                {% for item in cart %}
+                                <div class="cart-mobile-item mb-3 p-3 bg-white rounded-4 shadow-sm position-relative" id="mobile-row-{{ item.product.id }}">
+                                    <button type="button" 
+                                            onclick="removeCartItem('{{ item.product.id }}'); return false;" 
+                                            class="btn btn-link text-danger p-0 position-absolute top-0 end-0 mt-2 me-2 delete-btn">
+                                        <i class="bi bi-trash fs-5"></i>
+                                    </button>
+                                    <div class="d-flex gap-3" onclick="openProductModal('{{ item.product.id }}')">
+                                        {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" width="60" height="60" class="rounded-3 object-fit-cover">
+                                        {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold">{{ item.product.name }}</div>
+                                            <div class="small text-muted">{{ item.product.weight }}г</div>
+                                            
+                                            <!-- ОТОБРАЖЕНИЕ КОММЕНТАРИЯ В МОБИЛЬНОЙ ВЕРСИИ -->
+                                            <div class="mt-1" id="mobile-comment-container-{{ item.product.id }}">
+                                                {% if item.comment %}
+                                                <span class="comment-preview" onclick="event.stopPropagation(); openCommentModal('{{ item.product.id }}', '{{ item.product.name }}', this)">
+                                                    <i class="bi bi-chat-dots"></i> {{ item.comment|truncatechars:25 }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <div class="qty-controls d-inline-flex align-items-center bg-light rounded-pill p-1" onclick="event.stopPropagation()">
+                                                    <button type="button" 
+                                                            onclick="updateCartQuantity('{{ item.product.id }}', 'subtract'); return false;" 
+                                                            class="btn btn-sm btn-white rounded-circle shadow-sm" 
+                                                            style="width:28px; height:28px;">-</button>
+                                                    
+                                                    <span class="mx-2 fw-bold" id="mobile-qty-{{ item.product.id }}">{{ item.quantity }}</span>
+                                                    
+                                                    <button type="button" 
+                                                            onclick="updateCartQuantity('{{ item.product.id }}', 'add'); return false;" 
+                                                            class="btn btn-sm btn-white rounded-circle shadow-sm" 
+                                                            style="width:28px; height:28px;">+</button>
+                                                </div>
+                                                <span class="fw-bold text-warning" id="mobile-total-{{ item.product.id }}">{{ item.total_price }} ₽</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            onclick="event.stopPropagation(); openCommentModal('{{ item.product.id }}', '{{ item.product.name }}', this)" 
+                                            class="btn btn-sm btn-outline-warning rounded-pill mt-2 w-100 mobile-comment-btn">
+                                        <i class="bi bi-chat me-1"></i> 
+                                        {% if item.comment %}Изменить комментарий{% else %}Добавить комментарий{% endif %}
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div id="empty-cart-message" class="text-center py-5">
+                            <i class="bi bi-cart-x display-1 text-muted opacity-25"></i>
+                            <p class="mt-3 fs-5 text-muted">Ваша корзина пока пуста</p>
+                            <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-4">В меню за покупками</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if recommended_products %}
+            <div class="ai-recommendations mt-4 mt-md-5">
+                <h4 class="fw-bold mb-3 mb-md-4 d-flex align-items-center">
+                    <span class="ai-badge">AI</span> 
+                    {% if is_new_user %}
+                        🌟 Популярное сегодня
+                    {% else %}
+                        🎯 Ваши предпочтения
+                    {% endif %}
+                </h4>
+                
+                {% if not is_new_user and orders_count >= 4 %}
+                <p class="small text-muted mb-3">
+                    <i class="bi bi-star-fill text-warning me-1"></i> 
+                    Подобрано на основе ваших {{ orders_count }} заказов
+                </p>
+                {% endif %}
+                
+                <div class="row row-cols-2 row-cols-md-4 g-2 g-md-3">
+                    {% for p in recommended_products %}
+                    <div class="col">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 recommendation-card overflow-hidden">
+                            {% if p.image %}
+                            <img src="{{ p.image.url }}" class="card-img-top" style="height: 100px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body p-2 p-md-3 text-center">
+                                <h6 class="card-title small fw-bold mb-1 text-truncate">{{ p.name }}</h6>
+                                <p class="text-warning small fw-bold mb-2">{{ p.price }} ₽</p>
+                                <button type="button" onclick="animateAddToCart(this, '{{ p.id }}')" class="btn btn-sm btn-dark rounded-pill w-100 py-1 btn-ai-add">
+                                    + Добавить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white position-sticky" style="top: 100px;" id="order-card">
+                <h4 class="fw-bold mb-3 mb-md-4">Оформление</h4>
+                
+                <div id="order-form-container">
+                    {% if cart %}
+                        <form method="post" action="{% url 'order_create' %}" id="order-form">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3 mb-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase d-flex justify-content-between">
+                                    Куда доставить?
+                                    <a href="{% url 'profile' %}" class="text-warning text-decoration-none">+ добавить</a>
+                                </label>
+                                
+                                <div class="address-selection-grid shadow-sm rounded-4 overflow-hidden border" id="address-grid">
+                                    {% for addr in user.addresses.all %}
+                                    <div class="address-item border-bottom">
+                                        <input type="checkbox" name="address_ids" value="{{ addr.id }}" class="btn-check address-checkbox" id="addr-{{ addr.id }}" 
+                                            onchange="handleAddressChange(this)">
+                                        <label class="btn btn-white w-100 text-start rounded-0 p-2 p-md-3 d-flex align-items-center" for="addr-{{ addr.id }}">
+                                            <i class="bi bi-geo-alt me-2 text-muted"></i>
+                                            <span class="small">{{ addr.address_line|truncatechars:35 }}</span>
+                                            <i class="bi bi-check-circle-fill ms-auto check-icon text-success"></i>
+                                        </label>
+                                    </div>
+                                    {% empty %}
+                                    <div class="p-3 text-center small text-muted bg-light">В профиле нет адресов</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Или новый адрес</label>
+                                <div class="input-group">
+                                    <input type="text" name="new_address" id="new_address_input" 
+                                        class="form-control rounded-start-pill border-light bg-light px-3" 
+                                        placeholder="Улица, дом, кв (например: ул. Горького, 12, кв 14)" 
+                                        value="Байконур, "
+                                        oninput="validateAddressInput(this.value)">
+                                    <button type="button" class="btn btn-dark rounded-end-pill px-3" id="add-address-btn">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                                <div id="address-feedback" class="mt-1" style="display:none;"></div>
+                            </div>
+
+                            <div class="mb-3 mb-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Телефон</label>
+                                <input type="text" name="phone" id="phone-mask" class="form-control rounded-pill border-light bg-light px-3 phone-mask" value="{{ user.profile.phone|default:'' }}" required>
+                            </div>
+                                <!-- НОВОЕ ПОЛЕ: выбор времени доставки -->
+                            <div class="mb-3 mb-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">
+                                    <i class="bi bi-clock me-1"></i> Желаемое время доставки
+                                </label>
+                                <input type="datetime-local" name="delivery_time" id="delivery_time"
+                                    class="form-control rounded-pill border-light bg-light px-3"
+                                    min="">
+                                <script>
+                                    // Устанавливаем минимальную дату: сейчас + 30 минут, округление до минут
+                                    const now = new Date();
+                                    now.setMinutes(now.getMinutes() + 30);
+                                    const year = now.getFullYear();
+                                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                                    const day = String(now.getDate()).padStart(2, '0');
+                                    const hours = String(now.getHours()).padStart(2, '0');
+                                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                                    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                    document.getElementById('delivery_time').min = minDateTime;
+                                </script>
+                                <div class="small text-muted mt-1">Минимальное время – через 30 минут от текущего момента</div>
+                            </div>
+
+                            <div class="card border-0 bg-light rounded-4 p-3 mb-3 mb-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" {% if user.profile.points == 0 %}disabled{% endif %}>
+                                    <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="usePointsSwitch">
+                                        <span class="small fw-bold">Списать баллы</span>
+                                        <span class="badge bg-dark rounded-pill">{{ user.profile.points }}</span>
+                                    </label>
+                                </div>
+                                <div id="points-info" class="small text-muted mt-2" style="display: none;">
+                                    Будет списано: <span id="points-to-deduct" class="fw-bold text-success">0</span> ₽
+                                </div>
+                                {% if discount > 0 %}
+                                <div class="small text-success mt-2">
+                                    <i class="bi bi-tag"></i> Ваша скидка: {{ discount }}%
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 mb-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Способ оплаты</label>
+                                <div class="d-flex gap-2">
+                                    <input type="radio" name="payment_method" value="cash" class="btn-check" id="pay-cash" checked required>
+                                    <label class="btn btn-outline-dark rounded-pill flex-grow-1 py-2" for="pay-cash">Наличные</label>
+
+                                    <input type="radio" name="payment_method" value="card" class="btn-check" id="pay-card" required>
+                                    <label class="btn btn-outline-dark rounded-pill flex-grow-1 py-2" for="pay-card">Картой</label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Сумма заказа:</span>
+                                <span id="base-price" data-raw="{{ cart.get_total_price }}">{{ cart.get_total_price }} ₽</span>
+                            </div>
+                            {% if discount > 0 %}
+                            <div class="d-flex justify-content-between mb-1 text-success">
+                                <span>Скидка ({{ discount }}%):</span>
+                                <span id="discount-amount">0 ₽</span>
+                            </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-between mb-2 border-top pt-2">
+                                <span class="fw-bold">ИТОГО:</span>
+                                <span class="fw-bold fs-4 text-warning" id="total-price-display">{{ cart.get_total_price }} ₽</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="small text-muted">Будет зачислено (5%):</span>
+                                <span class="small fw-bold text-success">+<span id="points-earn">0</span> б.</span>
+                            </div>
+
+                            <!-- Кнопка отправки – стилизована для состояний disabled -->
+                            <button type="submit" class="btn btn-warning w-100 btn-lg rounded-pill fw-bold py-3 shadow-sm transition-all" 
+                                    id="submit-order-btn">
+                                Заказать
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">Добавьте товары в корзину</p>
+                            <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-4">В меню</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <style>
+                    /* Дополнительные стили для улучшения читаемости кнопок */
+                    .btn-outline-dark {
+                        transition: all 0.2s ease;
+                    }
+                    .btn-outline-dark:hover {
+                        background-color: #212529;
+                        color: white;
+                        transform: translateY(-1px);
+                    }
+                    .btn-check:checked + .btn-outline-dark {
+                        background-color: #ffc107;
+                        border-color: #ffc107;
+                        color: #000;
+                        box-shadow: 0 2px 8px rgba(255,193,7,0.4);
+                    }
+                    .btn-check:disabled + .btn-outline-dark {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                        transform: none;
+                    }
+                    #submit-order-btn:disabled {
+                        opacity: 0.6;
+                        cursor: not-allowed;
+                        transform: none !important;
+                        background-color: #6c757d !important;
+                        border-color: #6c757d !important;
+                        box-shadow: none !important;
+                    }
+                    .form-check-input:disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                    }
+                    #add-address-btn:active {
+                        transform: scale(0.96);
+                    }
+                    .transition-all {
+                        transition: all 0.2s ease;
+                    }
+                </style>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для комментария (стандартная Bootstrap, с высоким z-index) -->
+<div class="modal fade comment-modal" id="commentModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Комментарий к блюду</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <span class="fw-bold" id="comment-product-name"></span>
+                </div>
+                <textarea id="comment-textarea" class="form-control" rows="3" placeholder="Например: без лука, остро, добавить соус..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-warning" id="saveCommentBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалки деталей товаров -->
+{% for item in cart %}
+<div class="modal fade" id="productDetailModal{{ item.product.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 bg-white p-2 rounded-circle" data-bs-dismiss="modal"></button>
+            {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" class="modal-header-img" style="height: 200px; width: 100%; object-fit: cover;">
+            {% endif %}
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h3 class="fw-bold mb-0 fs-4">{{ item.product.name }}</h3>
+                    <span class="fs-4 fw-bold text-warning">{{ item.product.price }} ₽</span>
+                </div>
+                
+                <!-- Рейтинг в модалке -->
+                <div class="rating-stars mb-3">
+                    {% with rating=item.product.get_rating|default:0 %}
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= rating|floatformat:0 %}
+                                <i class="bi bi-star-fill filled fs-6"></i>
+                            {% else %}
+                                <i class="bi bi-star fs-6"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="rating-value">({{ rating|floatformat:1 }} из 5)</span>
+                    {% endwith %}
+                </div>
+                
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <div class="info-badge"><i class="bi bi-scale me-1"></i> {{ item.product.weight }}г</div>
+                    <div class="info-badge"><i class="bi bi-lightning-charge me-1"></i> {{ item.product.calories|default:"450" }} ккал</div>
+                </div>
+
+                <h6 class="fw-bold mb-2">Описание</h6>
+                <p class="text-muted mb-3">{{ item.product.description|default:"Описание отсутствует" }}</p>
+
+                <!-- Отзывы -->
+                <h6 class="fw-bold mb-2 mt-3">Отзывы покупателей</h6>
+                <div class="reviews-list">
+                    {% with reviews=item.product.reviews.all %}
+                        {% if reviews %}
+                            {% for review in reviews %}
+                            <div class="review-item">
+                                <div class="review-user">{{ review.user.username }}</div>
+                                <div class="rating-stars mb-1">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="bi bi-star-fill filled" style="font-size: 10px;"></i>
+                                        {% else %}
+                                            <i class="bi bi-star" style="font-size: 10px;"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="review-text">{{ review.text }}</div>
+                                <div class="review-date">{{ review.created_at|date:"d.m.Y" }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small text-center py-3">Нет отзывов. Будьте первым!</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                <button type="button" onclick="updateCartQuantity('{{ item.product.id }}', 'add'); return false;" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-2 py-md-3 shadow mt-3">
+                    Добавить за {{ item.product.price }} ₽
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .ai-badge {
+        background: linear-gradient(45deg, #6366f1, #a855f7);
+        color: white;
+        padding: 2px 10px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        margin-right: 8px;
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    }
+    .recommendation-card {
+        transition: all 0.3s ease;
+    }
+    .recommendation-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .address-item .check-icon { display: none; }
+    .btn-check:checked + label .check-icon { display: block; }
+    .btn-check:checked + label { background-color: #fff9e6 !important; border-color: #ffc107 !important; }
+    .address-item:last-child { border-bottom: none !important; }
+    .qty-controls { border: 1px solid #eee; }
+    .btn-white { background: white; border: none; }
+    .btn-white:hover { background: #f8f9fa; }
+    .btn-ai-add {
+        transition: background 0.3s ease;
+        font-size: 12px;
+    }
+    .ai-badge {
+        animation: pulse-purple 2s infinite;
+    }
+    @keyframes pulse-purple {
+        0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
+        70% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+    }
+    @media (max-width: 768px) {
+        .btn-ai-add {
+            font-size: 10px;
+            padding: 6px !important;
+        }
+        .recommendation-card h6 {
+            font-size: 12px !important;
+        }
+    }
+    .info-badge {
+        background: #f8f9fa;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    .modal-header-img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+    }
+    .reviews-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .review-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    .review-user {
+        font-weight: bold;
+        font-size: 13px;
+    }
+    .review-text {
+        font-size: 13px;
+        color: #555;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+    .review-date {
+        font-size: 10px;
+        color: #999;
+        margin-top: 5px;
+    }
+    .rating-stars {
+        display: inline-flex;
+        gap: 2px;
+        align-items: center;
+    }
+    .rating-stars i.filled {
+        color: #ffc107;
+    }
+    .rating-value {
+        font-size: 11px;
+        color: #666;
+        margin-left: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/imask"></script>
+<script>
+
+    // Инициализация маски телефона
+    function initPhoneMask() {
+        const phoneInput = document.getElementById('phone-mask');
+        if (phoneInput && !phoneInput._imask) { // Проверяем, чтобы не накладывать повторно
+            const mask = IMask(phoneInput, {
+                mask: '+{7}(000)000-00-00'
+            });
+            phoneInput._imask = mask; // Сохраняем ссылку
+        }
+    }
+
+    let currentCommentProductId = null;
+    let currentCommentProductName = null;
+    let currentCommentElement = null;
+    let commentModalInstance = null;
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 3000);
+    }
+
+    function openProductModal(productId) {
+        const modalEl = document.getElementById('productDetailModal' + productId);
+        if (modalEl) {
+            const myModal = new bootstrap.Modal(modalEl);
+            myModal.show();
+        }
+    }
+
+    function openCommentModal(productId, productName, element) {
+        if (element && element.stopPropagation) {
+            element.stopPropagation();
+        }
+        currentCommentProductId = productId;
+        currentCommentProductName = productName;
+        currentCommentElement = element;
+        
+        const productNameSpan = document.getElementById('comment-product-name');
+        const textarea = document.getElementById('comment-textarea');
+        
+        productNameSpan.innerText = productName;
+        
+        const row = document.getElementById(`row-${productId}`);
+        const commentSpan = row ? row.querySelector('.comment-preview') : null;
+        
+        let existingComment = '';
+        if (commentSpan) {
+            existingComment = commentSpan.innerText.replace(/^[💬\s]+/, '').trim();
+        } else {
+            const mobileRow = document.getElementById(`mobile-row-${productId}`);
+            const mobileCommentSpan = mobileRow ? mobileRow.querySelector('.comment-preview') : null;
+            if (mobileCommentSpan) {
+                existingComment = mobileCommentSpan.innerText.replace(/^[💬\s]+/, '').trim();
+            }
+        }
+        
+        textarea.value = existingComment;
+        
+        if (!commentModalInstance) {
+            const modalElement = document.getElementById('commentModal');
+            if (modalElement) {
+                commentModalInstance = new bootstrap.Modal(modalElement);
+            }
+        }
+        if (commentModalInstance) {
+            commentModalInstance.show();
+        }
+        
+        document.querySelectorAll('.comment-badge, .mobile-comment-btn').forEach(btn => btn.classList.remove('active'));
+        if (element && element.classList) element.classList.add('active');
+    }
+
+    function closeCommentModal() {
+        if (commentModalInstance) {
+            commentModalInstance.hide();
+        }
+        document.querySelectorAll('.comment-badge, .mobile-comment-btn').forEach(btn => btn.classList.remove('active'));
+        currentCommentProductId = null;
+    }
+
+    function saveCommentFromModal() {
+        if (!currentCommentProductId) return;
+        
+        const comment = document.getElementById('comment-textarea').value.trim();
+        
+        fetch(`/update_comment/${currentCommentProductId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `comment=${encodeURIComponent(comment)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const row = document.getElementById(`row-${currentCommentProductId}`);
+                const productDiv = row ? row.querySelector('.fw-bold').closest('div') : null;
+                const existingCommentDiv = row ? row.querySelector('.comment-preview')?.closest('.mt-1') : null;
+                
+                if (comment) {
+                    const commentHtml = `<div class="mt-1"><span class="comment-preview" onclick="openCommentModal('${currentCommentProductId}', '${currentCommentProductName}', this)"><i class="bi bi-chat-dots"></i> ${comment.length > 30 ? comment.substring(0, 30) + '...' : comment}</span></div>`;
+                    
+                    if (existingCommentDiv && row) {
+                        existingCommentDiv.innerHTML = commentHtml;
+                    } else if (productDiv) {
+                        productDiv.insertAdjacentHTML('beforeend', commentHtml);
+                    }
+                } else {
+                    if (existingCommentDiv) existingCommentDiv.remove();
+                }
+                
+                const mobileRow = document.getElementById(`mobile-row-${currentCommentProductId}`);
+                const mobileCommentContainer = document.getElementById(`mobile-comment-container-${currentCommentProductId}`);
+                const mobileCommentBtn = mobileRow ? mobileRow.querySelector('.mobile-comment-btn') : null;
+                
+                if (mobileRow && mobileCommentContainer) {
+                    if (comment) {
+                        mobileCommentContainer.innerHTML = `<span class="comment-preview" onclick="openCommentModal('${currentCommentProductId}', '${currentCommentProductName}', this)"><i class="bi bi-chat-dots"></i> ${comment.length > 25 ? comment.substring(0, 25) + '...' : comment}</span>`;
+                        if (mobileCommentBtn) mobileCommentBtn.innerHTML = '<i class="bi bi-chat me-1"></i> Изменить комментарий';
+                    } else {
+                        mobileCommentContainer.innerHTML = '';
+                        if (mobileCommentBtn) mobileCommentBtn.innerHTML = '<i class="bi bi-chat me-1"></i> Добавить комментарий';
+                    }
+                }
+                
+                showToast('Комментарий сохранен', 'success');
+                closeCommentModal();
+            }
+        })
+        .catch(err => console.error('Ошибка:', err));
+    }
+
+    function removeCartItem(productId) {
+        if (confirm('Удалить товар из корзины?')) {
+            updateCartQuantity(productId, 'remove');
+        }
+    }
+
+    function validateAddressInput(address) {
+        const feedbackDiv = document.getElementById('address-feedback');
+        const prefix = "Байконур, ";
+        
+        if (!address || address.length < prefix.length + 5) {
+            feedbackDiv.style.display = 'none';
+            return false;
+        }
+        
+        const hasStreet = /ул\.|улица|пр\.|проспект|пер\.|переулок|микрорайон|мкр|посёлок|п\./i.test(address);
+        const hasHouse = /\d+/.test(address);
+        
+        if (!hasStreet) {
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.className = 'address-error';
+            feedbackDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Укажите улицу/микрорайон (например: ул. Горького, мкр. Байконур)';
+            return false;
+        }
+        
+        if (!hasHouse) {
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.className = 'address-error';
+            feedbackDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Укажите номер дома';
+            return false;
+        }
+        
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.className = 'address-suggestion';
+        feedbackDiv.innerHTML = '<i class="bi bi-check-circle"></i> Адрес введен корректно';
+        
+        setTimeout(() => {
+            feedbackDiv.style.opacity = '0';
+            setTimeout(() => {
+                feedbackDiv.style.display = 'none';
+                feedbackDiv.style.opacity = '1';
+            }, 2000);
+        }, 2000);
+        
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const saveBtn = document.getElementById('saveCommentBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveCommentFromModal);
+        }
+        initPhoneMask();
+        const addrInput = document.getElementById('new_address_input');
+        const phoneInput = document.getElementById('phone-mask');
+        const prefix = "Байконур, ";
+
+
+        if (addrInput) {
+            addrInput.addEventListener('input', function() {
+                if (!this.value.startsWith(prefix)) {
+                    this.value = prefix;
+                }
+            });
+
+            addrInput.addEventListener('keydown', function(e) {
+                if (this.selectionStart <= prefix.length && (e.key === 'Backspace' || e.key === 'Delete')) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        const addBtn = document.getElementById('add-address-btn');
+        if (addBtn && addrInput) {
+            addBtn.addEventListener('click', function() {
+                const addressLine = addrInput.value.trim();
+                
+                if (!validateAddressInput(addressLine)) {
+                    alert('Пожалуйста, введите корректный адрес (улица/микрорайон и номер дома)');
+                    return;
+                }
+                
+                fetch('/add_address_ajax/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `address_line=${encodeURIComponent(addressLine)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const container = document.querySelector('.address-selection-grid');
+                        const emptyMsg = container.querySelector('.bg-light');
+                        if (emptyMsg) emptyMsg.remove();
+
+                        const newAddrHtml = `
+                            <div class="address-item border-bottom">
+                                <input type="checkbox" name="address_ids" value="${data.id}" class="btn-check address-checkbox" id="addr-${data.id}" onchange="handleAddressChange(this)">
+                                <label class="btn btn-white w-100 text-start rounded-0 p-2 p-md-3 d-flex align-items-center" for="addr-${data.id}">
+                                    <i class="bi bi-geo-alt me-2 text-muted"></i>
+                                    <span class="small">${data.address}</span>
+                                    <i class="bi bi-check-circle-fill ms-auto check-icon text-success"></i>
+                                </label>
+                            </div>`;
+                        container.insertAdjacentHTML('beforeend', newAddrHtml);
+                        
+                        addrInput.value = prefix;
+                        document.getElementById('address-feedback').style.display = 'none';
+                        recalculateTotals();
+                        showToast('Адрес добавлен', 'success');
+
+                        if (typeof initPhoneMask === 'function') initPhoneMask();
+                    }
+                });
+            });
+        }
+        
+        // Инициализация пересчёта при загрузке
+        recalculateTotals();
+    });
+
+    function handleAddressChange(el) {
+        const checkboxes = document.querySelectorAll('.address-checkbox:checked');
+        const newAddressInput = document.getElementById('new_address_input');
+        const prefix = "Байконур, ";
+        
+        const hasNewAddress = newAddressInput.value.trim().length > prefix.length;
+        let totalSelected = checkboxes.length + (hasNewAddress ? 1 : 0);
+        
+        if (totalSelected > 2) {
+            if (el.type === 'checkbox') el.checked = false;
+            else el.value = el.value.slice(0, -1);
+            alert("Вы можете выбрать не более 2-х адресов");
+        }
+        updatePointsSwitchState();
+        recalculateTotals();
+    }
+
+    function animateAddToCart(button, productId) {
+        const card = button.closest('.recommendation-card');
+        const originalText = button.innerHTML;
+        
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const badges = document.querySelectorAll('#nav-cart-count, #float-cart-count, #mobile-cart-count');
+                badges.forEach(b => {
+                    if (b) {
+                        b.innerText = data.cart_total_quantity;
+                        b.classList.remove('d-none');
+                    }
+                });
+                
+                const floatBtn = document.getElementById('float-cart-btn');
+                if (floatBtn) floatBtn.classList.remove('d-none');
+                
+                showToast('Товар добавлен в корзину', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+
+                if (typeof initPhoneMask === 'function') initPhoneMask();
+            }
+            button.disabled = false;
+            button.innerHTML = originalText;
+        })
+        .catch(err => {
+            console.error("Ошибка добавления:", err);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+    }
+
+    // Функция пересчёта итогов (скидка + баллы)
+    function recalculateTotals() {
+        const basePriceElement = document.getElementById('base-price');
+        const newAddressInput = document.getElementById('new_address_input');
+        const prefix = "Байконур, ";
+        
+        if (!basePriceElement || !newAddressInput) return;
+
+        let pricePerOrder = parseFloat(basePriceElement.dataset.raw);
+        if (isNaN(pricePerOrder)) {
+            pricePerOrder = parseFloat(basePriceElement.innerText.replace(' ₽', '').replace(',', '.'));
+        }
+        if (isNaN(pricePerOrder)) pricePerOrder = 0;
+        
+        const checkboxes = document.querySelectorAll('.address-checkbox:checked');
+        const hasNewAddress = newAddressInput.value.trim().length > prefix.length;
+        const addressCount = checkboxes.length + (hasNewAddress ? 1 : 0);
+        
+        let totalBasePrice = pricePerOrder * (addressCount || 1);
+        
+        // Скидка
+        const discountPercent = parseInt("{{ discount|default:0 }}");
+        let discountAmount = 0;
+        if (discountPercent > 0) {
+            discountAmount = totalBasePrice * discountPercent / 100;
+            const discountSpan = document.getElementById('discount-amount');
+            if (discountSpan) discountSpan.innerText = discountAmount.toFixed(2) + ' ₽';
+        }
+        let priceAfterDiscount = totalBasePrice - discountAmount;
+        
+        // Баллы
+        const bonusSwitch = document.getElementById('usePointsSwitch');
+        const pointsInfo = document.getElementById('points-info');
+        const pointsToDeductDisplay = document.getElementById('points-to-deduct');
+        const totalPriceDisplay = document.getElementById('total-price-display');
+        const pointsEarnDisplay = document.getElementById('points-earn');
+        
+        let availablePoints = parseInt("{{ user.profile.points|default:0 }}");
+        let pointsToUse = 0;
+
+        if (bonusSwitch && bonusSwitch.checked && availablePoints > 0 && addressCount === 1) {
+            let maxDeductible = Math.floor(priceAfterDiscount * 0.3);
+            pointsToUse = Math.min(availablePoints, maxDeductible);
+            if (pointsInfo) pointsInfo.style.display = 'block';
+            if (pointsToDeductDisplay) pointsToDeductDisplay.innerText = pointsToUse;
+        } else if (pointsInfo) {
+            pointsInfo.style.display = 'none';
+            pointsToUse = 0;
+        }
+
+        let finalPrice = Math.max(0, priceAfterDiscount - pointsToUse);
+        let cashback = Math.floor(finalPrice * 0.05);
+        
+        if (totalPriceDisplay) totalPriceDisplay.innerText = finalPrice.toFixed(2) + ' ₽';
+        if (pointsEarnDisplay) pointsEarnDisplay.innerText = cashback;
+        
+        const submitBtn = document.getElementById('submit-order-btn');
+        if (submitBtn) {
+            submitBtn.disabled = (addressCount === 0);
+        }
+        
+        const totalInput = document.getElementById('total-hidden');
+        if (totalInput) totalInput.value = finalPrice;
+
+        if (typeof initPhoneMask === 'function') initPhoneMask();
+    }
+
+    function updatePointsSwitchState() {
+        const checkboxes = document.querySelectorAll('.address-checkbox:checked');
+        const newAddressInput = document.getElementById('new_address_input');
+        const prefix = "Байконур, ";
+        const hasNewAddress = newAddressInput.value.trim().length > prefix.length;
+        const totalSelected = checkboxes.length + (hasNewAddress ? 1 : 0);
+        const pointsSwitch = document.getElementById('usePointsSwitch');
+        const pointsLabel = pointsSwitch?.closest('.form-check');
+
+        if (totalSelected > 1) {
+            pointsSwitch.disabled = true;
+            if (pointsLabel && !pointsLabel.querySelector('.points-warning')) {
+                pointsLabel.insertAdjacentHTML('afterend', '<div class="small text-warning mt-1 points-warning">⚠️ При доставке по нескольким адресам списание баллов недоступно</div>');
+            }
+            pointsSwitch.checked = false;
+        } else {
+            pointsSwitch.disabled = false;
+            const warning = pointsLabel?.parentNode?.querySelector('.points-warning');
+            if (warning) warning.remove();
+        }
+        recalculateTotals();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,718 @@
+{% extends 'base.html' %}
+{% block title %}Личный кабинет — Ginza{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        background: white;
+        border-radius: 20px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .filter-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .search-order {
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+    }
+    .search-order input {
+        padding-left: 35px;
+        border-radius: 50px;
+        border: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+    .search-order i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+    .order-card {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important;
+    }
+    .order-stats-mini {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+        font-size: 12px;
+        color: #666;
+    }
+    .order-stats-mini span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    .page-btn {
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+        text-decoration: none;
+        color: #333;
+    }
+    .page-btn.active {
+        background: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+    .page-btn:hover:not(.active) {
+        background: #f8f9fa;
+        border-color: #ffc107;
+    }
+    .orders-count-info {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .status-card {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+        border-radius: 24px;
+        padding: 20px;
+    }
+    .status-card .trophy-icon {
+        position: absolute;
+        right: -15px;
+        top: -15px;
+        opacity: 0.1;
+        font-size: 100px;
+        color: #ffc107;
+        transform: rotate(15deg);
+    }
+    .progress-custom {
+        height: 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-custom-bar {
+        height: 100%;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ffc107, #ff9800);
+        transition: width 0.5s ease;
+    }
+    .modal-custom {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1060;
+        overflow-y: auto;
+    }
+    .modal-custom.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-custom .modal-dialog {
+        margin: 0.5rem;
+        pointer-events: auto;
+        max-width: 500px;
+        width: 100%;
+    }
+    .modal-custom .modal-dialog.modal-lg {
+        max-width: 800px;
+    }
+    .modal-custom .modal-content {
+        background: #fff;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+    }
+    .modal-custom .modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-custom .modal-body {
+        padding: 1rem;
+        flex: 1 1 auto;
+    }
+    .modal-custom .modal-footer {
+        padding: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+    .modal-custom .btn-close-custom {
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+        opacity: 0.5;
+        width: 1em;
+        height: 1em;
+        padding: 0;
+        border: 0;
+        cursor: pointer;
+        background-color: transparent;
+    }
+    .btn-close-custom:hover {
+        opacity: 0.75;
+    }
+    @media (max-width: 576px) {
+        .filter-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .search-order {
+            width: 100%;
+        }
+        .order-stats-mini {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .status-card {
+            padding: 16px;
+        }
+        .status-card .trophy-icon {
+            font-size: 70px;
+            right: -10px;
+            top: -10px;
+        }
+        .status-card h2 {
+            font-size: 1.8rem;
+        }
+        .modal-custom .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/inputmask@5.0.8/dist/inputmask.min.js"></script>
+
+<div class="container py-4 py-md-5">
+    <div class="row g-4 mb-5">
+        <!-- Карточка профиля -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                        <i class="bi bi-person-circle fs-3 text-primary"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ user.username|upper }}</h5>
+                        <small class="badge {% if profile.role == 'courier' %}bg-info{% else %}bg-secondary{% endif %} rounded-pill">
+                            {{ profile.get_role_display }}
+                        </small>
+                    </div>
+                </div>
+                <hr class="my-3 opacity-50">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Телефон:</small>
+                    <span class="fw-bold small">{{ profile.phone|default:"Не указан" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        {% if profile.role == 'client' %}
+        <!-- Карточка статуса (со скидкой) -->
+        <div class="col-md-4">
+            <div class="status-card text-white h-100">
+                <i class="bi bi-trophy-fill trophy-icon"></i>
+                <div class="position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-uppercase small opacity-75">Ваш статус</span>
+                        <span class="badge bg-warning text-dark rounded-pill px-3">GINZA PASS</span>
+                    </div>
+                    <h2 class="fw-bold mb-0 display-5">
+                        {{ total_spent|floatformat:0|default:"0" }}
+                        <small class="fs-6 text-white-50">₽</small>
+                    </h2>
+                    <p class="small mb-2">потрачено всего</p>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-bold">{{ status_name }}</span>
+                            {% if next_level_amount %}
+                            <span class="small text-warning">до {{ next_level_name|default:"Гурмана" }}: {{ next_level_amount|add:total_spent_neg|floatformat:0 }} ₽</span>
+                            {% else %}
+                            <span class="small text-success">Максимальный уровень</span>
+                            {% endif %}
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-custom-bar" style="width: {{ progress_percent|default:100 }}%"></div>
+                        </div>
+                        {% if discount > 0 %}
+                        <div class="mt-2 text-center">
+                            <span class="badge bg-warning text-dark rounded-pill px-3">🔥 Скидка {{ discount }}% на все заказы</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Избранное -->
+        <div class="col-md-4">
+            <a href="{% url 'favorites_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-danger border-5 h-100 transition-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-heart-fill fs-3 text-danger"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">{{ fav_count }}</h5>
+                            <small class="text-muted">Любимых блюд</small>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <!-- Для курьера -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-dark text-white h-100 shadow-lg" style="background: linear-gradient(45deg, #212529, #343a40);">
+                <div class="d-flex align-items-center h-100">
+                    <div class="flex-grow-1">
+                        <h4 class="fw-bold text-warning mb-2">Рабочая панель курьера</h4>
+                        <p class="mb-4 opacity-75">Используйте навигатор для оптимизации маршрутов доставки.</p>
+                        <a href="{% url 'courier_map' %}" class="btn btn-warning btn-lg rounded-pill fw-bold px-4 shadow-sm">
+                            <i class="bi bi-geo-alt-fill me-2"></i> В ПУТЬ (КАРТА)
+                        </a>
+                    </div>
+                    <div class="d-none d-md-block ms-3">
+                        <i class="bi bi-truck text-warning opacity-25" style="font-size: 5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            {% if profile.role == 'courier' %}
+                <!-- курьерская часть -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <h4 class="fw-bold mb-4 text-primary"><i class="bi bi-box-seam me-2"></i>Мои доставки</h4>
+                    {% for order in my_delivery %}
+                        <div class="card mb-3 border-primary rounded-4 shadow-sm border-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="fw-bold">Заказ №{{ order.id }}</h5>
+                                        <p class="mb-1 text-danger fw-bold"><i class="bi bi-geo-alt"></i> {{ order.address }}</p>
+                                        <p class="small text-muted mb-2"><i class="bi bi-telephone"></i> {{ order.phone }}</p>
+                                        <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Детали заказа</a>
+                                    </div>
+                                    <form action="{% url 'courier_complete_order' order.id %}" method="post">
+                                        {% csrf_token %}
+                                        <button class="btn btn-success rounded-pill px-4 fw-bold">Доставлен</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted text-center py-3">У вас нет активных доставок</p>
+                    {% endfor %}
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h4 class="fw-bold mb-4 text-warning"><i class="bi bi-list-stars me-2"></i>Доступно для доставки</h4>
+                    {% for order in orders_ready %}
+                        <div class="card mb-3 border-0 bg-light rounded-4">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div><span class="fw-bold">№{{ order.id }}</span> | {{ order.address|truncatechars:40 }}</div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Детали</a>
+                                    <a href="{% url 'courier_take_order' order.id %}" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold">Взять</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted text-center py-3">Пока нет готовых заказов</p>
+                    {% endfor %}
+                </div>
+
+            {% else %}
+                <!-- Фильтры -->
+                <form method="get" class="filter-bar">
+                    <div class="filter-group">
+                        <div class="search-order">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="search" class="form-control" placeholder="Поиск по № заказа..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <select name="status" class="form-select rounded-pill">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Все статусы</option>
+                            <option value="new" {% if status_filter == 'new' %}selected{% endif %}>🆕 Новый</option>
+                            <option value="cooking" {% if status_filter == 'cooking' %}selected{% endif %}>🍳 Готовится</option>
+                            <option value="ready" {% if status_filter == 'ready' %}selected{% endif %}>✅ Готов</option>
+                            <option value="delivering" {% if status_filter == 'delivering' %}selected{% endif %}>🚚 В пути</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>🎉 Завершен</option>
+                            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>❌ Отменен</option>
+                        </select>
+                        <select name="sort" class="form-select rounded-pill">
+                            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>📅 Сначала новые</option>
+                            <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>📅 Сначала старые</option>
+                            <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>💰 По сумме (дорогие)</option>
+                            <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>💰 По сумме (дешевые)</option>
+                        </select>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4">Применить</button>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary rounded-pill">Сбросить</a>
+                    </div>
+                </form>
+
+                <div class="orders-count-info">
+                    <span><i class="bi bi-list-check me-1"></i> Найдено заказов: <strong>{{ orders.paginator.count }}</strong></span>
+                </div>
+
+                <div id="ordersList">
+                    {% for order in orders %}
+                    <div class="card mb-3 border-0 bg-light rounded-4 overflow-hidden shadow-sm transition-hover order-card" onclick="location.href='/order/{{ order.id }}/'">
+                        <div class="card-body p-0">
+                            <div class="p-3 d-flex justify-content-between align-items-center bg-white border-bottom flex-wrap gap-2">
+                                <div>
+                                    <h5 class="fw-bold mb-0">
+                                        Заказ №{{ order.id }}
+                                        {% if order.status == 'delivering' %}
+                                            <span class="ms-2 badge bg-primary animate-pulse" style="font-size: 0.6rem;">🚚 ЕДЕТ К ВАМ</span>
+                                        {% elif order.status == 'completed' %}
+                                            <span class="ms-2 badge bg-success" style="font-size: 0.6rem;">✅ Доставлен</span>
+                                        {% elif order.status == 'cooking' %}
+                                            <span class="ms-2 badge bg-primary" style="font-size: 0.6rem;">🍳 Готовится</span>
+                                        {% elif order.status == 'ready' %}
+                                            <span class="ms-2 badge bg-info" style="font-size: 0.6rem;">✅ Готов</span>
+                                        {% endif %}
+                                    </h5>
+                                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i> {{ order.created_at|date:"d E, H:i" }}</small>
+                                    {% if order.delivery_time %}
+                                    <small class="text-muted d-block"><i class="bi bi-clock me-1"></i> Доставка: {{ order.delivery_time|date:"d E, H:i" }}</small>
+                                    {% endif %}
+                                </div>
+                                <span class="badge rounded-pill 
+                                    {% if order.status == 'new' %}bg-warning text-dark
+                                    {% elif order.status == 'cooking' %}bg-primary
+                                    {% elif order.status == 'ready' %}bg-info
+                                    {% elif order.status == 'delivering' %}bg-info
+                                    {% elif order.status == 'completed' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="p-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-7">
+                                        <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i> {{ order.address|truncatechars:50 }}</div>
+                                        <div class="small fw-medium text-dark">
+                                            {% for item in order.items.all %}
+                                                {{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <div class="order-stats-mini">
+                                            <span><i class="bi bi-cart"></i> {{ order.items.count }} блюд</span>
+                                            <span><i class="bi bi-cash-stack"></i> {{ order.total_price|floatformat:2 }} ₽</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5 text-md-end mt-2 mt-md-0">
+                                        <div class="d-flex gap-2 justify-content-md-end">
+                                            <a href="/order/{{ order.id }}/" class="btn btn-warning btn-sm rounded-pill px-3" onclick="event.stopPropagation()">
+                                                <i class="bi bi-eye me-1"></i> Детали
+                                            </a>
+                                            {% if order.payment_id %}
+                                            <button onclick="event.stopPropagation(); openReceipt({{ order.id }})" class="btn btn-outline-dark btn-sm rounded-pill px-3">
+                                                <i class="bi bi-receipt me-1"></i> Чек
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-bag-x text-muted fs-1 d-block mb-3"></i>
+                        <p class="text-muted">Вы еще ничего не заказывали</p>
+                        <a href="{% url 'menu' %}" class="btn btn-warning rounded-pill px-4 fw-bold">В меню</a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Пагинация -->
+                {% if orders.paginator.num_pages > 1 %}
+                <div class="pagination">
+                    {% if orders.has_previous %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ orders.previous_page_number }}" class="page-btn">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in orders.paginator.page_range %}
+                        {% if num == orders.number %}
+                            <span class="page-btn active">{{ num }}</span>
+                        {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" class="page-btn">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if orders.has_next %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ orders.next_page_number }}" class="page-btn">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            {% if profile.role == 'client' %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-geo-alt text-warning me-2"></i>Мои адреса</h5>
+                    <button class="btn btn-warning btn-sm rounded-circle" onclick="openModal('addAddressModal')">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+                <div class="address-list">
+                    {% for addr in addresses %}
+                    <div class="p-3 mb-2 border rounded-4 d-flex justify-content-between align-items-center bg-white hover-bg-light transition-all">
+                        <div class="d-flex align-items-center overflow-hidden">
+                            <i class="bi bi-house text-warning me-2"></i>
+                            <small class="text-truncate fw-medium">{{ addr.address_line }}</small>
+                        </div>
+                        <a href="{% url 'delete_address' addr.id %}" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></a>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3 border border-dashed rounded-4 text-muted small">Добавьте адрес</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-dark text-white">
+                <h5 class="fw-bold mb-3 small text-uppercase text-warning"><i class="bi bi-person-gear me-2"></i>Профиль</h5>
+                <form action="{% url 'update_profile' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small opacity-75">📞 Телефон</label>
+                        <input type="text" name="phone" id="phone-mask" class="form-control form-control-sm bg-white bg-opacity-10 border-0 text-white rounded-pill px-3 shadow-none phone-mask" value="{{ profile.phone|default:'' }}" placeholder="+7 (7__) ___-__-__">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm w-100 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-save me-2"></i>Сохранить
+                    </button>
+                </form>
+            </div>
+
+            <div class="d-grid">
+                <a href="{% url 'logout' %}" class="btn btn-outline-danger rounded-pill fw-bold">
+                    <i class="bi bi-box-arrow-right me-2"></i>Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления адреса -->
+<div class="modal-custom" id="addAddressModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Добавить адрес</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addAddressModal')"></button>
+            </div>
+            <form method="post" action="{% url 'add_address' %}" onsubmit="return submitAddressForm(event)">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="text" name="address_line" class="form-control rounded-pill" placeholder="Введите адрес" required>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для чека -->
+<div class="modal-custom" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold">Электронный чек</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('receiptModal')"></button>
+            </div>
+            <div class="modal-body p-4" id="receiptContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-secondary rounded-pill" onclick="closeModal('receiptModal')">Закрыть</button>
+                <button class="btn btn-warning rounded-pill" onclick="window.print()">Печать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Кастомные функции для модальных окон
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList && event.target.classList.contains('modal-custom')) {
+            closeModal(event.target.id);
+        }
+    };
+
+    function submitAddressForm(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                closeModal('addAddressModal');
+                showToast('Адрес добавлен!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert('Ошибка при добавлении адреса');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(err => {
+            console.error('Ошибка:', err);
+            alert('Ошибка при добавлении адреса');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+        
+        return false;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 3000);
+    }
+
+    function openReceipt(orderId) {
+        const modal = document.getElementById('receiptModal');
+        const content = document.getElementById('receiptContent');
+        content.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-warning"></div></div>`;
+        openModal('receiptModal');
+        
+        fetch(`/receipt/${orderId}/`)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const receiptHtml = doc.querySelector('.receipt') || doc.body;
+                content.innerHTML = receiptHtml.outerHTML;
+            })
+            .catch(err => {
+                content.innerHTML = '<div class="text-center text-danger py-5">Ошибка загрузки чека</div>';
+            });
+    }
+
+    // Инициализация маски телефона
+    document.addEventListener('DOMContentLoaded', function() {
+        var phoneInput = document.getElementById('phone-mask');
+        if (phoneInput) {
+            var im = new Inputmask("+7 (999) 999-99-99");
+            im.mask(phoneInput);
+        }
+    });
+
+    {% if auto_open_id %}
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { openReceipt({{ auto_open_id }}); }, 1000);
+        });
+    {% endif %}
+</script>
+{% endblock %}
