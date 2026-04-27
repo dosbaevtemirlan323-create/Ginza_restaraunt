@@ -50,4 +50,5 @@ wrapt==2.1.1
 yookassa==3.10.0
 zope.interface==8.2
 django-admin-interface>=0.28.0
-colorfield>=0.11.0
+django-colorfield>=0.11.0
+geopy>=2.4.0
