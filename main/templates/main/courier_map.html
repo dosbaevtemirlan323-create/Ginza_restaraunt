@@ -97,14 +97,12 @@
                             <a href="tel:{{ order.user.profile.phone|default:order.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="btn btn-sm btn-outline-success rounded-pill" onclick="event.stopPropagation()">
                                 <i class="bi bi-telephone"></i> Звонок
                             </a>
-                            {% if forloop.first %}
                             <form action="{% url 'courier_complete_order' order.id %}" method="post" class="d-inline" onsubmit="event.stopPropagation()">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-success rounded-pill">
                                     <i class="bi bi-check2-circle"></i> Доставлен
                                 </button>
                             </form>
-                            {% endif %}
                         </div>
                     </div>
                     {% empty %}
@@ -445,7 +443,7 @@
 
     // ========== POLLING ДЛЯ ДОСТУПНЫХ ЗАКАЗОВ (без WebSocket) ==========
     function fetchAvailableOrders() {
-        fetch('/api/operator/new-orders/')
+        fetch('/api/courier/available-orders/')
             .then(res => res.json())
             .then(data => {
                 if (data.orders) {

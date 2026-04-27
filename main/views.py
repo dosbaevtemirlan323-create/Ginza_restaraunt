@@ -1,4 +1,4 @@
-from .utils import send_order_to_restaurant, send_receipt_email
+from .utils import send_order_to_restaurant, send_receipt_email, geocode_address
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
@@ -9,7 +9,7 @@ from django.db.models import Prefetch, Sum, F, Q
 from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
-from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, SupportMessage
+from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, SupportMessage, ProductRecommendation
 from .cart import Cart
 from .forms import UserRegisterForm
 import uuid
@@ -31,6 +31,29 @@ from geopy.distance import geodesic              # НОВОЕ: для автон
 Configuration.configure('1285119', 'test_yOeCjmKe1rtmfgAat4OUl_9V89XI0Z4gIqR3HZXr7wg')
 
 
+def get_cross_sell_products(cart_products, limit=4):
+    """Возвращает товары, которые часто покупают вместе с товарами из корзины."""
+    if not cart_products:
+        return []
+    cart_product_ids = [p.id for p in cart_products]
+    recs = ProductRecommendation.objects.filter(
+        source_product_id__in=cart_product_ids
+    ).select_related('recommended_product').order_by('-score')
+    recommended_ids = []
+    for rec in recs:
+        if rec.recommended_product.id not in cart_product_ids:
+            recommended_ids.append(rec.recommended_product.id)
+            if len(recommended_ids) >= limit:
+                break
+    if len(recommended_ids) < limit:
+        needed = limit - len(recommended_ids)
+        popular = Product.objects.filter(is_active=True).exclude(id__in=cart_product_ids)\
+            .annotate(total_sold=Sum('orderitem__quantity')).order_by('-total_sold')[:needed]
+        for p in popular:
+            if p.id not in recommended_ids:
+                recommended_ids.append(p.id)
+    return list(Product.objects.filter(id__in=recommended_ids, is_active=True))
+
 # --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 def validate_address(address):
     """
@@ -38,7 +61,7 @@ def validate_address(address):
     и номера дома. Возвращает (is_valid, lat, lng).
     """
     if "Байконур" in address and len(address) > 15:
-        return True, 45.624828, 63.312162
+        return geocode_address(address)
 
     address_lower = address.lower()
 
@@ -62,7 +85,7 @@ def validate_address(address):
         return False, None, None
 
     # Здесь можно добавить реальное геокодирование через Yandex Maps API
-    return True, 45.624828, 63.312162
+    return geocode_address(address)
 
 
 # --- ГЛАВНАЯ И МЕНЮ ---
@@ -71,7 +94,9 @@ def start(request):
     popular_dishes = Product.objects.filter(is_active=True).annotate(
         total_sold=Sum('orderitem__quantity')
     ).order_by('-total_sold')[:10]
-    
+    cart_products = [item['product'] for item in cart]
+    cross_sell_products = get_cross_sell_products(cart_products, limit=4)
+
     if popular_dishes.count() < 10:
         existing_ids = list(popular_dishes.values_list('id', flat=True))
         additional = Product.objects.filter(is_active=True).exclude(id__in=existing_ids).order_by('?')[:10 - popular_dishes.count()]
@@ -79,6 +104,7 @@ def start(request):
     
     context = {
         'cart': cart,
+        'cross_sell_products': cross_sell_products,
         'popular_dishes': popular_dishes,
     }
     return render(request, 'main/index.html', context)
@@ -99,11 +125,17 @@ def menu_view(request):
     user_favorites = []
     if request.user.is_authenticated:
         user_favorites = Favorite.objects.filter(user=request.user).values_list('product_id', flat=True)
+        recommended_for_menu = get_ai_recommendations(request.user, limit=8)
+    else:
+        user_favorites = []
+        recommended_for_menu = get_ai_recommendations(None, limit=8)   # вызываем с None
+
 
     context = {
         'categories': categories,
         'cart': cart,
         'user_favorites': user_favorites,
+        'recommended_for_menu': recommended_for_menu,
         'all_products': Product.objects.all(),
     }
     return render(request, 'main/menu.html', context)
@@ -133,72 +165,15 @@ def favorites_list(request):
 def cart_detail(request):
     cart = Cart(request)
 
-    recommended_products = []
-    cart_product_ids = [int(pid) for pid in cart.cart.keys()]
-    
+    # Получаем товары из корзины для cross-sell
+    cart_products = [item['product'] for item in cart]
+    cross_sell_products = get_cross_sell_products(cart_products, limit=4)
+
     user_orders_count = 0
     if request.user.is_authenticated:
         user_orders_count = Order.objects.filter(user=request.user, status='completed').count()
-    
-    if not request.user.is_authenticated or user_orders_count < 4:
-        # Для новых пользователей – популярное
-        popular_products = OrderItem.objects.values('product_id')\
-            .annotate(total_sold=Sum('quantity'))\
-            .order_by('-total_sold')[:12]
-        popular_ids = [p['product_id'] for p in popular_products]
-        recommended_products = list(Product.objects.filter(
-            id__in=popular_ids, is_active=True
-        ).exclude(id__in=cart_product_ids)[:4])
-        if len(recommended_products) < 4:
-            extra = Product.objects.filter(is_active=True)\
-                .exclude(id__in=cart_product_ids)\
-                .order_by('?')[:4-len(recommended_products)]
-            recommended_products += list(extra)
-    else:
-        # Для опытных: анализ тегов и состава
-        from collections import Counter
-        # Получаем все купленные товары пользователя
-        purchased_products = OrderItem.objects.filter(
-            order__user=request.user, order__status='completed'
-        ).select_related('product')
-        
-        # Собираем теги всех купленных товаров
-        tag_counter = Counter()
-        product_ids_purchased = []
-        for item in purchased_products:
-            product_ids_purchased.append(item.product.id)
-            for tag in item.product.tags.all():
-                tag_counter[tag.id] += 1
-        
-        # Самые частые теги
-        top_tags = [tag_id for tag_id, count in tag_counter.most_common(3)]
-        
-        # Рекомендуем товары с этими тегами, исключая уже купленные и в корзине
-        if top_tags:
-            recommended_products = list(Product.objects.filter(
-                tags__id__in=top_tags, is_active=True
-            ).exclude(id__in=product_ids_purchased)
-             .exclude(id__in=cart_product_ids)
-             .distinct()[:4])
-        
-        # Если не хватает – добавляем популярные
-        if len(recommended_products) < 4:
-            needed = 4 - len(recommended_products)
-            popular = Product.objects.filter(is_active=True)\
-                .exclude(id__in=product_ids_purchased)\
-                .exclude(id__in=cart_product_ids)\
-                .order_by('-orderitem__quantity')[:needed]
-            recommended_products += list(popular)
-        
-        # Если всё равно пусто – случайные
-        if len(recommended_products) < 4:
-            needed = 4 - len(recommended_products)
-            random_products = Product.objects.filter(is_active=True)\
-                .exclude(id__in=product_ids_purchased)\
-                .exclude(id__in=cart_product_ids)\
-                .order_by('?')[:needed]
-            recommended_products += list(random_products)
-    
+
+    # Расчёт скидки от суммы потраченных средств
     discount = 0
     if request.user.is_authenticated:
         total_spent = Order.objects.filter(user=request.user, status='completed').aggregate(Sum('total_price'))['total_price__sum'] or 0
@@ -207,21 +182,23 @@ def cart_detail(request):
         elif total_spent >= 5000:
             discount = 3
 
-
     # Текущее локальное время для поля datetime-local
     now = timezone.localtime(timezone.now())
-    
+
     return render(request, 'main/cart_detail.html', {
         'cart': cart,
-        'recommended_products': recommended_products,
+        'cross_sell_products': cross_sell_products,   # ← только cross-sell
         'is_new_user': not request.user.is_authenticated or user_orders_count < 4,
         'orders_count': user_orders_count,
         'now': now,
         'discount': discount,
     })
 
-
 def cart_add(request, product_id):
+    if not request.user.is_authenticated:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': 'Пожалуйста, войдите в аккаунт'}, status=401)
+        return redirect('login')
     cart = Cart(request)
     product = get_object_or_404(Product, id=product_id)
     cart.add(product=product)
@@ -237,7 +214,6 @@ def cart_add(request, product_id):
             'product_price': float(product.price)
         })
     return redirect('cart_detail')
-
 
 def cart_subtract(request, product_id):
     cart = Cart(request)
@@ -362,11 +338,19 @@ def order_create(request):
 
         actual_payment_amount = total_full_price - total_points_to_spend
 
+        addresses_with_coords = []
+        for addr in final_addresses:
+            is_valid, lat, lng = validate_address(addr)
+            if not is_valid:
+                messages.error(request, f"Адрес '{addr}' не распознан. Укажите улицу и дом.")
+                return redirect('cart_detail')
+            addresses_with_coords.append((addr, lat, lng))
+
         # Если оплата наличными – создаём заказ сразу, без ЮKassa
         if payment_method == 'cash':
             created_orders = []
             try:
-                for idx, addr_text in enumerate(final_addresses):
+                for idx, (addr_text, lat, lng) in enumerate(addresses_with_coords):
                     points_used = Decimal(str(points_per_order[idx])) if idx < len(points_per_order) else 0
                     current_order_price = total_cart_price - points_used
                     order = Order.objects.create(
@@ -377,8 +361,10 @@ def order_create(request):
                         total_price=current_order_price,
                         points_used=int(points_used),
                         status='new',
-                        is_paid=False,  # наличные – оплата при получении
+                        is_paid=False,
                         delivery_time=delivery_time,
+                        lat=lat,
+                        lng=lng,
                     )
                     for item in cart:
                         OrderItem.objects.create(
@@ -430,7 +416,7 @@ def order_create(request):
         # Для оплаты картой – идём в ЮKassa
         # Сохраняем данные в сессию
         request.session['pending_order'] = {
-            'final_addresses': final_addresses,
+            'final_addresses_with_coords': addresses_with_coords,
             'phone': phone,
             'payment_method': payment_method,
             'use_points': use_points,
@@ -504,7 +490,7 @@ def payment_success(request):
         return redirect('cart_detail')
     
     # Восстанавливаем данные из сессии
-    final_addresses = pending_order['final_addresses']
+    addresses_with_coords = pending_order['final_addresses_with_coords']
     phone = pending_order['phone']
     payment_method = pending_order['payment_method']
     total_cart_price = Decimal(str(pending_order['total_cart_price']))
@@ -519,14 +505,14 @@ def payment_success(request):
         except ValueError:
             pass
     
-    print(f"Creating orders for {len(final_addresses)} addresses")
+    print(f"Creating orders for {len(addresses_with_coords)} addresses")
     
     profile = request.user.profile
     cart = Cart(request)
     created_orders = []
     
     try:
-        for idx, addr_text in enumerate(final_addresses):
+        for idx, (addr_text, lat, lng) in enumerate(addresses_with_coords):
             points_used = Decimal(str(points_per_order[idx])) if idx < len(points_per_order) else 0
             current_order_price = total_cart_price - points_used
             
@@ -541,6 +527,8 @@ def payment_success(request):
                 payment_id=pending_payment_id,
                 is_paid=True,
                 delivery_time=delivery_time,
+                lat=lat,
+                lng=lng,
             )
             
             print(f"Order #{order.id} created, total: {current_order_price}")
@@ -652,9 +640,52 @@ def auto_assign_order(order):
         order.courier = best_courier
         order.status = 'delivering'
         order.save()
+        optimize_courier_route(best_courier)
         print(f"✅ Заказ #{order.id} автоматически назначен курьеру {best_courier.username}")
         return True
     return False
+
+
+def optimize_courier_route(courier_user):
+    """
+    Пересчитывает оптимальный порядок доставки для курьера (жадный алгоритм ближайшего соседа).
+    Обновляет поле route_order у заказов.
+    """
+    orders = Order.objects.filter(
+        courier=courier_user,
+        status='delivering'
+    ).exclude(lat__isnull=True, lng__isnull=True)
+
+    if not orders:
+        return
+
+    # Текущая позиция курьера (если есть) или ресторан
+    profile = courier_user.profile
+    if profile.last_lat and profile.last_lng:
+        current_point = (profile.last_lat, profile.last_lng)
+    else:
+        rest_config = RestaurantConfig.objects.first()
+        if rest_config and rest_config.location_coords:
+            lat, lng = map(float, rest_config.location_coords.split(','))
+        else:
+            lat, lng = 45.624828, 63.312162
+        current_point = (lat, lng)
+
+    order_list = list(orders)
+    visited = []
+    unvisited = order_list.copy()
+    current = current_point
+
+    while unvisited:
+        nearest = min(unvisited, key=lambda o: geodesic(current, (o.lat, o.lng)).km)
+        visited.append(nearest)
+        current = (nearest.lat, nearest.lng)
+        unvisited.remove(nearest)
+
+    for idx, order in enumerate(visited, start=1):
+        if order.route_order != idx:
+            order.route_order = idx
+            order.save(update_fields=['route_order'])
 
 
 @staff_member_required
@@ -809,8 +840,8 @@ def courier_take_order(request, order_id):
     if active_count < 5:
         order.courier = request.user
         order.status = 'delivering'
-        order.delivery_order_index = active_count + 1
-        order.save()
+        order.save()   # поле delivery_order_index больше не нужно, используем route_order
+        optimize_courier_route(request.user)   # <-- пересчитать порядок
         messages.success(request, f"Вы приняли заказ №{order.id}!")
     else:
         messages.error(request, "Максимум 5 заказов одновременно!")
@@ -824,24 +855,19 @@ def courier_complete_order(request, order_id):
     order.status = 'completed'
     order.save()
     
-    remaining_orders = Order.objects.filter(
-        courier=request.user, 
-        status='delivering'
-    ).order_by('created_at')
-    
-    for idx, o in enumerate(remaining_orders, 1):
-        o.delivery_order_index = idx
-        o.save()
+    # Пересчитать маршрут для оставшихся заказов курьера
+    optimize_courier_route(request.user)
     
     messages.success(request, f"Заказ №{order.id} успешно доставлен!")
     return redirect('courier_map')
+    
 
 
 def courier_map(request):
     if not request.user.is_authenticated or request.user.profile.role != 'courier':
         return redirect('profile')
     
-    my_orders = Order.objects.filter(courier=request.user, status='delivering').order_by('created_at')
+    my_orders = Order.objects.filter(courier=request.user, status='delivering').order_by('route_order', 'created_at')
     available_orders = Order.objects.filter(status='ready', courier__isnull=True).order_by('created_at')
     
     delivered_count = Order.objects.filter(
@@ -1216,6 +1242,7 @@ def change_order_status(request, order_id, new_status):
             auto_assign_order(order)
             print(f"🔔 Автоматическое назначение курьера для заказа #{order.id}")
         
+        
         return JsonResponse({
             'status': 'ok',
             'message': message,
@@ -1288,20 +1315,28 @@ def register(request):
             user = form.save()
             login(request, user)
             return redirect('menu')
-    else: 
+    else:
         form = UserRegisterForm()
     return render(request, 'main/register.html', {'form': form})
 
 
 def login_view(request):
+    next_url = request.GET.get('next', '')
     if request.method == 'POST':
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
-            login(request, form.get_user())
-            return redirect('profile')
-    else: 
+            user = form.get_user()
+            login(request, user)
+            if next_url:
+                return redirect(next_url)
+            if user.is_staff:
+                return redirect('operator_panel')
+            if hasattr(user, 'profile') and user.profile.role == 'courier':
+                return redirect('courier_map')
+            return redirect('menu')
+    else:
         form = AuthenticationForm()
-    return render(request, 'main/login.html', {'form': form})
+    return render(request, 'main/login.html', {'form': form, 'next': next_url})
 
 
 def logout_view(request):
@@ -1410,7 +1445,7 @@ def update_courier_location(request):
 
 
 def get_ai_recommendations(user, limit=4):
-    if not user.is_authenticated:
+    if user is None or not user.is_authenticated:
         return Product.objects.filter(is_active=True).order_by('-id')[:limit]
 
     favorite_categories = OrderItem.objects.filter(order__user=user)\
@@ -1561,3 +1596,33 @@ def get_order_counts(request):
         'delivery': Order.objects.filter(status='delivering').count(),
     }
     return JsonResponse({'counts': counts})
+
+@staff_member_required
+def mark_order_viewed(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if not order.is_operator_viewed:
+        order.is_operator_viewed = True
+        order.save()
+    return JsonResponse({'status': 'ok'})
+
+@login_required
+def get_available_orders_for_courier(request):
+    """Возвращает заказы со статусом 'ready' для курьера"""
+    if request.user.profile.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещён'}, status=403)
+    orders = Order.objects.filter(status='ready', courier__isnull=True).order_by('-created_at')
+    data = []
+    for order in orders:
+        data.append({
+            'id': order.id,
+            'address': order.address,
+            'total_price': float(order.total_price),
+            'created_at': order.created_at.strftime('%H:%M'),
+        })
+    return JsonResponse({'orders': data})
+
+@login_required
+def get_user_orders_statuses(request):
+    orders = Order.objects.filter(user=request.user).exclude(status__in=['completed', 'cancelled']).order_by('-created_at')
+    data = [{'id': o.id, 'status': o.status, 'status_display': o.get_status_display()} for o in orders]
+    return JsonResponse({'orders': data})

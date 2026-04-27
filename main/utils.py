@@ -91,3 +91,20 @@ def send_receipt_email(order):
             html_message=html_message,
             fail_silently=True,
         )
+
+def geocode_address(address):
+    api_key = "2b6a7d3b-b4ef-4682-a0e0-69dda3376fba"  # ваш ключ Яндекс.Карт
+    url = "https://geocode-maps.yandex.ru/1.x/"
+    params = {"apikey": api_key, "geocode": address, "format": "json", "results": 1}
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        data = resp.json()
+        found = data["response"]["GeoObjectCollection"]["featureMember"]
+        if found:
+            coords = found[0]["GeoObject"]["Point"]["pos"].split()
+            lng, lat = float(coords[0]), float(coords[1])
+            return True, lat, lng
+        return False, None, None
+    except Exception as e:
+        print(f"Geocoding error: {e}")
+        return False, None, None

@@ -126,7 +126,8 @@ class Order(models.Model):
     total_price = models.DecimalField('Общая сумма', max_digits=10, decimal_places=2)
     points_used = models.IntegerField(default=0)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='new')
-    created_at = models.DateTimeField(auto_now_add=True)   # ОДИН РАЗ
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_operator_viewed = models.BooleanField(default=False, verbose_name="Оператор просмотрел")   # ОДИН РАЗ
     
     delivery_order_index = models.PositiveSmallIntegerField("Порядок в маршруте", default=0)
 
@@ -138,16 +139,29 @@ class Order(models.Model):
     fiscal_fn = models.CharField('Номер ФН', max_length=30, null=True, blank=True)
     fiscal_kkt = models.CharField('Имя ККТ', max_length=100, null=True, blank=True)
 
-    # НОВОЕ ПОЛЕ
+    # Желаемое время доставки
     delivery_time = models.DateTimeField(
         verbose_name="Желаемое время доставки",
         null=True, blank=True,
         help_text="Выберите дату и время, когда вам удобно получить заказ"
     )
 
+    # ----- НОВЫЕ ПОЛЯ ДЛЯ ОПТИМИЗАЦИИ МАРШРУТА -----
+    lat = models.FloatField("Широта адреса доставки", null=True, blank=True, help_text="Автоматически определятся при создании заказа")
+    lng = models.FloatField("Долгота адреса доставки", null=True, blank=True)
+    route_order = models.PositiveSmallIntegerField(
+        "Порядок в оптимальном маршруте",
+        default=0,
+        help_text="Рассчитывается автоматически для курьера"
+    )
+    # ------------------------------------------------
+
     class Meta:
         verbose_name = 'Заказ'
         verbose_name_plural = 'Заказы'
+        indexes = [
+            models.Index(fields=['status', 'courier', 'route_order']),
+        ]
 
     def __str__(self):
         return f"Заказ #{self.id} от {self.user.username}"
@@ -159,7 +173,7 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     comment = models.CharField(max_length=255, blank=True, null=True)
 
-# Модель для ИИ-рекомендаций
+# Модель для ИИ-рекомендаций (используется для cross-sell в корзине)
 class ProductRecommendation(models.Model):
     source_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='main_prod')
     recommended_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='suggested_prod')

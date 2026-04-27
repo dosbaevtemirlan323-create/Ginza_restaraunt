@@ -368,35 +368,23 @@
                 </div>
             </div>
 
-            {% if recommended_products %}
-            <div class="ai-recommendations mt-4 mt-md-5">
-                <h4 class="fw-bold mb-3 mb-md-4 d-flex align-items-center">
-                    <span class="ai-badge">AI</span> 
-                    {% if is_new_user %}
-                        🌟 Популярное сегодня
-                    {% else %}
-                        🎯 Ваши предпочтения
-                    {% endif %}
+            {% if cross_sell_products %}
+            <div class="cross-sell mt-4 mt-md-5">
+                <h4 class="fw-bold mb-3 mb-md-4">
+                    🛒 С этим заказом часто покупают
                 </h4>
                 
-                {% if not is_new_user and orders_count >= 4 %}
-                <p class="small text-muted mb-3">
-                    <i class="bi bi-star-fill text-warning me-1"></i> 
-                    Подобрано на основе ваших {{ orders_count }} заказов
-                </p>
-                {% endif %}
-                
                 <div class="row row-cols-2 row-cols-md-4 g-2 g-md-3">
-                    {% for p in recommended_products %}
+                    {% for product in cross_sell_products %}
                     <div class="col">
                         <div class="card h-100 border-0 shadow-sm rounded-4 recommendation-card overflow-hidden">
-                            {% if p.image %}
-                            <img src="{{ p.image.url }}" class="card-img-top" style="height: 100px; object-fit: cover;">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" style="height: 100px; object-fit: cover;">
                             {% endif %}
                             <div class="card-body p-2 p-md-3 text-center">
-                                <h6 class="card-title small fw-bold mb-1 text-truncate">{{ p.name }}</h6>
-                                <p class="text-warning small fw-bold mb-2">{{ p.price }} ₽</p>
-                                <button type="button" onclick="animateAddToCart(this, '{{ p.id }}')" class="btn btn-sm btn-dark rounded-pill w-100 py-1 btn-ai-add">
+                                <h6 class="card-title small fw-bold mb-1 text-truncate">{{ product.name }}</h6>
+                                <p class="text-warning small fw-bold mb-2">{{ product.price }} ₽</p>
+                                <button type="button" onclick="animateAddToCart(this, '{{ product.id }}')" class="btn btn-sm btn-dark rounded-pill w-100 py-1 btn-ai-add">
                                     + Добавить
                                 </button>
                             </div>

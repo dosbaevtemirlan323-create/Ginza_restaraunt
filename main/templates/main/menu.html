@@ -612,6 +612,31 @@
 </div>
 
 <div class="container mb-5 mt-3 mt-md-4">
+    {% if recommended_for_menu %}
+    <div class="ai-recommendations mb-5">
+        <h3 class="fw-bold mb-3"><i class="bi bi-star-fill text-warning"></i> Повар рекомендует</h3>
+        <div class="row row-cols-2 row-cols-md-4 g-4">
+            {% for product in recommended_for_menu %}
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-4">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                        <i class="bi bi-camera text-muted fs-1"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body p-3 text-center">
+                        <h6 class="fw-bold">{{ product.name }}</h6>
+                        <p class="text-warning fw-bold">{{ product.price }} ₽</p>
+                        <button onclick="updateCartQuantity('{{ product.id }}', 'add')" class="btn btn-sm btn-dark rounded-pill w-100">В корзину</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     {% for category in categories %}
     <div class="category-section" id="cat-{{ category.id }}" data-category-name="{{ category.name }}">
         <div class="d-flex align-items-center mb-3 mb-md-4">

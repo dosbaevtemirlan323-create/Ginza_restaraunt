@@ -14,6 +14,9 @@ urlpatterns = [
     path('cart/subtract/<int:product_id>/', views.cart_subtract, name='cart_subtract'),
     path('cart/remove/<int:product_id>/', views.remove_from_cart, name='remove_from_cart'),
     path('product/delete/<int:product_id>/', views.delete_product, name='delete_product'),
+    path('api/mark-order-viewed/<int:order_id>/', views.mark_order_viewed, name='mark_order_viewed'),
+    path('api/courier/available-orders/', views.get_available_orders_for_courier, name='available_orders_api'),
+    path('api/user/orders-status/', views.get_user_orders_statuses, name='user_orders_statuses'),
     
     # Комментарии к товарам
     path('update_comment/<int:product_id>/', views.update_item_comment, name='update_comment'),

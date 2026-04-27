@@ -769,8 +769,9 @@
         spaceBetween: 20,
         loop: true,
         autoplay: {
-            delay: 3000,
-            disableOnInteraction: true,
+            delay: 1000,               // пауза между прокрутками (1 сек)
+            disableOnInteraction: false,  // не отключать автопрокрутку навсегда после взаимодействия
+            pauseOnMouseEnter: true,      // останавливать при наведении мыши
         },
         pagination: {
             el: '.swiper-pagination',
@@ -784,6 +785,11 @@
             320: { spaceBetween: 12 },
             768: { spaceBetween: 20 }
         }
+    });
+
+    // Дополнительно: при ручном перетаскивании (drag) автопрокрутка возобновляется
+    swiper.on('touchEnd', function() {
+        swiper.autoplay.start();
     });
     
     // ----- Чат поддержки (исправленная версия с автообновлением, без Bootstrap JS) -----
