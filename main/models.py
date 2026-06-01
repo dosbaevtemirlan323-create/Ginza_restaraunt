@@ -5,37 +5,35 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-
-
+from collections import defaultdict
 
 # --- ТЕГИ (Острое, Веган и т.д.) ---
 class Tag(models.Model):
     name = models.CharField("Название", max_length=50)
-    icon_class = models.CharField("Bootstrap Icon Class", max_length=50, help_text="Например: bi-fire") 
+    icon_class = models.CharField("Bootstrap Icon Class", max_length=50, help_text="Например: bi-fire")
 
     def __str__(self):
         return self.name
 
+
 # --- ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ---
 class Profile(models.Model):
-    # Добавляем роли для пользователей (Клиент или Доставщик)
     ROLE_CHOICES = [
         ('client', 'Клиент'),
         ('courier', 'Доставщик'),
     ]
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     role = models.CharField("Роль", max_length=10, choices=ROLE_CHOICES, default='client')
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Телефон")
     address = models.TextField(blank=True, null=True, verbose_name="Основной адрес доставки")
     points = models.IntegerField(default=0, verbose_name="Бонусные баллы")
     is_online = models.BooleanField(default=False, verbose_name="Онлайн")
-    
+
     # Поля для доставщика (координаты в реальном времени)
     last_lat = models.FloatField(null=True, blank=True)
     last_lng = models.FloatField(null=True, blank=True)
     last_updated = models.DateTimeField(null=True, blank=True)
-    
 
     class Meta:
         verbose_name = 'Профиль'
@@ -44,37 +42,56 @@ class Profile(models.Model):
     def __str__(self):
         return f'Профиль {self.user.username} ({self.get_role_display()})'
 
+
 # --- КАТЕГОРИИ И ТОВАРЫ ---
 class Category(models.Model):
     name = models.CharField('Название категории', max_length=100)
+
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+
     def __str__(self):
         return self.name
 
+
 class Product(models.Model):
+    # Тип блюда для умных рекомендаций (салат, горячее, суп, гарнир, напиток, десерт и т.д.)
+    DISH_TYPE_CHOICES = [
+        ('salad', 'Салат'),
+        ('soup', 'Суп'),
+        ('main', 'Горячее блюдо'),
+        ('side', 'Гарнир'),
+        ('sauce', 'Соус'),
+        ('drink', 'Напиток'),
+        ('dessert', 'Десерт'),
+        ('other', 'Другое'),
+    ]
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE, verbose_name='Категория')
     name = models.CharField('Название блюда', max_length=255)
     description = models.TextField('Описание (состав)', blank=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     weight = models.IntegerField('Вес (гр/мл)', null=True, blank=True)
-    calories = models.IntegerField('Калорийность (ккал)', null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(2000)])
+    calories = models.IntegerField('Калорийность (ккал)', null=True, blank=True, default=0,
+                                   validators=[MinValueValidator(0), MaxValueValidator(2000)])
     image = models.ImageField('Фото блюда', upload_to='products/', blank=True, null=True)
     is_active = models.BooleanField('В наличии', default=True)
     tags = models.ManyToManyField(Tag, blank=True, verbose_name="Теги")
-    
+    dish_type = models.CharField('Тип блюда', max_length=20, choices=DISH_TYPE_CHOICES, default='other')
+
     class Meta:
         verbose_name = 'Блюдо'
         verbose_name_plural = 'Блюда'
-    
+
     def get_rating(self):
         reviews = self.reviews.all()
-        if not reviews: return 0
+        if not reviews:
+            return 0
         return sum(r.rating for r in reviews) / reviews.count()
 
     def __str__(self):
         return self.name
+
 
 # --- ОТЗЫВЫ ---
 class Review(models.Model):
@@ -88,47 +105,48 @@ class Review(models.Model):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
 
+
 # --- АДРЕСА ---
 class Address(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
     address_line = models.CharField("Адрес", max_length=255)
-    lat = models.FloatField("Широта", null=True, blank=True) # Для точного построения маршрута
+    lat = models.FloatField("Широта", null=True, blank=True)
     lng = models.FloatField("Долгота", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         verbose_name = "Адрес"
         verbose_name_plural = "Адреса"
 
+
 # --- ЗАКАЗЫ (ГЛАВНАЯ МОДЕЛЬ С ЛОГИКОЙ ДОСТАВКИ) ---
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('new', 'Новый'), 
-        ('cooking', 'Готовится'), 
+        ('new', 'Новый'),
+        ('cooking', 'Готовится'),
         ('ready', 'Готов к выдаче'),
-        ('delivering', 'В пути'), 
-        ('completed', 'Завершен'), 
+        ('delivering', 'В пути'),
+        ('completed', 'Завершен'),
         ('cancelled', 'Отменен')
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-    
     courier = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='deliveries',
         verbose_name="Назначенный доставщик"
     )
-    
-    address = models.CharField('Адрес доставки', max_length=500) 
+    address = models.CharField('Адрес доставки', max_length=500)
     phone = models.CharField('Телефон', max_length=20)
     payment_method = models.CharField('Способ оплаты', max_length=20)
     total_price = models.DecimalField('Общая сумма', max_digits=10, decimal_places=2)
     points_used = models.IntegerField(default=0)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='new')
     created_at = models.DateTimeField(auto_now_add=True)
-    is_operator_viewed = models.BooleanField(default=False, verbose_name="Оператор просмотрел")   # ОДИН РАЗ
-    
+    is_operator_viewed = models.BooleanField(default=False, verbose_name="Оператор просмотрел")
+
     delivery_order_index = models.PositiveSmallIntegerField("Порядок в маршруте", default=0)
 
     payment_id = models.CharField('ID транзакции ЮKassa', max_length=255, null=True, blank=True)
@@ -140,21 +158,26 @@ class Order(models.Model):
     fiscal_kkt = models.CharField('Имя ККТ', max_length=100, null=True, blank=True)
 
     # Желаемое время доставки
-    delivery_time = models.DateTimeField(
-        verbose_name="Желаемое время доставки",
+    delivery_time_from = models.DateTimeField(
+        verbose_name="Желаемое время доставки (с)",
         null=True, blank=True,
-        help_text="Выберите дату и время, когда вам удобно получить заказ"
+        help_text="Начало интервала, когда вам удобно получить заказ"
+    )
+    delivery_time_to = models.DateTimeField(
+        verbose_name="Желаемое время доставки (по)",
+        null=True, blank=True,
+        help_text="Конец интервала доставки"
     )
 
-    # ----- НОВЫЕ ПОЛЯ ДЛЯ ОПТИМИЗАЦИИ МАРШРУТА -----
-    lat = models.FloatField("Широта адреса доставки", null=True, blank=True, help_text="Автоматически определятся при создании заказа")
+    # Поля для оптимизации маршрута
+    lat = models.FloatField("Широта адреса доставки", null=True, blank=True,
+                            help_text="Автоматически определяется при создании заказа")
     lng = models.FloatField("Долгота адреса доставки", null=True, blank=True)
     route_order = models.PositiveSmallIntegerField(
         "Порядок в оптимальном маршруте",
         default=0,
         help_text="Рассчитывается автоматически для курьера"
     )
-    # ------------------------------------------------
 
     class Meta:
         verbose_name = 'Заказ'
@@ -166,6 +189,7 @@ class Order(models.Model):
     def __str__(self):
         return f"Заказ #{self.id} от {self.user.username}"
 
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
@@ -173,17 +197,90 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     comment = models.CharField(max_length=255, blank=True, null=True)
 
-# Модель для ИИ-рекомендаций (используется для cross-sell в корзине)
-class ProductRecommendation(models.Model):
-    source_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='main_prod')
-    recommended_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='suggested_prod')
-    score = models.FloatField(default=0.0)
+
+# --- ИСТОРИЯ СМЕНЫ СТАТУСОВ ЗАКАЗА ---
+class OrderStatusHistory(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status_history')
+    old_status = models.CharField(
+        max_length=20,
+        choices=Order.STATUS_CHOICES,
+        blank=True,          # ← добавить
+        null=True            # ← добавить (или blank=True достаточно, но null=True тоже полезно)
+    )
+    new_status = models.CharField(max_length=20, choices=Order.STATUS_CHOICES)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   verbose_name="Кто изменил")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Рекомендация ИИ"
-        unique_together = ('source_product', 'recommended_product')
+        verbose_name = "История статуса заказа"
+        verbose_name_plural = "Истории статусов заказов"
+        ordering = ['created_at']
 
-# Модель для настроек ресторана
+    def __str__(self):
+        return f"Заказ {self.order.id}: {self.old_status} → {self.new_status} в {self.created_at}"
+
+
+# --- РЕКОМЕНДАЦИИ (УЛУЧШЕННАЯ ВЕРСИЯ) ---
+# main/models.py
+
+class ProductRecommendation(models.Model):
+    SOURCE_TYPES = (
+        ('product', 'Продукт'),
+        ('category', 'Категория'),
+        ('user', 'Пользователь'),
+    )
+    source_type = models.CharField(max_length=20, choices=SOURCE_TYPES, default='product')
+    source_product = models.ForeignKey(
+        Product, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='recommendations_as_source'
+    )
+    source_category = models.ForeignKey(
+        Category, on_delete=models.CASCADE,
+        null=True, blank=True
+    )
+    source_user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        null=True, blank=True
+    )
+    # ManyToMany через промежуточную таблицу
+    recommended_products = models.ManyToManyField(
+        Product,
+        through='RecommendationItem',
+        related_name='recommendations_as_target',
+        verbose_name="Рекомендуемые товары"
+    )
+
+    class Meta:
+        verbose_name = "Рекомендация"
+        verbose_name_plural = "Рекомендации"
+
+    def __str__(self):
+        if self.source_type == 'product' and self.source_product:
+            return f"Из {self.source_product.name}"
+        elif self.source_type == 'category' and self.source_category:
+            return f"Из категории {self.source_category.name}"
+        elif self.source_type == 'user' and self.source_user:
+            return f"Для пользователя {self.source_user.username}"
+        return "Рекомендация"
+
+class RecommendationItem(models.Model):
+    """Промежуточная модель для хранения пары (рекомендация → продукт) с весом"""
+    recommendation = models.ForeignKey(ProductRecommendation, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    score = models.FloatField(default=0.0, verbose_name="Вес рекомендации")
+    pairing_type = models.CharField(
+        max_length=50, blank=True,
+        verbose_name="Тип сочетания (salad_main и т.п.)"
+    )
+
+    class Meta:
+        unique_together = ('recommendation', 'product')
+        verbose_name = "Элемент рекомендации"
+        verbose_name_plural = "Элементы рекомендаций"
+
+
+# --- НАСТРОЙКИ РЕСТОРАНА ---
 class RestaurantConfig(models.Model):
     name = models.CharField("Название филиала", max_length=100, default="GINZA")
     address = models.CharField(max_length=255, verbose_name="Адрес ресторана")
@@ -194,12 +291,17 @@ class RestaurantConfig(models.Model):
         verbose_name = "Настройки ресторана"
         verbose_name_plural = "Настройки ресторана"
 
+
+# --- ИЗБРАННОЕ ---
 class Favorite(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
     class Meta:
         unique_together = ('user', 'product')
 
+
+# --- ЧАТ МЕЖДУ КЛИЕНТОМ И КУРЬЕРОМ/ОПЕРАТОРОМ ПО ЗАКАЗУ ---
 class OrderMessage(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -213,13 +315,17 @@ class OrderMessage(models.Model):
         return f"{self.sender.username}: {self.text[:20]}"
 
 
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created: Profile.objects.get_or_create(user=instance)
-
+# --- ПОДДЕРЖКА (ОБЩИЙ ЧАТ ИЛИ ПРИВЯЗАННЫЙ К ЗАКАЗУ) ---
 class SupportMessage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_messages')
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='support_messages',
+        verbose_name="Связанный заказ (если есть)"
+    )
     text = models.TextField(verbose_name="Текст сообщения")
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, null=True, blank=True, related_name='support_messages')
     file = models.FileField(upload_to='support_files/', blank=True, null=True, verbose_name="Вложение")
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False, verbose_name="Прочитано")
@@ -232,3 +338,94 @@ class SupportMessage(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.created_at.strftime('%d.%m.%Y %H:%M')}"
+
+
+# --- СКИДКИ (ДЛЯ ОПЕРАТИВНОГО УПРАВЛЕНИЯ) ---
+class Discount(models.Model):
+    DISCOUNT_TYPE_CHOICES = [
+        ('percent', 'Процент'),
+        ('fixed', 'Фиксированная сумма'),
+    ]
+    APPLIES_TO_CHOICES = [
+        ('all', 'Всё меню'),
+        ('category', 'Категория'),
+        ('product', 'Конкретное блюдо'),
+    ]
+
+    name = models.CharField("Название скидки", max_length=100)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='percent')
+    value = models.DecimalField("Значение", max_digits=10, decimal_places=2, help_text="Процент или сумма в рублях")
+    applies_to = models.CharField(max_length=20, choices=APPLIES_TO_CHOICES, default='all')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True,
+                                 verbose_name="Категория (если applies_to=category)")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True,
+                                verbose_name="Блюдо (если applies_to=product)")
+    active = models.BooleanField("Активна", default=True)
+    start_date = models.DateTimeField("Начало действия")
+    end_date = models.DateTimeField("Конец действия")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Скидка"
+        verbose_name_plural = "Скидки"
+
+    def __str__(self):
+        return f"{self.name} ({self.get_discount_type_display()} {self.value})"
+
+
+# --- АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ПРОФИЛЯ ПРИ РЕГИСТРАЦИИ ---
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.get_or_create(user=instance)
+
+@receiver(post_save, sender=Order)
+def update_recommendations_from_order(sender, instance, created, **kwargs):
+    """
+    Обновляет рекомендации на основе завершённого заказа.
+    Для каждой пары продуктов в заказе увеличивает score в ProductRecommendation.
+    """
+    if instance.status != 'completed':
+        return
+    
+    # Получаем ID всех продуктов в заказе
+    product_ids = list(instance.items.values_list('product_id', flat=True))
+    if len(product_ids) < 2:
+        return  # для одного продукта нет пар
+    
+    # Считаем частоту пар (направленные)
+    # Для каждого product1 и product2 (product1 != product2) увеличиваем score
+    for i in range(len(product_ids)):
+        for j in range(i+1, len(product_ids)):
+            p1 = product_ids[i]
+            p2 = product_ids[j]
+            # Направление p1 -> p2
+            rec, _ = ProductRecommendation.objects.get_or_create(
+                source_type='product',
+                source_product_id=p1,
+                defaults={'source_category': None, 'source_user': None}
+            )
+            # Добавляем или обновляем элемент рекомендации
+            item, created = RecommendationItem.objects.get_or_create(
+                recommendation=rec,
+                product_id=p2,
+                defaults={'score': 1.0, 'pairing_type': 'co_purchase'}
+            )
+            if not created:
+                item.score += 1.0
+                item.save()
+            
+            # Направление p2 -> p1 (симметрично)
+            rec2, _ = ProductRecommendation.objects.get_or_create(
+                source_type='product',
+                source_product_id=p2,
+                defaults={'source_category': None, 'source_user': None}
+            )
+            item2, created2 = RecommendationItem.objects.get_or_create(
+                recommendation=rec2,
+                product_id=p1,
+                defaults={'score': 1.0, 'pairing_type': 'co_purchase'}
+            )
+            if not created2:
+                item2.score += 1.0
+                item2.save()

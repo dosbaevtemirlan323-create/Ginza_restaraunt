@@ -28,7 +28,6 @@
     .message-time { font-size: 10px; color: #999; margin-top: 4px; }
     .new-order-animation { animation: slideIn 0.5s ease; background: #fff9e6; }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(20px); } }
     @media (max-width: 768px) { .location-btn { bottom: 80px; right: 20px; } }
 </style>
 {% endblock %}
@@ -52,66 +51,20 @@
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between mb-2">
                         <small class="text-muted">Прогресс доставки</small>
-                        <small class="fw-bold text-warning">{{ delivered_count }}/{{ my_orders|length }}</small>
+                        <small class="fw-bold text-warning" id="deliveredCounter">{{ delivered_count }}/{{ my_orders|length }}</small>
                     </div>
-                    <div class="delivery-progress" style="width: {% widthratio delivered_count my_orders|length 100 %}%"></div>
+                    <div class="delivery-progress" id="progressBar" style="width: {% widthratio delivered_count my_orders|length 100 %}%"></div>
                 </div>
             </div>
             {% endif %}
             
-            <!-- Мои заказы (всегда данные клиента) -->
+            <!-- Мои заказы (динамический список) -->
             <div class="card shadow-sm mb-4 border-0 rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-bag-check me-2"></i>Мои заказы</h5>
-                    <span class="badge bg-warning text-dark rounded-pill">{{ my_orders|length }}/5</span>
+                    <span class="badge bg-warning text-dark rounded-pill" id="myOrdersCount">{{ my_orders|length }}/5</span>
                 </div>
-                <div class="list-group list-group-flush" style="max-height: 450px; overflow-y: auto;">
-                    {% for order in my_orders %}
-                    <div class="list-group-item order-card p-3" onclick="selectOrder({{ order.id }})">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <span class="fw-bold">Заказ №{{ order.id }}</span>
-                                <span class="badge status-delivering ms-2">
-                                    {% if forloop.first %}Следующий{% else %}В очереди{% endif %}
-                                </span>
-                            </div>
-                            <span class="badge bg-info text-dark">№{{ forloop.counter }}</span>
-                        </div>
-                        <p class="small mb-2 text-dark">
-                            <i class="bi bi-geo-alt-fill text-warning me-1"></i> {{ order.address|truncatechars:50 }}
-                        </p>
-                        <p class="small text-muted mb-2">
-                            <i class="bi bi-person me-1"></i> {{ order.user.username }}<br>
-                            <i class="bi bi-telephone me-1"></i> 
-                            <a href="tel:{{ order.user.profile.phone|default:order.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="text-decoration-none text-muted">
-                                {{ order.user.profile.phone|default:order.phone }}
-                            </a>
-                        </p>
-                        <div class="d-flex gap-2 mt-2 flex-wrap">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showOrderDetails({{ order.id }})">
-                                <i class="bi bi-eye"></i> Состав
-                            </button>
-                            <button class="btn btn-sm btn-outline-info rounded-pill" onclick="event.stopPropagation(); openChat({{ order.id }}, '{{ order.user.username|escapejs }}')">
-                                <i class="bi bi-chat-dots"></i> Чат
-                            </button>
-                            <a href="tel:{{ order.user.profile.phone|default:order.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="btn btn-sm btn-outline-success rounded-pill" onclick="event.stopPropagation()">
-                                <i class="bi bi-telephone"></i> Звонок
-                            </a>
-                            <form action="{% url 'courier_complete_order' order.id %}" method="post" class="d-inline" onsubmit="event.stopPropagation()">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-success rounded-pill">
-                                    <i class="bi bi-check2-circle"></i> Доставлен
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="p-5 text-center text-muted">
-                        <i class="bi bi-box-seam fs-1 opacity-25"></i>
-                        <p class="mt-2 mb-0">Нет активных заказов</p>
-                    </div>
-                    {% endfor %}
-                </div>
+                <div id="myOrdersListContainer" class="list-group list-group-flush" style="max-height: 450px; overflow-y: auto;"></div>
             </div>
             
             <!-- Доступные заказы -->
@@ -139,7 +92,7 @@
                             <a href="tel:{{ order.user.profile.phone|default:order.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="btn btn-sm btn-outline-success rounded-pill">
                                 <i class="bi bi-telephone"></i> Звонок
                             </a>
-                            <a href="{% url 'courier_take_order' order.id %}" class="btn btn-warning btn-sm rounded-pill fw-bold flex-grow-1">
+                            <a href="/courier/take/{{ order.id }}/" class="btn btn-warning btn-sm rounded-pill fw-bold flex-grow-1">
                                 <i class="bi bi-truck me-1"></i> Взять заказ
                             </a>
                         </div>
@@ -163,11 +116,21 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white py-3">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0 fw-bold"><i class="bi bi-map me-2"></i>Оптимальный маршрут</h5>
-                        <div id="route-info-text" class="small text-warning">
-                            <i class="bi bi-info-circle"></i> Маршрут перестраивается автоматически
+                        <div class="d-flex gap-2">
+                            <select id="transport-mode" class="form-select form-select-sm w-auto rounded-pill" style="font-size: 0.8rem;">
+                                <option value="driving">🚗 Автомобиль</option>
+                                <option value="pedestrian">🚶 Пешком</option>
+                                <option value="bicycle">🚲 Велосипед</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-light rounded-pill" onclick="recalculateRoute()">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
                         </div>
+                    </div>
+                    <div id="route-info-text" class="small text-warning mt-2">
+                        <i class="bi bi-info-circle"></i> Маршрут перестраивается автоматически
                     </div>
                 </div>
                 <div id="map" style="width: 100%; height: 550px; background-color: #f8f9fa;"></div>
@@ -218,14 +181,17 @@
 
 <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=2b6a7d3b-b4ef-4682-a0e0-69dda3376fba" type="text/javascript"></script>
 
-<script type="text/javascript">
+<script>
+    // ---------------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----------------------------
     let myMap, watchId;
     let currentLocation = [45.624828, 63.312162];
     let currentOrderId = null;
     let routeSegments = [];
+    let currentTransportMode = 'driving';
+    let routeDistances = [];
 
     // Данные заказов из Django
-    const myOrdersData = [
+    let myOrdersData = [
         {% for order in my_orders %}
         {
             id: {{ order.id }},
@@ -247,67 +213,222 @@
         {% endfor %}
     ];
 
-    // Для отслеживания новых заказов через polling
-    let lastAvailableOrderIds = new Set();
+    let lastAvailableOrderIds = new Set([{% for order in available_orders %}{{ order.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]);
 
-    ymaps.ready(init);
+    let audioCtx = null;
+    let audioAllowed = false;
 
-    function init() {
-        const ginzaCoords = [45.624828, 63.312162];
-        currentLocation = ginzaCoords;
-
-        myMap = new ymaps.Map("map", {
-            center: ginzaCoords, zoom: 14,
-            controls: ['zoomControl', 'trafficControl', 'fullscreenControl']
-        });
-        myMap.controls.get('trafficControl').showTraffic();
-
-        const courierMarker = new ymaps.Placemark(currentLocation, { balloonContent: '🚚 Вы здесь' }, {
-            preset: 'islands#blueCircleIcon',
-            iconLayout: 'default#image',
-            iconImageHref: 'https://cdn-icons-png.flaticon.com/512/1995/1995571.png',
-            iconImageSize: [40, 40],
-            iconImageOffset: [-20, -20]
-        });
-        myMap.geoObjects.add(courierMarker);
-
-        startTracking((coords) => {
-            courierMarker.geometry.setCoordinates(coords);
-            currentLocation = coords;
-            if (myOrdersData.length > 0) buildColorfulRoute();
-        });
-
-        if (myOrdersData.length > 0) buildColorfulRoute();
-        
-        // Запускаем polling для доступных заказов
-        fetchAvailableOrders(); // первый запрос
-        setInterval(fetchAvailableOrders, 5000);
+    function initAudio() {
+        if (audioCtx) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.value = 0;
+            osc.start();
+            osc.stop(0.001);
+            audioCtx.resume().then(() => { audioAllowed = true; });
+        } catch(e) { console.warn('Web Audio не поддерживается'); }
     }
 
+    function playNewOrderSound() {
+        if (!audioAllowed || !audioCtx) return;
+        try {
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0;
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        } catch(e) {}
+    }
+
+    document.addEventListener('click', function initOnClick() {
+        initAudio();
+        document.removeEventListener('click', initOnClick);
+    }, { once: true });
+
+    // ---------------------------- РЕЖИМ ТРАНСПОРТА ----------------------------
+    function loadTransportModeFromStorage() {
+        const savedMode = localStorage.getItem('courier_transport_mode');
+        if (savedMode && ['driving', 'pedestrian', 'bicycle'].includes(savedMode)) {
+            currentTransportMode = savedMode;
+        } else {
+            currentTransportMode = 'driving';
+        }
+        const select = document.getElementById('transport-mode');
+        if (select) select.value = currentTransportMode;
+    }
+
+    function saveTransportMode(mode) {
+        localStorage.setItem('courier_transport_mode', mode);
+    }
+
+    // ---------------------------- ПОДГОТОВКА АДРЕСА ----------------------------
     function prepareAddress(addr) {
         let a = addr.toLowerCase();
-        a = a.split(/кв|квартира|под|этаж/)[0];
-        a = a.replace(/6а/g, '6-й').replace(/7а/g, '7-й').replace(/5а/g, '5-й');
-        if (!a.includes('байконур')) return "Казахстан, Байконур, " + a.trim();
-        return a.trim();
+        a = a.split(/кв|квартира|под|этаж|офис/)[0].trim();
+        a = a.replace(/(\d+)\s*мкр/i, '$1-й микрорайон');
+        a = a.replace(/6а/i, '6-й');
+        a = a.replace(/7а/i, '7-й');
+        a = a.replace(/5а/i, '5-й');
+        if (!a.includes('байконур') && !a.includes('байконыр')) {
+            return "Казахстан, Байконур, " + a;
+        }
+        return a.charAt(0).toUpperCase() + a.slice(1);
     }
 
-    async function buildColorfulRoute() {
+    // ---------------------------- ПОЛУЧЕНИЕ КООРДИНАТ ----------------------------
+    async function getCoordsForAddress(address, orderId) {
+        let coords = null;
+        let attempts = 2;
+        while (attempts > 0 && !coords) {
+            try {
+                const res = await ymaps.geocode(prepareAddress(address), { results: 1 });
+                const geo = res.geoObjects.get(0);
+                if (geo) {
+                    coords = geo.geometry.getCoordinates();
+                    console.log(`✅ Заказ ${orderId}: "${address}" ->`, coords);
+                } else {
+                    throw new Error('Объект не найден');
+                }
+            } catch (e) {
+                console.warn(`⚠️ Ошибка геокодирования заказа ${orderId} (попытка ${3-attempts}):`, e.message);
+                attempts--;
+                if (attempts === 0) {
+                    try {
+                        const fallbackAddr = address.replace(/байконур|Казахстан/gi, '').trim();
+                        const res2 = await ymaps.geocode(fallbackAddr, { results: 1 });
+                        const geo2 = res2.geoObjects.get(0);
+                        if (geo2) coords = geo2.geometry.getCoordinates();
+                    } catch(e2) {}
+                }
+            }
+        }
+        return coords;
+    }
+
+    // ---------------------------- ОПТИМИЗАЦИЯ МАРШРУТА (жадный TSP) ----------------------------
+    // Сортировка заказов по возрастанию расстояния от текущего местоположения (ближайший первым)
+    async function optimizeRoute() {
         if (!myOrdersData.length) return;
+        const currentCoords = currentLocation;
+        if (!currentCoords) return;
+
+        // Получаем координаты и расстояния от курьера
+        const ordersWithDist = [];
+        for (let order of myOrdersData) {
+            const coords = await getCoordsForAddress(order.address, order.id);
+            if (coords) {
+                const distance = ymaps.coordSystem.geo.getDistance(currentCoords, coords);
+                ordersWithDist.push({ order, coords, distance });
+            } else {
+                ordersWithDist.push({ order, coords: null, distance: Infinity });
+            }
+        }
+        // Сортируем по возрастанию расстояния (ближайший первый)
+        ordersWithDist.sort((a, b) => a.distance - b.distance);
+        const newOrderedList = ordersWithDist.map(item => item.order);
+        
+        // Обновляем глобальный массив
+        myOrdersData.length = 0;
+        myOrdersData.push(...newOrderedList);
+        
+        // Перерисовываем список
+        renderMyOrdersList();
+        console.log('🚀 Маршрут оптимизирован (ближайший первым):', myOrdersData.map(o => o.id));
+        return ordersWithDist;
+    }
+
+    // ---------------------------- ОТРИСОВКА СПИСКА "МОИ ЗАКАЗЫ" ----------------------------
+    function renderMyOrdersList() {
+        const container = document.getElementById('myOrdersListContainer');
+        if (!container) return;
+        if (!myOrdersData.length) {
+            container.innerHTML = '<div class="p-5 text-center text-muted"><i class="bi bi-box-seam fs-1 opacity-25"></i><p class="mt-2 mb-0">Нет активных заказов</p></div>';
+            document.getElementById('myOrdersCount').innerText = '0/5';
+            return;
+        }
+        let html = '';
+        myOrdersData.forEach((order, idx) => {
+            const isFirst = (idx === 0);
+            const completeUrl = `/courier/complete/${order.id}/`;
+            const phoneRaw = order.phone.replace(/[^0-9+]/g, '');
+            html += `
+            <div class="list-group-item order-card p-3" onclick="selectOrder(${order.id})">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="fw-bold">Заказ №${order.id}</span>
+                        <span class="badge status-delivering ms-2">${isFirst ? 'Следующий' : 'В очереди'}</span>
+                    </div>
+                    <span class="badge bg-info text-dark">№${idx+1}</span>
+                </div>
+                <p class="small mb-2 text-dark">
+                    <i class="bi bi-geo-alt-fill text-warning me-1"></i> ${escapeHtml(order.address.substring(0, 50))}
+                </p>
+                <p class="small text-muted mb-2">
+                    <i class="bi bi-person me-1"></i> ${escapeHtml(order.phone)}<br>
+                    <i class="bi bi-telephone me-1"></i> 
+                    <a href="tel:${phoneRaw}" class="text-decoration-none text-muted">
+                        ${escapeHtml(order.phone)}
+                    </a>
+                </p>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showOrderDetails(${order.id})">
+                        <i class="bi bi-eye"></i> Состав
+                    </button>
+                    <button class="btn btn-sm btn-outline-info rounded-pill" onclick="event.stopPropagation(); openChat(${order.id}, '${escapeHtml(order.phone)}')">
+                        <i class="bi bi-chat-dots"></i> Чат
+                    </button>
+                    <a href="tel:${phoneRaw}" class="btn btn-sm btn-outline-success rounded-pill" onclick="event.stopPropagation()">
+                        <i class="bi bi-telephone"></i> Звонок
+                    </a>
+                    <form action="${completeUrl}" method="post" class="d-inline" onsubmit="event.stopPropagation()">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-sm btn-success rounded-pill">
+                            <i class="bi bi-check2-circle"></i> Доставлен
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+        document.getElementById('myOrdersCount').innerHTML = `${myOrdersData.length}/5`;
+        const delivered = myOrdersData.filter(o => o.status === 'delivered').length;
+        document.getElementById('deliveredCounter').innerHTML = `${delivered}/${myOrdersData.length}`;
+        const percent = (delivered / myOrdersData.length) * 100;
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) progressBar.style.width = percent + '%';
+    }
+
+    // ---------------------------- ПОСТРОЕНИЕ МАРШРУТА ----------------------------
+    async function buildColorfulRoute() {
+        if (!myOrdersData.length) {
+            document.getElementById('route-details').classList.add('d-none');
+            return;
+        }
         routeSegments.forEach(seg => myMap.geoObjects.remove(seg));
         routeSegments = [];
+        routeDistances = [];
 
+        // Точки: сначала текущая позиция, затем заказы в оптимизированном порядке
         const points = [currentLocation];
         for (let order of myOrdersData) {
-            try {
-                const res = await ymaps.geocode(prepareAddress(order.address));
-                const coords = res.geoObjects.get(0)?.geometry.getCoordinates();
-                if (coords) points.push(coords);
-                else points.push(null);
-            } catch(e) { points.push(null); }
+            const coords = await getCoordsForAddress(order.address, order.id);
+            points.push(coords);
         }
         const validPoints = points.filter(p => p !== null);
-        if (validPoints.length < 2) return;
+        if (validPoints.length < 2) {
+            console.warn('Недостаточно координат для маршрута');
+            return;
+        }
 
         const colors = ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#20c997'];
         
@@ -318,7 +439,7 @@
             
             const route = new ymaps.multiRouter.MultiRoute({
                 referencePoints: [from, to],
-                params: { routingMode: 'driving' }
+                params: { routingMode: currentTransportMode }
             }, {
                 boundsAutoApply: false,
                 routeActiveStrokeWidth: 5,
@@ -330,26 +451,56 @@
             myMap.geoObjects.add(route);
             routeSegments.push(route);
             
-            route.model.events.add('requestsuccess', () => {
-                const active = route.getActiveRoute();
-                if (active && i === 0) {
-                    const dist = active.properties.get("distance").text;
-                    const dur = active.properties.get("duration").text;
-                    document.getElementById('route-info-text').innerHTML = `<i class="bi bi-signpost"></i> ${dist} • ${dur}`;
-                    document.getElementById('route-distance').innerText = `${dist} • ${dur}`;
-                }
-            });
+            route.model.events.add('requestsuccess', (function(idx) {
+                return function() {
+                    const active = route.getActiveRoute();
+                    if (active) {
+                        let dist = active.properties.get("distance").text;
+                        let dur = active.properties.get("duration").text;
+                        if (localStorage.getItem('courier_transport_mode') === 'bicycle') {
+                            let distanceMeters = active.properties.get("distance").value;
+                            let bicycleSeconds = distanceMeters / 4.17;
+                            let minutes = Math.floor(bicycleSeconds / 60);
+                            let seconds = Math.floor(bicycleSeconds % 60);
+                            dur = `${minutes} мин. ${seconds} сек.`;
+                        }
+                        routeDistances[idx] = { dist, dur };
+                        if (idx === 0) {
+                            document.getElementById('route-info-text').innerHTML = `<i class="bi bi-signpost"></i> ${dist} • ${dur}`;
+                            document.getElementById('route-distance').innerText = `${dist} • ${dur}`;
+                        }
+                        updateRouteStepsWithHints();
+                    }
+                };
+            })(i));
         }
         
-        const stepsHtml = [];
-        stepsHtml.push(`<div class="route-step"><div class="step-number completed"><i class="bi bi-truck"></i></div><div><strong>📍 Вы здесь</strong><br><small>${currentLocation[0].toFixed(4)}, ${currentLocation[1].toFixed(4)}</small></div></div>`);
-        myOrdersData.forEach((order, idx) => {
-            stepsHtml.push(`<div class="route-step"><div class="step-number ${idx === 0 ? 'current' : ''}">${idx+1}</div><div><strong>📦 Заказ №${order.id}</strong><br><small>${order.address}</small><br><small>📞 ${order.phone}</small></div></div>`);
-        });
-        document.getElementById('route-steps').innerHTML = stepsHtml.join('');
+        function updateRouteStepsWithHints() {
+            const stepsHtml = [];
+            stepsHtml.push(`<div class="route-step"><div class="step-number completed"><i class="bi bi-truck"></i></div><div><strong>📍 Вы здесь</strong><br><small>${currentLocation[0].toFixed(4)}, ${currentLocation[1].toFixed(4)}</small></div></div>`);
+            myOrdersData.forEach((order, idx) => {
+                let hintHtml = '';
+                if (routeDistances[idx]) {
+                    hintHtml = `<div class="small text-success mt-1"><i class="bi bi-info-circle"></i> Расстояние: ${routeDistances[idx].dist} (${routeDistances[idx].dur})</div>`;
+                }
+                stepsHtml.push(`<div class="route-step"><div class="step-number ${idx === 0 ? 'current' : ''}">${idx+1}</div><div><strong>📦 Заказ №${order.id}</strong><br><small>${order.address}</small><br><small>📞 ${order.phone}</small>${hintHtml}</div></div>`);
+            });
+            document.getElementById('route-steps').innerHTML = stepsHtml.join('');
+        }
+        
+        updateRouteStepsWithHints();
         document.getElementById('route-details').classList.remove('d-none');
     }
 
+    // ---------------------------- ОБНОВЛЕНИЕ МАРШРУТА ----------------------------
+    async function refreshRoute() {
+        if (myOrdersData.length) {
+            await optimizeRoute();   // сортировка: ближайший первым
+            await buildColorfulRoute();
+        }
+    }
+
+    // ---------------------------- ТРЕКИНГ ПОЗИЦИИ ----------------------------
     function startTracking(onLocationUpdate) {
         if (!navigator.geolocation) return;
         navigator.geolocation.watchPosition(pos => {
@@ -378,13 +529,11 @@
     window.showOrderDetails = function(orderId) {
         const order = myOrdersData.find(o => o.id === orderId);
         if (!order) return;
-        
         document.getElementById('modalOrderTitle').innerHTML = `Заказ №${order.id}`;
-        const itemsHtml = order.items.map(i => {
+        const itemsHtml = (order.items || []).map(i => {
             const cost = parseFloat(i.price) * i.quantity;
             return `<div class="d-flex justify-content-between py-2 border-bottom"><div><strong>${escapeHtml(i.name)}</strong> x${i.quantity}${i.comment ? `<br><small class="text-warning">${escapeHtml(i.comment)}</small>` : ''}</div><span>${cost} ₽</span></div>`;
         }).join('');
-        
         document.getElementById('modalOrderContent').innerHTML = `
             <div class="p-3">
                 <div><strong>📍 Адрес:</strong> ${escapeHtml(order.address)}</div>
@@ -441,48 +590,26 @@
 
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
-    // ========== POLLING ДЛЯ ДОСТУПНЫХ ЗАКАЗОВ (без WebSocket) ==========
+    // ---------------------------- ПОЛЛИНГ ДОСТУПНЫХ ЗАКАЗОВ ----------------------------
     function fetchAvailableOrders() {
         fetch('/api/courier/available-orders/')
             .then(res => res.json())
             .then(data => {
                 if (data.orders) {
-                    // Определяем новые заказы (которых не было в прошлый раз)
                     const newOrderIds = data.orders.filter(order => !lastAvailableOrderIds.has(order.id));
                     if (newOrderIds.length > 0) {
-                        // Для каждого нового заказа воспроизводим звук и уведомление
                         newOrderIds.forEach(order => {
                             playNewOrderSound();
                             showBrowserNotification('📦 Новый заказ!', `Заказ №${order.id} готов к доставке`);
                             addNewOrderToList(order);
                         });
-                        // Если есть активные доставки – перестраиваем маршрут
-                        if (myOrdersData.length > 0) {
-                            setTimeout(() => buildColorfulRoute(), 500);
-                        }
+                        if (myOrdersData.length > 0) setTimeout(() => refreshRoute(), 500);
                     }
-                    // Обновляем список доступных заказов в UI
                     updateAvailableOrders(data.orders);
-                    // Обновляем Set ID для будущих сравнений
                     lastAvailableOrderIds = new Set(data.orders.map(o => o.id));
                 }
             })
             .catch(err => console.error('Ошибка загрузки заказов:', err));
-    }
-
-    function playNewOrderSound() {
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const ctx = new AudioContext();
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.frequency.value = 880;
-            gain.gain.value = 0.3;
-            oscillator.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
-        } catch(e) { console.log('Sound error:', e); }
     }
 
     function showBrowserNotification(title, body) {
@@ -496,13 +623,11 @@
     function updateAvailableOrders(orders) {
         const container = document.getElementById('available-orders-container');
         if (!container) return;
-        
         if (orders.length === 0) {
             container.innerHTML = '<div class="p-5 text-center text-muted"><i class="bi bi-inbox fs-1 opacity-25"></i><p class="mt-2 mb-0">Нет доступных заказов</p></div>';
             document.getElementById('available-badge').innerText = '0';
             return;
         }
-        
         container.innerHTML = orders.map(order => `
             <div class="list-group-item p-3" data-order-id="${order.id}">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -522,9 +647,7 @@
     function addNewOrderToList(order) {
         const container = document.getElementById('available-orders-container');
         if (!container) return;
-        
         if (document.querySelector(`[data-order-id="${order.id}"]`)) return;
-        
         const orderHtml = `
             <div class="list-group-item p-3 new-order-animation" data-order-id="${order.id}">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -536,20 +659,74 @@
                 <a href="/courier/take/${order.id}/" class="btn btn-warning btn-sm w-100 rounded-pill fw-bold"><i class="bi bi-truck me-1"></i> Взять заказ</a>
             </div>
         `;
-        
         container.insertAdjacentHTML('afterbegin', orderHtml);
         const count = parseInt(document.getElementById('available-badge').innerText) + 1;
         document.getElementById('available-badge').innerText = count;
-        
-        // Анимация кнопки
         const badge = document.getElementById('available-badge');
         badge.style.animation = 'pulse 0.5s 3';
         setTimeout(() => badge.style.animation = '', 1500);
     }
 
-    // Запрос разрешения на уведомления
-    if (Notification.permission === 'default') {
-        Notification.requestPermission();
+    // ---------------------------- ИНИЦИАЛИЗАЦИЯ ----------------------------
+    ymaps.ready(init);
+
+    function init() {
+        loadTransportModeFromStorage();
+        const ginzaCoords = [45.624828, 63.312162];
+        currentLocation = ginzaCoords;
+
+        myMap = new ymaps.Map("map", {
+            center: ginzaCoords, zoom: 14,
+            controls: ['zoomControl', 'trafficControl', 'fullscreenControl']
+        });
+        myMap.controls.get('trafficControl').showTraffic();
+
+        const courierMarker = new ymaps.Placemark(currentLocation, { balloonContent: '🚚 Вы здесь' }, {
+            preset: 'islands#blueCircleIcon',
+            iconLayout: 'default#image',
+            iconImageHref: 'https://cdn-icons-png.flaticon.com/512/1995/1995571.png',
+            iconImageSize: [40, 40],
+            iconImageOffset: [-20, -20]
+        });
+        myMap.geoObjects.add(courierMarker);
+
+        renderMyOrdersList();
+        startTracking(async (coords) => {
+            courierMarker.geometry.setCoordinates(coords);
+            currentLocation = coords;
+            await refreshRoute();
+        });
+        refreshRoute();
+        fetchAvailableOrders();
+        setInterval(fetchAvailableOrders, 5000);
+
+        const modeSelect = document.getElementById('transport-mode');
+        if (modeSelect) {
+            modeSelect.addEventListener('change', function() {
+                let selected = this.value;
+                let effectiveMode = (selected === 'bicycle') ? 'pedestrian' : selected;
+                currentTransportMode = effectiveMode;
+                saveTransportMode(effectiveMode);
+                refreshRoute();
+                if (selected === 'bicycle') {
+                    const hint = document.getElementById('route-info-text');
+                    hint.innerHTML = '<i class="bi bi-info-circle"></i> 🚲 Велосипед: маршрут построен как пешеходный (скорость ~15 км/ч)';
+                    setTimeout(() => {
+                        if (myOrdersData.length > 0) {
+                            const activeDist = document.getElementById('route-distance').innerText;
+                            hint.innerHTML = `<i class="bi bi-signpost"></i> ${activeDist}`;
+                        } else {
+                            hint.innerHTML = '<i class="bi bi-info-circle"></i> Маршрут перестраивается автоматически';
+                        }
+                    }, 3000);
+                }
+            });
+            modeSelect.value = currentTransportMode === 'pedestrian' && localStorage.getItem('courier_transport_mode') === 'bicycle' ? 'bicycle' : currentTransportMode;
+        }
     }
+
+    function recalculateRoute() { refreshRoute(); }
+
+    if (Notification.permission === 'default') Notification.requestPermission();
 </script>
 {% endblock %}

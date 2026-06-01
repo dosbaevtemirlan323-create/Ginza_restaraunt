@@ -412,19 +412,23 @@
                                 </label>
                                 
                                 <div class="address-selection-grid shadow-sm rounded-4 overflow-hidden border" id="address-grid">
-                                    {% for addr in user.addresses.all %}
-                                    <div class="address-item border-bottom">
-                                        <input type="checkbox" name="address_ids" value="{{ addr.id }}" class="btn-check address-checkbox" id="addr-{{ addr.id }}" 
-                                            onchange="handleAddressChange(this)">
-                                        <label class="btn btn-white w-100 text-start rounded-0 p-2 p-md-3 d-flex align-items-center" for="addr-{{ addr.id }}">
-                                            <i class="bi bi-geo-alt me-2 text-muted"></i>
-                                            <span class="small">{{ addr.address_line|truncatechars:35 }}</span>
-                                            <i class="bi bi-check-circle-fill ms-auto check-icon text-success"></i>
-                                        </label>
-                                    </div>
-                                    {% empty %}
-                                    <div class="p-3 text-center small text-muted bg-light">В профиле нет адресов</div>
-                                    {% endfor %}
+                                    {% if user.is_authenticated %}
+                                        {% for addr in user.addresses.all %}
+                                        <div class="address-item border-bottom">
+                                            <input type="checkbox" name="address_ids" value="{{ addr.id }}" class="btn-check address-checkbox" id="addr-{{ addr.id }}" 
+                                                onchange="handleAddressChange(this)">
+                                            <label class="btn btn-white w-100 text-start rounded-0 p-2 p-md-3 d-flex align-items-center" for="addr-{{ addr.id }}">
+                                                <i class="bi bi-geo-alt me-2 text-muted"></i>
+                                                <span class="small">{{ addr.address_line|truncatechars:35 }}</span>
+                                                <i class="bi bi-check-circle-fill ms-auto check-icon text-success"></i>
+                                            </label>
+                                        </div>
+                                        {% empty %}
+                                        <div class="p-3 text-center small text-muted bg-light">В профиле нет адресов</div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="p-3 text-center small text-muted bg-light">🔒 Войдите в аккаунт, чтобы использовать сохранённые адреса</div>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -450,40 +454,45 @@
                                 <!-- НОВОЕ ПОЛЕ: выбор времени доставки -->
                             <div class="mb-3 mb-md-4">
                                 <label class="form-label small fw-bold text-muted text-uppercase">
-                                    <i class="bi bi-clock me-1"></i> Желаемое время доставки
+                                    <i class="bi bi-clock me-1"></i> Желаемый интервал доставки
                                 </label>
-                                <input type="datetime-local" name="delivery_time" id="delivery_time"
-                                    class="form-control rounded-pill border-light bg-light px-3"
-                                    min="">
-                                <script>
-                                    // Устанавливаем минимальную дату: сейчас + 30 минут, округление до минут
-                                    const now = new Date();
-                                    now.setMinutes(now.getMinutes() + 30);
-                                    const year = now.getFullYear();
-                                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                                    const day = String(now.getDate()).padStart(2, '0');
-                                    const hours = String(now.getHours()).padStart(2, '0');
-                                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                                    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-                                    document.getElementById('delivery_time').min = minDateTime;
-                                </script>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="datetime-local" name="delivery_time_from" id="delivery_time_from"
+                                            class="form-control rounded-pill border-light bg-light px-3"
+                                            placeholder="С">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="datetime-local" name="delivery_time_to" id="delivery_time_to"
+                                            class="form-control rounded-pill border-light bg-light px-3"
+                                            placeholder="По">
+                                    </div>
+                                </div>
                                 <div class="small text-muted mt-1">Минимальное время – через 30 минут от текущего момента</div>
                             </div>
 
                             <div class="card border-0 bg-light rounded-4 p-3 mb-3 mb-md-4">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" {% if user.profile.points == 0 %}disabled{% endif %}>
-                                    <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="usePointsSwitch">
-                                        <span class="small fw-bold">Списать баллы</span>
-                                        <span class="badge bg-dark rounded-pill">{{ user.profile.points }}</span>
-                                    </label>
+                                    {% if user.is_authenticated %}
+                                        <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" {% if user.profile.points == 0 %}disabled{% endif %}>
+                                        <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="usePointsSwitch">
+                                            <span class="small fw-bold">Списать баллы</span>
+                                            <span class="badge bg-dark rounded-pill">{{ user.profile.points }}</span>
+                                        </label>
+                                    {% else %}
+                                        <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" disabled>
+                                        <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="usePointsSwitch">
+                                            <span class="small fw-bold">Списать баллы</span>
+                                            <span class="badge bg-dark rounded-pill">0</span>
+                                        </label>
+                                    {% endif %}
                                 </div>
                                 <div id="points-info" class="small text-muted mt-2" style="display: none;">
                                     Будет списано: <span id="points-to-deduct" class="fw-bold text-success">0</span> ₽
                                 </div>
-                                {% if discount > 0 %}
+                                {% if final_discount > 0 %}
                                 <div class="small text-success mt-2">
-                                    <i class="bi bi-tag"></i> Ваша скидка: {{ discount }}%
+                                    <i class="bi bi-tag"></i> Ваша скидка: {{ final_discount }}%
                                 </div>
                                 {% endif %}
                             </div>
@@ -502,21 +511,25 @@
                             <div class="d-flex justify-content-between mb-1">
                                 <span class="text-muted">Сумма заказа:</span>
                                 <span id="base-price" data-raw="{{ cart.get_total_price }}">{{ cart.get_total_price }} ₽</span>
+                                <span id="final-discount-percent" data-raw="{{ final_discount }}" style="display:none;"></span>
                             </div>
-                            {% if discount > 0 %}
+                            {% if final_discount > 0 %}
                             <div class="d-flex justify-content-between mb-1 text-success">
-                                <span>Скидка ({{ discount }}%):</span>
-                                <span id="discount-amount">0 ₽</span>
+                                <span>Скидка ({{ final_discount }}%):</span>
+                                <span id="discount-amount">{{ discount_amount|floatformat:2 }} ₽</span>
                             </div>
                             {% endif %}
                             <div class="d-flex justify-content-between mb-2 border-top pt-2">
                                 <span class="fw-bold">ИТОГО:</span>
-                                <span class="fw-bold fs-4 text-warning" id="total-price-display">{{ cart.get_total_price }} ₽</span>
+                                <span class="fw-bold fs-4 text-warning" id="total-price-display">{{ final_total|floatformat:2 }} ₽</span>
                             </div>
+                            {% if user.is_authenticated %}
                             <div class="d-flex justify-content-between mb-3">
                                 <span class="small text-muted">Будет зачислено (5%):</span>
                                 <span class="small fw-bold text-success">+<span id="points-earn">0</span> б.</span>
+                                <span class="small text-muted">Среднее время готови 1ч</span>
                             </div>
+                            {% endif %}
 
                             <!-- Кнопка отправки – стилизована для состояний disabled -->
                             <button type="submit" class="btn btn-warning w-100 btn-lg rounded-pill fw-bold py-3 shadow-sm transition-all" 
@@ -615,17 +628,10 @@
                 </div>
                 
                 <!-- Рейтинг в модалке -->
-                <div class="rating-stars mb-3">
-                    {% with rating=item.product.get_rating|default:0 %}
-                        {% for i in "12345"|make_list %}
-                            {% if forloop.counter <= rating|floatformat:0 %}
-                                <i class="bi bi-star-fill filled fs-6"></i>
-                            {% else %}
-                                <i class="bi bi-star fs-6"></i>
-                            {% endif %}
-                        {% endfor %}
-                        <span class="rating-value">({{ rating|floatformat:1 }} из 5)</span>
-                    {% endwith %}
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-star-fill text-warning fs-5"></i>
+                    <span class="fw-bold">{{ item.product.get_rating|default:0|floatformat:1 }}</span>
+                    <span class="text-muted small">(средняя оценка)</span>
                 </div>
                 
                 <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -789,6 +795,38 @@
     let currentCommentProductName = null;
     let currentCommentElement = null;
     let commentModalInstance = null;
+
+
+
+    function setMinDateTime() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30);
+        const minDateTime = now.toISOString().slice(0, 16);
+        const fromInput = document.getElementById('delivery_time_from');
+        const toInput = document.getElementById('delivery_time_to');
+        if (fromInput) fromInput.min = minDateTime;
+        if (toInput) toInput.min = minDateTime;
+    }
+    setMinDateTime();
+
+    // Чтобы "до" не было раньше "от"
+    const fromInput = document.getElementById('delivery_time_from');
+    const toInput = document.getElementById('delivery_time_to');
+    if (fromInput && toInput) {
+        fromInput.addEventListener('change', function() {
+            if (toInput.value && this.value > toInput.value) {
+                toInput.value = '';
+            }
+            toInput.min = this.value;
+        });
+        toInput.addEventListener('change', function() {
+            if (fromInput.value && this.value < fromInput.value) {
+                this.value = '';
+                alert('Конец интервала не может быть раньше начала');
+            }
+        });
+    }
+
 
     function getCookie(name) {
         let cookieValue = null;
@@ -993,6 +1031,12 @@
         const phoneInput = document.getElementById('phone-mask');
         const prefix = "Байконур, ";
 
+        const pointsSwitch = document.getElementById('usePointsSwitch');
+        if (pointsSwitch) {
+            pointsSwitch.addEventListener('change', function() {
+                recalculateTotals();
+            });
+        }
 
         if (addrInput) {
             addrInput.addEventListener('input', function() {
@@ -1125,6 +1169,7 @@
     // Функция пересчёта итогов (скидка + баллы)
     function recalculateTotals() {
         const basePriceElement = document.getElementById('base-price');
+        const discountPercentSpan = document.getElementById('final-discount-percent');
         const newAddressInput = document.getElementById('new_address_input');
         const prefix = "Байконур, ";
         
@@ -1140,31 +1185,35 @@
         const hasNewAddress = newAddressInput.value.trim().length > prefix.length;
         const addressCount = checkboxes.length + (hasNewAddress ? 1 : 0);
         
+        console.log('addressCount:', addressCount); // отладка
+        
         let totalBasePrice = pricePerOrder * (addressCount || 1);
         
         // Скидка
-        const discountPercent = parseInt("{{ discount|default:0 }}");
-        let discountAmount = 0;
-        if (discountPercent > 0) {
-            discountAmount = totalBasePrice * discountPercent / 100;
-            const discountSpan = document.getElementById('discount-amount');
-            if (discountSpan) discountSpan.innerText = discountAmount.toFixed(2) + ' ₽';
-        }
+        const discountPercent = discountPercentSpan ? parseFloat(discountPercentSpan.dataset.raw) : 0;
+        let discountAmount = totalBasePrice * discountPercent / 100;
+        const discountSpan = document.getElementById('discount-amount');
+        if (discountSpan) discountSpan.innerText = discountAmount.toFixed(2) + ' ₽';
+        
         let priceAfterDiscount = totalBasePrice - discountAmount;
         
         // Баллы
+        // Баллы – используем не более 30% от баллов И не более 30% от суммы
         const bonusSwitch = document.getElementById('usePointsSwitch');
         const pointsInfo = document.getElementById('points-info');
         const pointsToDeductDisplay = document.getElementById('points-to-deduct');
         const totalPriceDisplay = document.getElementById('total-price-display');
         const pointsEarnDisplay = document.getElementById('points-earn');
-        
+
         let availablePoints = parseInt("{{ user.profile.points|default:0 }}");
         let pointsToUse = 0;
 
         if (bonusSwitch && bonusSwitch.checked && availablePoints > 0 && addressCount === 1) {
-            let maxDeductible = Math.floor(priceAfterDiscount * 0.3);
+            let maxByPrice = Math.floor(priceAfterDiscount * 0.3);        // 30% от цены
+            let maxByPoints = Math.floor(availablePoints * 0.3);          // 30% от баллов
+            let maxDeductible = Math.min(maxByPrice, maxByPoints);        // строгий лимит
             pointsToUse = Math.min(availablePoints, maxDeductible);
+            
             if (pointsInfo) pointsInfo.style.display = 'block';
             if (pointsToDeductDisplay) pointsToDeductDisplay.innerText = pointsToUse;
         } else if (pointsInfo) {

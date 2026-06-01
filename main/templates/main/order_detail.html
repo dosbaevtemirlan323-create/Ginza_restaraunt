@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}Заказ №{{ order.id }} - Детали{% endblock %}
 
 {% block extra_css %}
@@ -38,7 +40,7 @@
     .chat-message.user {
         align-items: flex-end;
     }
-    .chat-message.courier {
+    .chat-message.courier, .chat-message.support {
         align-items: flex-start;
     }
     .message-bubble {
@@ -58,13 +60,19 @@
         color: #333;
         border-bottom-left-radius: 5px;
     }
+    .chat-message.support .message-bubble {
+        background: #e9ecef;
+        color: #0c63e4;
+        border-bottom-left-radius: 5px;
+    }
     .message-time {
         font-size: 10px;
         color: #999;
         margin-top: 4px;
         text-align: right;
     }
-    .chat-message.courier .message-time {
+    .chat-message.courier .message-time,
+    .chat-message.support .message-time {
         text-align: left;
     }
     .chat-input-area {
@@ -207,6 +215,39 @@
         font-size: 12px;
         opacity: 0.8;
     }
+
+    /* Таймлайн статусов */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+    .timeline-badge {
+        position: absolute;
+        left: -30px;
+        top: 3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #6c757d;
+    }
+    .timeline-content {
+        padding-left: 15px;
+        border-left: 2px solid #dee2e6;
+    }
+    /* Вкладки */
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #ffc107;
+        border-bottom: 2px solid #ffc107;
+        background: transparent;
+    }
 </style>
 {% endblock %}
 
@@ -310,7 +351,7 @@
 
                 <div class="mb-3">
                     <p class="text-muted small mb-1 text-uppercase fw-bold">📍 Адрес доставки:</p>
-                    <h5 id="client-address" class="fw-bold text-dark">{{ order.address }}</h5>
+                    <h5 class="fw-bold text-dark">{{ order.address }}</h5>
                 </div>
 
                 <div class="mb-4">
@@ -346,87 +387,114 @@
         </div>
 
         <div class="col-lg-8">
-            <!-- Карта и чат -->
-            <div id="map-container" class="position-relative mb-4">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div class="bg-dark p-3 text-white d-flex justify-content-between align-items-center">
-                        <span class="small"><i class="bi bi-truck me-2 text-warning"></i>МАРШРУТ</span>
-                        <span id="route-data" class="text-warning small fw-bold">Загрузка навигации...</span>
-                    </div>
-                    <div id="map" style="width: 100%; height: 450px; background-color: #f8f9fa;"></div>
-                </div>
+            <!-- Вкладки -->
+            <ul class="nav nav-tabs mb-3" id="orderTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">Детали</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab">История статусов</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#support" type="button" role="tab">Чат с поддержкой</button>
+                </li>
+                {% if order.courier %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="courier-tab" data-bs-toggle="tab" data-bs-target="#courierChatTab" type="button" role="tab">Чат с курьером</button>
+                </li>
+                {% endif %}
+            </ul>
 
-                <div id="chat-window" class="chat-container shadow-lg border-0 d-none">
-                    <div class="chat-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
-                        <span class="fw-bold"><i class="bi bi-chat-dots me-2 text-warning"></i> 
-                            {% if order.status == 'delivering' %}
-                                {% if is_courier %}Чат с клиентом{% else %}Чат с курьером{% endif %}
-                            {% else %}История переписки{% endif %}
-                        </span>
-                        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
-                    </div>
-                    
-                    <div class="chat-messages" id="chatMessages">
-                        {% if order.messages.all %}
-                            {% for msg in order.messages.all %}
-                                <div class="chat-message {% if msg.sender == request.user %}user{% else %}courier{% endif %}">
-                                    <div class="message-bubble">
-                                        <div>{{ msg.text }}</div>
-                                        <div class="message-time">{{ msg.created_at|date:"H:i" }}</div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center my-5 placeholder-chat">
-                                <i class="bi bi-chat-dots text-muted fs-1"></i>
-                                <p class="text-muted small mt-2">
-                                    {% if order.status == 'delivering' %}
-                                        Чат защищен. Напишите сообщение!
-                                    {% else %}
-                                        История переписки пуста
-                                    {% endif %}
-                                </p>
+            <div class="tab-content">
+                <!-- Детали заказа (карта и маршрут) -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel">
+                    <div id="map-container" class="position-relative mb-4">
+                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                            <div class="bg-dark p-3 text-white d-flex justify-content-between align-items-center">
+                                <span class="small"><i class="bi bi-truck me-2 text-warning"></i>МАРШРУТ</span>
+                                <span id="route-data" class="text-warning small fw-bold">Загрузка навигации...</span>
                             </div>
-                        {% endif %}
-                    </div>
-
-                    {% if order.status == 'delivering' %}
-                    <div class="chat-input-area">
-                        <div class="input-group">
-                            {% csrf_token %}
-                            <input type="text" id="chatInput" class="form-control rounded-pill border-0 bg-light px-3" placeholder="Ваше сообщение...">
-                            <button onclick="sendMessage()" class="btn btn-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="bi bi-send-fill"></i>
-                            </button>
+                            <div id="map" style="width: 100%; height: 450px; background-color: #f8f9fa;"></div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
-            </div>
 
-            <!-- Фильтры и статистика для завершенных заказов -->
-            {% if order.status == 'completed' %}
-            <div class="order-stats mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-0">{{ order.items.count }}</h3>
-                        <p>блюда в заказе</p>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ order.created_at|date:"d.m.Y" }}</h3>
-                        <p>дата заказа</p>
-                    </div>
-                    <div>
-                        <h3 class="mb-0">{{ order.total_price|floatformat:0 }} ₽</h3>
-                        <p>общая сумма</p>
+                <!-- История статусов (таймлайн) -->
+                <div class="tab-pane fade" id="status" role="tabpanel">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
+                        <div class="timeline">
+                            {% for history in order.status_history.all %}
+                            <div class="timeline-item">
+                                <div class="timeline-badge"></div>
+                                <div class="timeline-content">
+                                    <div class="text-muted small">{{ history.created_at|date:"d.m.Y H:i:s" }}</div>
+                                    <div>
+                                        {% if history.old_status %}
+                                            <span class="badge bg-secondary">{{ history.old_status }}</span> → 
+                                            <span class="badge bg-primary">{{ history.new_status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ history.new_status }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if history.changed_by %}
+                                        <div class="small text-muted mt-1">Изменил: {{ history.changed_by.username }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center">Нет истории статусов</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
+
+                <!-- Чат с поддержкой (оператор) -->
+                <div class="tab-pane fade" id="support" role="tabpanel">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
+                        <div id="support-chat-messages" class="support-chat-messages mb-3" style="max-height: 350px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 12px;">
+                            <div class="text-center text-muted py-4">Загрузка сообщений...</div>
+                        </div>
+                        <div class="chat-input-area mt-2 p-0">
+                            <div class="input-group">
+                                <input type="text" id="support-message-input" class="form-control rounded-pill border-0 bg-light px-3" placeholder="Ваше сообщение...">
+                                <button onclick="sendSupportMessage()" class="btn btn-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-send-fill"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <input type="file" id="support-file-input" class="d-none" accept="image/*,.pdf,.doc,.docx,.txt">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('support-file-input').click()">
+                                    <i class="bi bi-paperclip"></i> Прикрепить файл
+                                </button>
+                                <span class="small text-muted ms-2" id="support-file-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Чат с курьером (отдельный от карты) -->
+                {% if order.courier %}
+                <div class="tab-pane fade" id="courierChatTab" role="tabpanel">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
+                        <div id="courier-chat-messages" style="max-height: 350px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 12px;">
+                            <div class="text-center text-muted py-4">Загрузка сообщений...</div>
+                        </div>
+                        <div class="chat-input-area mt-2 p-0">
+                            <div class="input-group">
+                                <input type="text" id="courier-message-input" class="form-control rounded-pill border-0 bg-light px-3" placeholder="Ваше сообщение...">
+                                <button onclick="sendCourierMessage()" class="btn btn-warning rounded-circle ms-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-send-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
 
             <!-- Отзывы на блюда (только для завершенных заказов) -->
             {% if order.status == 'completed' %}
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-4">
                 <div class="card-header bg-dark text-white py-3">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-star-fill me-2 text-warning"></i>Оцените блюда</h5>
                     <p class="small text-white-50 mb-0 mt-1">Ваше мнение поможет другим покупателям</p>
@@ -434,7 +502,7 @@
                 <div class="card-body p-4">
                     {% for item in order.items.all %}
                         {% with product=item.product %}
-                        {% with user_review=product.reviews.all|dictsort:"user.id"|first %}
+                        {% with user_review=product.reviews.all|dictsortreversed:"created_at"|first %}
                         <div class="product-item-review" id="review-item-{{ product.id }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
@@ -468,7 +536,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 </div>
-                                <div class="small mt-1">{{ user_review.text }}</div>
+                                <div class="small mt-1">{{ user_review.text|default:"Без комментария" }}</div>
                                 <div class="text-muted small mt-1">{{ user_review.created_at|date:"d.m.Y" }}</div>
                             </div>
                             {% endif %}
@@ -598,20 +666,94 @@
     let currentChatOrderId = null;
     let currentOrderStatus = '{{ order.status }}';
     let statusPollingInterval = null;
-    
-    // ========== ЧАТ ==========
+    let supportChatInterval = null;
+    let courierChatInterval = null;
+
+    // ========== ОБЩИЕ ФУНКЦИИ ==========
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg bg-white rounded-3 p-3 mb-2 d-flex align-items-center';
+        const icon = type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-info-circle-fill text-warning';
+        toast.innerHTML = `<i class="bi ${icon} me-2 fs-5"></i><div>${message}</div>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.4s ease";
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList && event.target.classList.contains('modal-custom')) {
+            closeModal(event.target.id);
+        }
+    };
+
+    // ========== ЧАТ С КУРЬЕРОМ (старый плавающий) ==========
     function toggleChat() {
         const chat = document.getElementById('chat-window');
+        if (!chat) return;
         chat.classList.toggle('d-none');
         if (!chat.classList.contains('d-none')) {
-            // Чат открыт — запускаем обновление
             currentChatOrderId = {{ order.id }};
             if (chatUpdateInterval) clearInterval(chatUpdateInterval);
             chatUpdateInterval = setInterval(() => {
-                if (currentChatOrderId) loadMessages(currentChatOrderId);
+                if (currentChatOrderId) loadCourierMessages(currentChatOrderId);
             }, 3000);
         } else {
-            // Чат закрыт — останавливаем обновление
             if (chatUpdateInterval) {
                 clearInterval(chatUpdateInterval);
                 chatUpdateInterval = null;
@@ -622,32 +764,16 @@
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
     }
 
-    function sendMessage() {
-        const input = document.getElementById('chatInput');
+    function sendCourierMessage() {
+        const input = document.getElementById('courier-message-input');
+        if (!input) return;
         const text = input.value.trim();
         if (!text) return;
-
-        // Оптимистичное добавление своего сообщения
-        const chatMessages = document.getElementById('chatMessages');
-        const placeholder = chatMessages.querySelector('.placeholder-chat');
-        if (placeholder) placeholder.remove();
-
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
-        const newMessage = `
-            <div class="chat-message user">
-                <div class="message-bubble">
-                    <div>${escapeHtml(text)}</div>
-                    <div class="message-time">${time}</div>
-                </div>
-            </div>`;
-        chatMessages.insertAdjacentHTML('beforeend', newMessage);
-        input.value = '';
-        chatMessages.scrollTop = chatMessages.scrollHeight;
 
         // Отправка на сервер
         const formData = new FormData();
         formData.append('text', text);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
 
         fetch("{% url 'send_message' order.id %}", {
             method: 'POST',
@@ -656,52 +782,116 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.status !== 'ok') {
+            if (data.status === 'ok') {
+                input.value = '';
+                loadCourierMessages({{ order.id }});
+            } else {
                 console.error('Ошибка отправки');
             }
         })
         .catch(err => console.error('Ошибка:', err));
     }
 
-    // Функция loadMessages с проверкой дублирования
-    function loadMessages(orderId) {
+    function loadCourierMessages(orderId) {
         fetch(`/order/${orderId}/messages/`)
             .then(r => r.json())
             .then(data => {
-                const container = document.getElementById('chatMessages');
+                const container = document.getElementById('courier-chat-messages');
                 if (!container) return;
-                const currentMessages = Array.from(container.querySelectorAll('.message-bubble div:first-child')).map(el => el.innerText);
-                let newMessagesAdded = false;
-                if (data.messages?.length) {
+                if (data.messages && data.messages.length) {
+                    container.innerHTML = '';
                     data.messages.forEach(msg => {
-                        if (!currentMessages.includes(msg.text)) {
-                            const isCourier = msg.sender === '{{ request.user.username }}';
-                            const div = document.createElement('div');
-                            div.className = `chat-message ${isCourier ? 'courier' : 'client'}`;
-                            div.innerHTML = `<div class="message-bubble"><div>${escapeHtml(msg.text)}</div><div class="message-time">${escapeHtml(msg.time)}</div></div>`;
-                            container.appendChild(div);
-                            newMessagesAdded = true;
-                        }
+                        const isUser = (msg.sender === '{{ request.user.username }}');
+                        container.innerHTML += `
+                            <div class="chat-message ${isUser ? 'user' : 'courier'} mb-2">
+                                <div class="message-bubble">
+                                    <div>${escapeHtml(msg.text)}</div>
+                                    <div class="message-time">${escapeHtml(msg.time)}</div>
+                                </div>
+                            </div>
+                        `;
                     });
-                    if (newMessagesAdded) container.scrollTop = container.scrollHeight;
+                    container.scrollTop = container.scrollHeight;
                 } else if (container.children.length === 0) {
                     container.innerHTML = '<div class="text-center text-muted py-4">Нет сообщений</div>';
                 }
             });
     }
 
-    // ========== ПОЛЛИНГ СТАТУСА ЗАКАЗА (без WebSocket) ==========
+    // ========== ЧАТ С ПОДДЕРЖКОЙ (ОПЕРАТОР) ==========
+    function loadSupportMessages() {
+        fetch(`/order/{{ order.id }}/client-support-messages/`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('support-chat-messages');
+                if (!container) return;
+                if (data.messages && data.messages.length) {
+                    container.innerHTML = '';
+                    data.messages.forEach(msg => {
+                        const isAdmin = msg.is_admin;
+                        container.innerHTML += `
+                            <div class="chat-message ${isAdmin ? 'support' : 'user'} mb-2">
+                                <div class="message-bubble">
+                                    <div>${escapeHtml(msg.text)}</div>
+                                    ${msg.file_url ? `<div class="small"><a href="${msg.file_url}" target="_blank">📎 ${escapeHtml(msg.file_name)}</a></div>` : ''}
+                                    <div class="message-time">${escapeHtml(msg.created_at)}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.scrollTop = container.scrollHeight;
+                } else if (container.children.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4">Нет сообщений</div>';
+                }
+            })
+            .catch(err => console.error('Ошибка загрузки сообщений поддержки:', err));
+    }
+
+    function sendSupportMessage() {
+        const input = document.getElementById('support-message-input');
+        const fileInput = document.getElementById('support-file-input');
+        const text = input.value.trim();
+        const file = fileInput.files[0];
+        if (!text && !file) {
+            alert('Введите текст или прикрепите файл');
+            return;
+        }
+        const btn = event.currentTarget;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        const formData = new FormData();
+        if (text) formData.append('text', text);
+        if (file) formData.append('file', file);
+        fetch(`/order/{{ order.id }}/client-support-send/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                input.value = '';
+                fileInput.value = '';
+                document.getElementById('support-file-name').innerText = '';
+                loadSupportMessages();
+            } else {
+                alert(data.message || 'Ошибка отправки');
+            }
+        })
+        .catch(err => { console.error(err); alert('Ошибка отправки'); })
+        .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>'; });
+    }
+
+    // ========== ПОЛЛИНГ СТАТУСА ЗАКАЗА ==========
     function pollOrderStatus() {
         fetch(`/api/check-order-status/{{ order.id }}/`)
             .then(res => res.json())
             .then(data => {
                 if (data.status && data.status !== currentOrderStatus) {
                     currentOrderStatus = data.status;
-                    // Обновляем бейдж статуса на странице
                     const statusBadge = document.getElementById('order-status-badge');
                     if (statusBadge) {
                         statusBadge.innerText = data.status_display;
-                        // Обновляем классы для цвета
                         statusBadge.className = 'badge rounded-pill px-3 py-2';
                         if (data.status === 'completed') statusBadge.classList.add('bg-success');
                         else if (data.status === 'delivering') statusBadge.classList.add('bg-info');
@@ -709,29 +899,10 @@
                         else if (data.status === 'ready') statusBadge.classList.add('bg-success');
                         else statusBadge.classList.add('bg-warning', 'text-dark');
                     }
-                    // Показываем уведомление (тост)
-                    if (typeof showStatusNotification === 'function') {
-                        showStatusNotification(data.status_display, data.order_id);
-                    } else {
-                        showToast(`Статус заказа №${data.order_id} изменён на "${data.status_display}"`, 'info');
-                    }
+                    showToast(`Статус заказа №${order.id} изменён на "${data.status_display}"`, 'info');
                 }
             })
             .catch(err => console.error('Polling error:', err));
-    }
-
-    // Запускаем polling статуса каждые 5 секунд
-    if (statusPollingInterval) clearInterval(statusPollingInterval);
-    statusPollingInterval = setInterval(pollOrderStatus, 5000);
-
-    function escapeHtml(unsafe) {
-        if (!unsafe) return '';
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
     }
 
     // ========== ОТЗЫВЫ ==========
@@ -834,63 +1005,6 @@
         });
     });
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = 'ginza-toast shadow-lg';
-        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
-        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-            toast.style.opacity = "0";
-            toast.style.transform = "translateX(20px)";
-            setTimeout(() => toast.remove(), 600);
-        }, 3000);
-    }
-
-    function openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.add('show');
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('show');
-            modal.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-    }
-
-    window.onclick = function(event) {
-        if (event.target.classList && event.target.classList.contains('modal-custom')) {
-            closeModal(event.target.id);
-        }
-    };
-
     // ========== КАРТА ==========
     ymaps.ready(function () {
         function cleanAddress(addr) {
@@ -919,6 +1033,40 @@
             });
         }
         buildRoute(startPoint);
+    });
+
+    // Запуск polling статуса каждые 5 секунд
+    if (statusPollingInterval) clearInterval(statusPollingInterval);
+    statusPollingInterval = setInterval(pollOrderStatus, 5000);
+
+    // Запуск загрузки сообщений поддержки и курьера при переключении вкладок
+    document.getElementById('support-tab').addEventListener('shown.bs.tab', function () {
+        if (supportChatInterval) clearInterval(supportChatInterval);
+        loadSupportMessages();
+        supportChatInterval = setInterval(loadSupportMessages, 5000);
+    });
+    document.getElementById('courier-tab').addEventListener('shown.bs.tab', function () {
+        if (courierChatInterval) clearInterval(courierChatInterval);
+        loadCourierMessages({{ order.id }});
+        courierChatInterval = setInterval(() => { if (document.getElementById('courier-tab').classList.contains('active')) loadCourierMessages({{ order.id }}); }, 5000);
+    });
+    // При загрузке страницы, если вкладка поддержки активна, загружаем сразу
+    if (document.getElementById('support-tab').classList.contains('active')) {
+        loadSupportMessages();
+        supportChatInterval = setInterval(loadSupportMessages, 5000);
+    }
+    // для курьера – аналогично
+    if (document.getElementById('courier-tab')) {
+        if (document.getElementById('courier-tab').classList.contains('active')) {
+            loadCourierMessages({{ order.id }});
+            courierChatInterval = setInterval(() => loadCourierMessages({{ order.id }}), 5000);
+        }
+    }
+
+    // Обработка выбора файла в поддержке
+    document.getElementById('support-file-input')?.addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        document.getElementById('support-file-name').innerText = fileName ? `📎 ${fileName}` : '';
     });
 </script>
 {% endblock %}

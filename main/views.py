@@ -5,11 +5,11 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import JsonResponse
-from django.db.models import Prefetch, Sum, F, Q
+from django.db.models import Prefetch, Sum, F, Q, Count
 from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
-from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, SupportMessage, ProductRecommendation
+from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, SupportMessage, ProductRecommendation, OrderStatusHistory, Discount 
 from .cart import Cart
 from .forms import UserRegisterForm
 import uuid
@@ -26,32 +26,63 @@ from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
-from geopy.distance import geodesic              # НОВОЕ: для автоназначения курьера (pip install geopy)
+from django.db.models import Avg, F, ExpressionWrapper, fields, Count, Q, DurationField, Sum
+from django.db.models.functions import Extract, TruncDate
+from geopy.distance import geodesic      
+from django.utils.timezone import now
+from collections import defaultdict   
+from datetime import datetime     # НОВОЕ: для автоназначения курьера (pip install geopy)
 
 Configuration.configure('1285119', 'test_yOeCjmKe1rtmfgAat4OUl_9V89XI0Z4gIqR3HZXr7wg')
 
 
-def get_cross_sell_products(cart_products, limit=4):
-    """Возвращает товары, которые часто покупают вместе с товарами из корзины."""
+def get_cross_sell_products(cart_products, user=None, limit=4):
     if not cart_products:
         return []
+    
     cart_product_ids = [p.id for p in cart_products]
-    recs = ProductRecommendation.objects.filter(
-        source_product_id__in=cart_product_ids
-    ).select_related('recommended_product').order_by('-score')
     recommended_ids = []
-    for rec in recs:
-        if rec.recommended_product.id not in cart_product_ids:
-            recommended_ids.append(rec.recommended_product.id)
+    
+    # 1. Если пользователь авторизован – получаем товары, которые он уже заказывал (чтобы не рекомендовать)
+    bought_product_ids = set()
+    if user and user.is_authenticated:
+        bought_product_ids = set(
+            OrderItem.objects.filter(order__user=user, order__status='completed')
+            .values_list('product_id', flat=True)
+        )
+    
+    # 2. Для каждого товара в корзине ищем его рекомендации
+    for product_id in cart_product_ids:
+        recs = ProductRecommendation.objects.filter(
+            source_type='product',
+            source_product_id=product_id
+        ).prefetch_related('recommendationitem_set')
+        for rec in recs:
+            for item in rec.recommendationitem_set.select_related('product'):
+                prod = item.product
+                if (prod.id not in cart_product_ids and 
+                    prod.id not in recommended_ids and
+                    prod.id not in bought_product_ids):
+                    recommended_ids.append(prod.id)
+                    if len(recommended_ids) >= limit:
+                        break
             if len(recommended_ids) >= limit:
                 break
+        if len(recommended_ids) >= limit:
+            break
+    
+    # 3. Если не набрали – добираем популярными товарами (исключая корзину и уже рекомендованные)
     if len(recommended_ids) < limit:
         needed = limit - len(recommended_ids)
-        popular = Product.objects.filter(is_active=True).exclude(id__in=cart_product_ids)\
-            .annotate(total_sold=Sum('orderitem__quantity')).order_by('-total_sold')[:needed]
+        exclude_ids = cart_product_ids + recommended_ids + list(bought_product_ids)
+        popular = Product.objects.filter(is_active=True) \
+            .exclude(id__in=exclude_ids) \
+            .annotate(total_sold=Sum('orderitem__quantity')) \
+            .order_by('-total_sold')[:needed]
         for p in popular:
             if p.id not in recommended_ids:
                 recommended_ids.append(p.id)
+    
     return list(Product.objects.filter(id__in=recommended_ids, is_active=True))
 
 # --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
@@ -162,36 +193,55 @@ def favorites_list(request):
 
 
 # --- КОРЗИНА ---
+
 def cart_detail(request):
     cart = Cart(request)
-
-    # Получаем товары из корзины для cross-sell
     cart_products = [item['product'] for item in cart]
     cross_sell_products = get_cross_sell_products(cart_products, limit=4)
 
     user_orders_count = 0
+    personal_discount = 0
     if request.user.is_authenticated:
         user_orders_count = Order.objects.filter(user=request.user, status='completed').count()
-
-    # Расчёт скидки от суммы потраченных средств
-    discount = 0
-    if request.user.is_authenticated:
         total_spent = Order.objects.filter(user=request.user, status='completed').aggregate(Sum('total_price'))['total_price__sum'] or 0
         if total_spent >= 15000:
-            discount = 5
+            personal_discount = 5
         elif total_spent >= 5000:
-            discount = 3
+            personal_discount = 3
 
-    # Текущее локальное время для поля datetime-local
-    now = timezone.localtime(timezone.now())
+    # Акционные скидки (модель Discount)
+    from django.utils import timezone
+    now = timezone.now()
+    active_discounts = Discount.objects.filter(
+        active=True,
+        applies_to='all',
+        start_date__lte=now,
+        end_date__gte=now
+    )
+    campaign_discount_percent = 0
+    if active_discounts.exists():
+        disc = active_discounts.first()
+        if disc.discount_type == 'percent':
+            campaign_discount_percent = disc.value
+
+    final_discount = max(personal_discount, campaign_discount_percent)
+    total_cart_price = cart.get_total_price()
+    discount_amount = total_cart_price * final_discount / 100
+    final_total = total_cart_price - discount_amount
+
+    now_local = timezone.localtime(timezone.now())
 
     return render(request, 'main/cart_detail.html', {
         'cart': cart,
-        'cross_sell_products': cross_sell_products,   # ← только cross-sell
+        'cross_sell_products': cross_sell_products,
         'is_new_user': not request.user.is_authenticated or user_orders_count < 4,
         'orders_count': user_orders_count,
-        'now': now,
-        'discount': discount,
+        'now': now_local,
+        'personal_discount': personal_discount,
+        'campaign_discount': campaign_discount_percent,
+        'final_discount': final_discount,
+        'discount_amount': discount_amount,
+        'final_total': final_total,
     })
 
 def cart_add(request, product_id):
@@ -275,22 +325,33 @@ def order_create(request):
         payment_method = request.POST.get('payment_method')
         use_points = request.POST.get('use_points') == 'on'
         
-        # Получаем время доставки
-        delivery_time_str = request.POST.get('delivery_time')
-        delivery_time = None
-        if delivery_time_str:
+        # --- Желаемое время доставки ---
+        delivery_time_from_str = request.POST.get('delivery_time_from')
+        delivery_time_to_str = request.POST.get('delivery_time_to')
+        delivery_time_from = None
+        delivery_time_to = None
+
+        if delivery_time_from_str:
             try:
-                delivery_time = datetime.fromisoformat(delivery_time_str)
-                # Делаем его aware, используя текущий часовой пояс
-                delivery_time = timezone.make_aware(delivery_time)
-                min_time = timezone.now() + timedelta(minutes=30)
-                if delivery_time < min_time:
-                    messages.error(request, "Выберите время не ранее чем через 30 минут")
+                delivery_time_from = datetime.fromisoformat(delivery_time_from_str)
+                delivery_time_from = timezone.make_aware(delivery_time_from)
+                if delivery_time_from < timezone.now() + timedelta(minutes=30):
+                    messages.error(request, "Начало интервала – не ранее чем через 30 минут")
+                    return redirect('cart_detail')
+            except ValueError:
+                pass
+
+        if delivery_time_to_str:
+            try:
+                delivery_time_to = datetime.fromisoformat(delivery_time_to_str)
+                delivery_time_to = timezone.make_aware(delivery_time_to)
+                if delivery_time_to < delivery_time_from:
+                    messages.error(request, "Конец интервала не может быть раньше начала")
                     return redirect('cart_detail')
             except ValueError:
                 pass
         
-        # Сбор адресов
+        # --- Сбор адресов ---
         final_addresses = []
         if new_address and new_address.strip():
             final_addresses.append(new_address.strip())
@@ -321,11 +382,16 @@ def order_create(request):
         total_cart_price = cart.get_total_price()
         total_full_price = total_cart_price * address_count
 
-        # Расчёт баллов
+        # --- Расчёт баллов ---
         total_points_to_spend = Decimal('0')
         if use_points and profile.points > 0:
-            max_spend_limit = (total_full_price * Decimal('0.30')).quantize(Decimal('1'))
-            total_points_to_spend = min(Decimal(profile.points), max_spend_limit)
+            # 30% от суммы заказа (уже было)
+            max_by_price = (total_full_price * Decimal('0.30')).quantize(Decimal('1'))
+            # 30% от имеющихся баллов
+            max_by_points = (Decimal(profile.points) * Decimal('0.30')).quantize(Decimal('1'))
+            # Ограничение – минимум из двух
+            max_deductible = min(max_by_price, max_by_points)
+            total_points_to_spend = min(Decimal(profile.points), max_deductible)
 
         points_per_order = [0] * address_count
         if total_points_to_spend > 0:
@@ -338,6 +404,7 @@ def order_create(request):
 
         actual_payment_amount = total_full_price - total_points_to_spend
 
+        # --- Геокодирование адресов ---
         addresses_with_coords = []
         for addr in final_addresses:
             is_valid, lat, lng = validate_address(addr)
@@ -346,7 +413,7 @@ def order_create(request):
                 return redirect('cart_detail')
             addresses_with_coords.append((addr, lat, lng))
 
-        # Если оплата наличными – создаём заказ сразу, без ЮKassa
+        # --- ОПЛАТА НАЛИЧНЫМИ (создаём заказы сразу) ---
         if payment_method == 'cash':
             created_orders = []
             try:
@@ -362,10 +429,19 @@ def order_create(request):
                         points_used=int(points_used),
                         status='new',
                         is_paid=False,
-                        delivery_time=delivery_time,
+                        delivery_time_from=delivery_time_from,
+                        delivery_time_to=delivery_time_to,
                         lat=lat,
                         lng=lng,
                     )
+                    # --- Запись в историю статусов ---
+                    OrderStatusHistory.objects.create(
+                        order=order,
+                        old_status='',
+                        new_status='new',
+                        changed_by=request.user
+                    )
+                    # --- Товары заказа ---
                     for item in cart:
                         OrderItem.objects.create(
                             order=order,
@@ -389,7 +465,7 @@ def order_create(request):
                 profile.save()
                 
                 cart.clear()
-                # Отправка в ресторан (если нужно)
+                # Отправка в ресторан (эмулятор)
                 for order in created_orders:
                     try:
                         send_order_to_restaurant(order)
@@ -413,8 +489,7 @@ def order_create(request):
                 messages.error(request, f"Ошибка при создании заказа: {e}")
                 return redirect('cart_detail')
         
-        # Для оплаты картой – идём в ЮKassa
-        # Сохраняем данные в сессию
+        # --- ОПЛАТА КАРТОЙ (сохраняем данные в сессию и уходим в ЮKassa) ---
         request.session['pending_order'] = {
             'final_addresses_with_coords': addresses_with_coords,
             'phone': phone,
@@ -424,7 +499,8 @@ def order_create(request):
             'address_count': address_count,
             'points_per_order': points_per_order,
             'total_points_to_spend': float(total_points_to_spend),
-            'delivery_time': delivery_time.isoformat() if delivery_time else None,
+            'delivery_time_from': delivery_time_from.isoformat() if delivery_time_from else None,
+            'delivery_time_to': delivery_time_to.isoformat() if delivery_time_to else None,
         }
         
         # Создаём платёж в ЮKassa
@@ -455,35 +531,24 @@ def order_create(request):
 
 @login_required
 def payment_success(request):
-    """Обработка успешной оплаты. Заказ создаётся здесь."""
-    
-    print("=" * 50)
-    print("PAYMENT_SUCCESS called")
-    print(f"Session pending_order: {request.session.get('pending_order')}")
-    print(f"Session pending_payment_id: {request.session.get('pending_payment_id')}")
-    print("=" * 50)
-    
+    """Обработка успешной оплаты. Создаём заказы из сессии."""
     pending_order = request.session.get('pending_order')
     pending_payment_id = request.session.get('pending_payment_id')
     
     if not pending_order or not pending_payment_id:
         messages.error(request, "Информация о заказе не найдена. Попробуйте оформить заказ заново.")
-        print("ERROR: No data in session!")
         return redirect('cart_detail')
     
     # Проверяем статус платежа в ЮKassa
     try:
         from yookassa import Payment
         payment = Payment.find_one(pending_payment_id)
-        print(f"Payment status: {payment.status}")
-        
         if payment.status != 'succeeded':
             request.session.pop('pending_order', None)
             request.session.pop('pending_payment_id', None)
             messages.error(request, "Платёж не был завершён. Попробуйте снова.")
             return redirect('cart_detail')
     except Exception as e:
-        print(f"ERROR checking payment: {e}")
         request.session.pop('pending_order', None)
         request.session.pop('pending_payment_id', None)
         messages.error(request, f"Ошибка при проверке оплаты: {e}")
@@ -497,15 +562,21 @@ def payment_success(request):
     address_count = pending_order['address_count']
     points_per_order = pending_order['points_per_order']
     total_points_to_spend = Decimal(str(pending_order['total_points_to_spend']))
-    delivery_time_str = pending_order.get('delivery_time')
-    delivery_time = None
-    if delivery_time_str:
+    delivery_time_from_str = pending_order.get('delivery_time_from')
+    delivery_time_to_str = pending_order.get('delivery_time_to')
+    delivery_time_from = None
+    delivery_time_to = None
+
+    if delivery_time_from_str:
         try:
-            delivery_time = datetime.fromisoformat(delivery_time_str)
+            delivery_time_from = datetime.fromisoformat(delivery_time_from_str)
         except ValueError:
             pass
-    
-    print(f"Creating orders for {len(addresses_with_coords)} addresses")
+    if delivery_time_to_str:
+        try:
+            delivery_time_to = datetime.fromisoformat(delivery_time_to_str)
+        except ValueError:
+            pass
     
     profile = request.user.profile
     cart = Cart(request)
@@ -526,13 +597,19 @@ def payment_success(request):
                 status='new',
                 payment_id=pending_payment_id,
                 is_paid=True,
-                delivery_time=delivery_time,
+                delivery_time_from=delivery_time_from,
+                delivery_time_to=delivery_time_to,
                 lat=lat,
                 lng=lng,
             )
-            
-            print(f"Order #{order.id} created, total: {current_order_price}")
-            
+            # --- Запись в историю статусов ---
+            OrderStatusHistory.objects.create(
+                order=order,
+                old_status='',
+                new_status='new',
+                changed_by=request.user
+            )
+            # --- Товары заказа ---
             for item in cart:
                 OrderItem.objects.create(
                     order=order,
@@ -547,7 +624,6 @@ def payment_success(request):
         if total_points_to_spend > 0:
             profile.points -= int(total_points_to_spend)
             profile.save()
-        
         # Начисляем кэшбэк
         total_earned = 0
         for o in created_orders:
@@ -571,8 +647,7 @@ def payment_success(request):
                 print(f"Error sending to restaurant: {e}")
         
         request.session['open_receipt_id'] = created_orders[0].id
-        
-        messages.success(request, f"Order #{created_orders[0].id} created successfully!")
+        messages.success(request, f"Заказ №{created_orders[0].id} успешно оплачен и создан!")
         
         return render(request, 'main/order_success.html', {
             'order': created_orders[0],
@@ -584,7 +659,6 @@ def payment_success(request):
         print(f"CRITICAL ERROR: {e}")
         import traceback
         traceback.print_exc()
-        
         for o in created_orders:
             o.delete()
         messages.error(request, f"Ошибка при создании заказа: {e}")
@@ -637,9 +711,16 @@ def auto_assign_order(order):
             best_score = score
 
     if best_courier:
+        old_status = order.status
         order.courier = best_courier
         order.status = 'delivering'
         order.save()
+        OrderStatusHistory.objects.create(
+            order=order,
+            old_status=old_status,
+            new_status='delivering',
+            changed_by=None   # или можно поставить админа/систему, если нужно
+        )
         optimize_courier_route(best_courier)
         print(f"✅ Заказ #{order.id} автоматически назначен курьеру {best_courier.username}")
         return True
@@ -728,7 +809,7 @@ def get_user_messages(request, user_id):
             'file_url': msg.file.url if msg.file else None,
             'file_name': msg.file.name.split('/')[-1] if msg.file else None,
             'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
-            'is_admin': False
+            'is_admin': msg.is_from_admin
         })
     return JsonResponse({'messages': data})
 
@@ -779,6 +860,100 @@ def send_support_reply(request):
         }
     })
 
+@staff_member_required
+def get_order_support_messages(request, order_id):
+    """Сообщения поддержки по конкретному заказу (оператор-клиент)"""
+    order = get_object_or_404(Order, id=order_id)
+    messages = SupportMessage.objects.filter(order=order).order_by('created_at')
+    data = []
+    for msg in messages:
+        data.append({
+            'id': msg.id,
+            'text': msg.text,
+            'file_url': msg.file.url if msg.file else None,
+            'file_name': msg.file.name.split('/')[-1] if msg.file else None,
+            'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
+            'is_admin': msg.is_from_admin,  # True – сообщение от оператора
+        })
+    return JsonResponse({'messages': data})
+
+@staff_member_required
+def send_order_support_reply(request, order_id):
+    """Отправка ответа оператора по конкретному заказу"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error'}, status=405)
+    order = get_object_or_404(Order, id=order_id)
+    text = request.POST.get('text', '').strip()
+    file = request.FILES.get('file')
+    if not text and not file:
+        return JsonResponse({'status': 'error', 'message': 'Введите текст или прикрепите файл'})
+    msg = SupportMessage.objects.create(
+        user=order.user,
+        order=order,
+        text=text,
+        file=file if file else None,
+        is_read=False,
+        is_from_admin=True
+    )
+    return JsonResponse({
+        'status': 'ok',
+        'message': {
+            'id': msg.id,
+            'text': text,
+            'file_url': msg.file.url if msg.file else None,
+            'file_name': msg.file.name.split('/')[-1] if msg.file else None,
+            'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
+            'is_admin': True
+        }
+    })
+
+@login_required
+def get_client_order_messages(request, order_id):
+    """Получение чата поддержки по заказу (для клиента)"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    messages = SupportMessage.objects.filter(order=order).order_by('created_at')
+    data = []
+    for msg in messages:
+        data.append({
+            'id': msg.id,
+            'text': msg.text,
+            'file_url': msg.file.url if msg.file else None,
+            'file_name': msg.file.name.split('/')[-1] if msg.file else None,
+            'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
+            'is_admin': msg.is_from_admin,
+        })
+    return JsonResponse({'messages': data})
+
+@login_required
+def send_client_support_message(request, order_id):
+    """Отправка сообщения клиентом в поддержку по заказу"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error'}, status=405)
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    text = request.POST.get('text', '').strip()
+    file = request.FILES.get('file')
+    if not text and not file:
+        return JsonResponse({'status': 'error', 'message': 'Введите текст или прикрепите файл'})
+    msg = SupportMessage.objects.create(
+        user=request.user,
+        order=order,
+        text=text,
+        file=file if file else None,
+        is_read=False,
+        is_from_admin=False
+    )
+    return JsonResponse({
+        'status': 'ok',
+        'message': {
+            'id': msg.id,
+            'text': text,
+            'file_url': msg.file.url if msg.file else None,
+            'file_name': msg.file.name.split('/')[-1] if msg.file else None,
+            'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
+            'is_admin': False
+        }
+    })
+
 
 @login_required
 def view_receipt(request, order_id):
@@ -793,7 +968,7 @@ def payment_success_view_old(request, order_id):
 
 @login_required
 def order_detail(request, order_id):
-    order = get_object_or_404(Order.objects.prefetch_related('items__product'), id=order_id)
+    order = get_object_or_404(Order.objects.prefetch_related('items__product', 'status_history'), id=order_id)
     
     user_is_admin = request.user.is_staff or request.user.is_superuser
     is_owner = (order.user == request.user)
@@ -812,7 +987,8 @@ def order_detail(request, order_id):
     return render(request, 'main/order_detail.html', {
         'order': order,
         'is_courier': is_courier,
-        'show_admin_info': user_is_admin
+        'show_admin_info': user_is_admin,
+        'status_history': order.status_history.all(),
     })
 
 
@@ -838,9 +1014,16 @@ def courier_take_order(request, order_id):
     active_count = Order.objects.filter(courier=request.user, status='delivering').count()
     
     if active_count < 5:
+        old_status = order.status
         order.courier = request.user
         order.status = 'delivering'
-        order.save()   # поле delivery_order_index больше не нужно, используем route_order
+        order.save()
+        OrderStatusHistory.objects.create(
+            order=order,
+            old_status=old_status,
+            new_status='delivering',
+            changed_by=request.user
+        )  # поле delivery_order_index больше не нужно, используем route_order
         optimize_courier_route(request.user)   # <-- пересчитать порядок
         messages.success(request, f"Вы приняли заказ №{order.id}!")
     else:
@@ -852,8 +1035,15 @@ def courier_take_order(request, order_id):
 @login_required
 def courier_complete_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, courier=request.user, status='delivering')
+    old_status = order.status  # было 'delivering'
     order.status = 'completed'
     order.save()
+    OrderStatusHistory.objects.create(
+        order=order,
+        old_status=old_status,
+        new_status='completed',
+        changed_by=request.user
+    )
     
     # Пересчитать маршрут для оставшихся заказов курьера
     optimize_courier_route(request.user)
@@ -942,6 +1132,156 @@ def add_product(request):
         )
         messages.success(request, "Блюдо успешно добавлено!")
     return redirect('menu')
+
+@staff_member_required
+def api_order_detail(request, order_id):
+    order = get_object_or_404(Order.objects.prefetch_related('items__product', 'status_history'), id=order_id)
+    data = {
+        'id': order.id,
+        'user': order.user.username,
+        'phone': order.phone,
+        'address': order.address,
+        'total_price': float(order.total_price),
+        'payment_method': order.payment_method,
+        'delivery_time_from': order.delivery_time_from.strftime('%d.%m.%Y %H:%M') if order.delivery_time_from else None,
+        'delivery_time_to': order.delivery_time_to.strftime('%H:%M') if order.delivery_time_to else None,
+        'items': [
+            {
+                'name': item.product.name,
+                'quantity': item.quantity,
+                'price': float(item.price),
+                'comment': item.comment or ''
+            } for item in order.items.all()
+        ],
+        'status_history': [
+            {
+                'old_status': dict(Order.STATUS_CHOICES).get(h.old_status, h.old_status),
+                'new_status': dict(Order.STATUS_CHOICES).get(h.new_status, h.new_status),
+                'created_at': h.created_at.strftime('%d.%m.%Y %H:%M'),
+                'changed_by': h.changed_by.username if h.changed_by else None
+            } for h in order.status_history.all()
+        ]
+    }
+    return JsonResponse(data)
+
+
+@staff_member_required
+def api_analytics_data(request):
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    orders_qs = Order.objects.filter(status='completed')
+    if start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            orders_qs = orders_qs.filter(created_at__date__range=[start, end])
+        except ValueError:
+            pass
+    else:
+        today = timezone.now().date()
+        orders_qs = orders_qs.filter(created_at__date=today)
+
+    # --- Выручка, количество заказов, средний чек ---
+    total_revenue = orders_qs.aggregate(Sum('total_price'))['total_price__sum'] or 0
+    orders_count = orders_qs.count()
+    avg_check = int(total_revenue / orders_count) if orders_count else 0
+
+    # --- Среднее время готовки (cooking → ready) ---
+    history = OrderStatusHistory.objects.filter(
+        order__in=orders_qs,
+        new_status__in=['cooking', 'ready']
+    ).order_by('order_id', 'created_at')
+    
+    cooking_durations = []
+    order_times = {}
+    for h in history:
+        oid = h.order_id
+        if h.new_status == 'cooking':
+            order_times[oid] = {'cooking': h.created_at}
+        elif h.new_status == 'ready' and oid in order_times and order_times[oid].get('cooking'):
+            delta = h.created_at - order_times[oid]['cooking']
+            cooking_durations.append(delta.total_seconds() / 60)
+
+    avg_cooking_time = round(sum(cooking_durations) / len(cooking_durations), 1) if cooking_durations else 0
+
+    # --- Среднее время доставки (delivering → completed) и лучший курьер ---
+    delivering_history = OrderStatusHistory.objects.filter(
+        order__in=orders_qs,
+        new_status__in=['delivering', 'completed']
+    ).order_by('order_id', 'created_at')
+    
+    delivering_durations = []
+    courier_times = {}  # courier_id -> {'total': сумма минут, 'count': количество}
+    courier_names = {}
+
+    order_deliver = {}
+    for h in delivering_history:
+        oid = h.order_id
+        if h.new_status == 'delivering':
+            order_deliver[oid] = {'delivering': h.created_at}
+        elif h.new_status == 'completed' and oid in order_deliver and order_deliver[oid].get('delivering'):
+            delta = h.created_at - order_deliver[oid]['delivering']
+            minutes = delta.total_seconds() / 60
+            delivering_durations.append(minutes)
+
+            # Найти курьера, который вёз этот заказ
+            try:
+                order = Order.objects.get(id=oid, courier__isnull=False)
+                courier_id = order.courier.id
+                courier_name = order.courier.username
+                courier_names[courier_id] = courier_name
+                if courier_id not in courier_times:
+                    courier_times[courier_id] = {'total': 0, 'count': 0}
+                courier_times[courier_id]['total'] += minutes
+                courier_times[courier_id]['count'] += 1
+            except Order.DoesNotExist:
+                pass
+
+    avg_delivery_time = round(sum(delivering_durations) / len(delivering_durations), 1) if delivering_durations else 0
+
+    # Лучший курьер (минимальное среднее время доставки)
+    best_courier_name = None
+    best_avg = None
+    for cid, data in courier_times.items():
+        avg = data['total'] / data['count']
+        if best_avg is None or avg < best_avg:
+            best_avg = avg
+            best_courier_name = courier_names.get(cid, f"Курьер #{cid}")
+            best_avg_minutes = round(avg, 1)
+    if best_courier_name and best_avg is not None:
+        best_courier_name = f"{best_courier_name} ({best_avg_minutes} мин.)"
+
+    # --- Хит продаж ---
+    popular = OrderItem.objects.filter(order__in=orders_qs)\
+        .values('product__name')\
+        .annotate(total=Sum('quantity'))\
+        .order_by('-total').first()
+    most_popular_name = popular['product__name'] if popular else None
+
+    # --- Блюда с долгим приготовлением (>45 мин) ---
+    slow_dishes_ids = set()
+    for order in orders_qs:
+        ready_entry = order.status_history.filter(new_status='ready').first()
+        cooking_entry = order.status_history.filter(new_status='cooking').first()
+        if ready_entry and cooking_entry:
+            duration = (ready_entry.created_at - cooking_entry.created_at).total_seconds() / 60
+            if duration > 45:
+                for item in order.items.all():
+                    slow_dishes_ids.add(item.product.id)
+    slow_dishes_names = list(Product.objects.filter(id__in=slow_dishes_ids).values_list('name', flat=True))
+
+    return JsonResponse({
+        'total_revenue': total_revenue,
+        'orders_count': orders_count,
+        'avg_check': avg_check,
+        'avg_cooking_time': avg_cooking_time,
+        'avg_delivery_time': avg_delivery_time,
+        'best_courier': best_courier_name,
+        'most_popular': most_popular_name,
+        'slow_dishes': slow_dishes_names,
+    })
 
 
 @staff_member_required
@@ -1159,104 +1499,243 @@ def delete_address(request, address_id):
 # --- ПАНЕЛЬ ОПЕРАТОРА ---
 @staff_member_required
 def operator_panel(request):
+    # Фильтр по статусу (GET-параметр)
+    status_filter = request.GET.get('status', '')
+    orders_qs = Order.objects.all().prefetch_related('items__product', 'user').order_by('-created_at')
+    if status_filter and status_filter in dict(Order.STATUS_CHOICES):
+        orders_qs = orders_qs.filter(status=status_filter)
+    
+    paginator = Paginator(orders_qs, 20)  # 20 заказов на страницу
+    page_number = request.GET.get('page')
+    orders_page = paginator.get_page(page_number)
+    
+    # Статистика для карточек
     today = timezone.now().date()
-    start_date = request.GET.get('start_date', '')
-    end_date = request.GET.get('end_date', '')
+    total_revenue = Order.objects.filter(status='completed', created_at__date=today).aggregate(Sum('total_price'))['total_price__sum'] or 0
+    today_count = Order.objects.filter(status='completed', created_at__date=today).count()
+    avg_check = int(total_revenue / today_count) if today_count else 0
     
-    report_orders = Order.objects.filter(status='completed')
-    if start_date and end_date:
-        report_orders = report_orders.filter(created_at__date__range=[start_date, end_date])
-    else:
-        report_orders = report_orders.filter(created_at__date=today)
-
-    total_revenue = report_orders.aggregate(Sum('total_price'))['total_price__sum'] or 0
-    today_count = report_orders.count()
-    avg_check = int(total_revenue / today_count) if today_count > 0 else 0
-    
-    popular_items_data = OrderItem.objects.filter(order__in=report_orders)\
-        .values('product__name')\
-        .annotate(total_qty=Sum('quantity'), total_sum=Sum(F('price') * F('quantity')))\
-        .order_by('-total_qty')
-    most_popular = popular_items_data.first() if popular_items_data else None
-
-    orders_new = Order.objects.filter(status='new').prefetch_related('items__product').order_by('-created_at')
-    orders_cooking = Order.objects.filter(status='cooking').prefetch_related('items__product').order_by('-created_at')
-    orders_ready = Order.objects.filter(status='ready').prefetch_related('items__product').order_by('-created_at')
-    orders_delivering = Order.objects.filter(status='delivering').prefetch_related('items__product').order_by('-created_at')
-    orders_history = Order.objects.filter(status__in=['completed', 'cancelled']).order_by('-created_at')[:50]
-    all_orders = Order.objects.all().prefetch_related('items__product')
-
     context = {
-        'orders_new': orders_new, 
-        'orders_cooking': orders_cooking,
-        'orders_ready': orders_ready,
-        'orders_delivering': orders_delivering,
-        'orders_history': orders_history,
-        'all_orders': all_orders,
+        'orders': orders_page,
+        'status_filter': status_filter,
         'total_revenue': total_revenue,
         'today_count': today_count,
         'avg_check': avg_check,
-        'most_popular': most_popular,
-        'popular_items_full': popular_items_data,
-        'start_date': start_date,
-        'end_date': end_date
     }
-    
     return render(request, 'main/operator_panel.html', context)
 
 
 @staff_member_required
 def change_order_status(request, order_id, new_status):
     order = get_object_or_404(Order, id=order_id)
-    
     old_status = order.status
-    message = f"Статус заказа №{order.id} изменён"
     
-    if old_status == 'new' and new_status == 'cooking':
-        message = f"Заказ №{order.id} передан на кухню."
-    elif old_status == 'cooking' and new_status == 'ready':
-        message = f"Заказ №{order.id} готов к выдаче!"
-    elif new_status == 'delivering':
-        message = f"Заказ №{order.id} передан курьеру."
-    elif new_status == 'completed':
-        message = f"Заказ №{order.id} доставлен! Спасибо за заказ."
-    elif new_status == 'cancelled':
-        message = f"Заказ №{order.id} отменён."
-
-    valid_statuses = ['new', 'cooking', 'ready', 'delivering', 'completed', 'cancelled']
-    
-    if new_status in valid_statuses:
-        order.status = new_status
-        order.save()
-        
-        # Получаем свежие счётчики для обновления через polling
-        counts = {
-            'new': Order.objects.filter(status='new').count(),
-            'cooking': Order.objects.filter(status='cooking').count(),
-            'ready': Order.objects.filter(status='ready').count(),
-            'delivering': Order.objects.filter(status='delivering').count(),
-        }
-        
-        # Автоматическое назначение курьера, если заказ стал готов
-        if new_status == 'ready' and old_status != 'ready':
-            auto_assign_order(order)
-            print(f"🔔 Автоматическое назначение курьера для заказа #{order.id}")
-        
-        
-        return JsonResponse({
-            'status': 'ok',
-            'message': message,
-            'counts': counts,
-            'order': {
-                'id': order.id,
-                'user': order.user.username,
-                'address': order.address,
-                'total_price': float(order.total_price),
-                'created_at': order.created_at.strftime('%H:%M'),
-            }
-        })
-    else:
+    if new_status not in ['new', 'cooking', 'ready', 'delivering', 'completed', 'cancelled']:
         return JsonResponse({'status': 'error', 'message': 'Некорректный статус'}, status=400)
+    
+    # Сохраняем старый статус
+    order.status = new_status
+    order.save()
+    
+    # Записываем историю
+    OrderStatusHistory.objects.create(
+        order=order,
+        old_status=old_status,
+        new_status=new_status,
+        changed_by=request.user
+    )
+    
+    # Если статус стал 'ready' – автоматически ищем курьера
+    if new_status == 'ready' and old_status != 'ready':
+        auto_assign_order(order)
+    
+    # Если заказ завершён – начисляем кэшбэк (если не начисляли ранее)
+    if new_status == 'completed' and old_status != 'completed':
+        profile = order.user.profile
+        earned = int(order.total_price * Decimal('0.05'))
+        profile.points += earned
+        profile.save()
+    
+    # Подготовка ответа
+    counts = {
+        'new': Order.objects.filter(status='new').count(),
+        'cooking': Order.objects.filter(status='cooking').count(),
+        'ready': Order.objects.filter(status='ready').count(),
+        'delivering': Order.objects.filter(status='delivering').count(),
+    }
+    
+    # Определяем цвет статуса для бейджа
+    status_color_map = {
+        'new': 'warning',
+        'cooking': 'primary',
+        'ready': 'success',
+        'delivering': 'info',
+        'completed': 'success',
+        'cancelled': 'danger',
+    }
+    
+    messages_dict = {
+        ('new', 'cooking'): f"Заказ №{order.id} передан на кухню.",
+        ('cooking', 'ready'): f"Заказ №{order.id} готов к выдаче!",
+        ('ready', 'delivering'): f"Заказ №{order.id} передан курьеру.",
+        ('delivering', 'completed'): f"Заказ №{order.id} доставлен! Спасибо за заказ.",
+    }
+    message = messages_dict.get((old_status, new_status), f"Статус заказа №{order.id} изменён на {order.get_status_display()}.")
+    
+    return JsonResponse({
+        'status': 'ok',
+        'message': message,
+        'counts': counts,
+        'status_color': status_color_map.get(new_status, 'secondary'),
+        'status_display': order.get_status_display(),
+        'order': {
+            'id': order.id,
+            'user': order.user.username,
+            'address': order.address,
+            'total_price': float(order.total_price),
+            'created_at': order.created_at.strftime('%H:%M'),
+        }
+    })
+
+@staff_member_required
+def discount_list(request):
+    """Список скидок и форма создания/редактирования"""
+    discounts = Discount.objects.all().order_by('-created_at')
+    categories = Category.objects.all()
+    products = Product.objects.filter(is_active=True)
+    return render(request, 'main/discounts.html', {
+        'discounts': discounts,
+        'categories': categories,
+        'products': products,
+    })
+
+@staff_member_required
+def create_discount(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        discount_type = request.POST.get('discount_type')
+        value = request.POST.get('value')
+        applies_to = request.POST.get('applies_to')
+        category_id = request.POST.get('category')
+        product_id = request.POST.get('product')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        try:
+            discount = Discount.objects.create(
+                name=name,
+                discount_type=discount_type,
+                value=value,
+                applies_to=applies_to,
+                category_id=category_id if applies_to == 'category' else None,
+                product_id=product_id if applies_to == 'product' else None,
+                start_date=start_date,
+                end_date=end_date,
+                active=True
+            )
+            messages.success(request, f'Скидка "{name}" создана')
+        except Exception as e:
+            messages.error(request, f'Ошибка: {e}')
+        return redirect('discount_list')
+    return redirect('discount_list')
+
+@staff_member_required
+def toggle_discount(request, discount_id):
+    discount = get_object_or_404(Discount, id=discount_id)
+    discount.active = not discount.active
+    discount.save()
+    messages.success(request, f'Скидка {"активирована" if discount.active else "деактивирована"}')
+    return redirect('discount_list')
+
+
+@staff_member_required
+def analytics_dashboard(request):
+
+    
+    # 1. Среднее время готовки (от new до ready)
+    # Находим время перехода new → cooking и cooking → ready
+    cooking_time = None
+    delivering_time = None
+    
+    # Лучший курьер по скорости доставки (delivering → completed)
+    best_courier = None
+    
+    # Блюда с долгим приготовлением
+    slow_dishes = []
+    
+    # Запрашиваем историю
+    history = OrderStatusHistory.objects.select_related('order', 'order__user')
+    
+    # Пример расчёта среднего времени между статусами (можно через raw SQL или цикл)
+    # Более простой способ – для каждого заказа вычислить разницу между записями
+    order_times = {}
+    for h in history.order_by('order_id', 'created_at'):
+        key = h.order_id
+        if key not in order_times:
+            order_times[key] = {}
+        order_times[key][h.new_status] = h.created_at
+    
+    cooking_durations = []
+    delivering_durations = []
+    
+    for order_id, times in order_times.items():
+        if 'cooking' in times and 'ready' in times:
+            delta = times['ready'] - times['cooking']
+            cooking_durations.append(delta.total_seconds() / 60)  # минуты
+        if 'delivering' in times and 'completed' in times:
+            delta = times['completed'] - times['delivering']
+            delivering_durations.append(delta.total_seconds() / 60)
+    
+    avg_cooking_time = sum(cooking_durations) / len(cooking_durations) if cooking_durations else 0
+    avg_delivery_time = sum(delivering_durations) / len(delivering_durations) if delivering_durations else 0
+    
+    # Лучший курьер – кто быстрее всего доставлял (min avg time)
+    courier_data = {}
+    for order in Order.objects.filter(status='completed', courier__isnull=False):
+        courier_id = order.courier.id
+        # Находим время доставки из истории
+        delivering_time = None
+        completed_time = None
+        for h in order.status_history.all():
+            if h.new_status == 'delivering':
+                delivering_time = h.created_at
+            if h.new_status == 'completed':
+                completed_time = h.created_at
+        if delivering_time and completed_time:
+            duration = (completed_time - delivering_time).total_seconds() / 60
+            if courier_id not in courier_data:
+                courier_data[courier_id] = {'total': 0, 'count': 0}
+            courier_data[courier_id]['total'] += duration
+            courier_data[courier_id]['count'] += 1
+    best_courier_obj = None
+    best_avg = None
+    for cid, data in courier_data.items():
+        avg = data['total'] / data['count']
+        if best_avg is None or avg < best_avg:
+            best_avg = avg
+            best_courier_obj = User.objects.get(id=cid)
+    
+    # Блюда, которые чаще всего задерживаются на кухне (готовятся дольше 45 минут)
+    # Анализируем OrderItem и время перехода cooking→ready
+    slow_dishes_ids = set()
+    for order in Order.objects.filter(status_history__new_status='ready'):
+        ready_time = order.status_history.filter(new_status='ready').first().created_at if order.status_history.filter(new_status='ready').exists() else None
+        cooking_time = order.status_history.filter(new_status='cooking').first().created_at if order.status_history.filter(new_status='cooking').exists() else None
+        if ready_time and cooking_time:
+            duration = (ready_time - cooking_time).total_seconds() / 60
+            if duration > 45:
+                for item in order.items.all():
+                    slow_dishes_ids.add(item.product.id)
+    
+    slow_dishes = Product.objects.filter(id__in=slow_dishes_ids)
+    
+    context = {
+        'avg_cooking_time': round(avg_cooking_time, 1),
+        'avg_delivery_time': round(avg_delivery_time, 1),
+        'best_courier': best_courier_obj,
+        'slow_dishes': slow_dishes,
+    }
+    return render(request, 'main/analytics.html', context)
 
 
 @staff_member_required
@@ -1448,25 +1927,52 @@ def get_ai_recommendations(user, limit=4):
     if user is None or not user.is_authenticated:
         return Product.objects.filter(is_active=True).order_by('-id')[:limit]
 
+    # Определяем любимые категории и типы блюд пользователя (как раньше)
     favorite_categories = OrderItem.objects.filter(order__user=user)\
         .values('product__category')\
         .annotate(count=Count('product__category'))\
         .order_by('-count')[:2]
-    
     cat_ids = [item['product__category'] for item in favorite_categories]
+
+    favorite_dish_types = OrderItem.objects.filter(order__user=user)\
+        .values('product__dish_type')\
+        .annotate(count=Count('product__dish_type'))\
+        .order_by('-count')[:2]
+    dish_types = [item['product__dish_type'] for item in favorite_dish_types]
+
     tried_products = OrderItem.objects.filter(order__user=user).values_list('product_id', flat=True)
-    
-    recommendations = Product.objects.filter(
-        category_id__in=cat_ids,
-        is_active=True
-    ).exclude(id__in=tried_products).distinct()[:limit]
 
-    if recommendations.count() < limit:
-        additional = Product.objects.filter(is_active=True)\
-            .exclude(id__in=recommendations.values_list('id', flat=True))[:limit - recommendations.count()]
-        recommendations = list(recommendations) + list(additional)
+    # Ищем персональные рекомендации для пользователя (source_type='user')
+    user_recs = ProductRecommendation.objects.filter(
+        source_type='user',
+        source_user=user
+    ).prefetch_related('recommendationitem_set')
+    recommended_ids = []
+    for rec in user_recs:
+        for item in rec.recommendationitem_set.select_related('product'):
+            if item.product.id not in tried_products:
+                recommended_ids.append(item.product.id)
+                if len(recommended_ids) >= limit:
+                    break
+        if len(recommended_ids) >= limit:
+            break
 
-    return recommendations
+    # Если не хватает – добираем из любимых категорий или типов
+    if len(recommended_ids) < limit:
+        needed = limit - len(recommended_ids)
+        rec_products = Product.objects.filter(
+            Q(category_id__in=cat_ids) | Q(dish_type__in=dish_types),
+            is_active=True
+        ).exclude(id__in=tried_products).exclude(id__in=recommended_ids).distinct()[:needed]
+        recommended_ids.extend([p.id for p in rec_products])
+
+    if len(recommended_ids) < limit:
+        needed = limit - len(recommended_ids)
+        popular = Product.objects.filter(is_active=True).exclude(id__in=tried_products).exclude(id__in=recommended_ids)\
+            .annotate(total_sold=Sum('orderitem__quantity')).order_by('-total_sold')[:needed]
+        recommended_ids.extend([p.id for p in popular])
+
+    return list(Product.objects.filter(id__in=recommended_ids, is_active=True))
 
 
 def get_single_recommendation(request):
@@ -1565,12 +2071,18 @@ def send_support_message(request):
     
     text = request.POST.get('text', '').strip()
     file = request.FILES.get('file')
+    order_id = request.POST.get('order_id')  # опционально
     
     if not text and not file:
         return JsonResponse({'status': 'error', 'message': 'Введите текст или прикрепите файл'}, status=400)
     
+    order = None
+    if order_id:
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+    
     msg = SupportMessage.objects.create(
         user=request.user,
+        order=order,
         text=text,
         file=file if file else None
     )
@@ -1626,3 +2138,167 @@ def get_user_orders_statuses(request):
     orders = Order.objects.filter(user=request.user).exclude(status__in=['completed', 'cancelled']).order_by('-created_at')
     data = [{'id': o.id, 'status': o.status, 'status_display': o.get_status_display()} for o in orders]
     return JsonResponse({'orders': data})
+
+@staff_member_required
+def get_all_orders_data(request):
+    """Возвращает все заказы в JSON с фильтрацией и пагинацией для вкладки 'Все заказы'"""
+    try:
+        orders = Order.objects.all().prefetch_related('items__product', 'user')
+
+        # Фильтр по статусу
+        status = request.GET.get('status')
+        if status and status != 'all':
+            orders = orders.filter(status=status)
+
+        # Поиск по ID заказа
+        search = request.GET.get('search')
+        if search and search.isdigit():
+            orders = orders.filter(id=int(search))
+
+        # Фильтр по датам
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+        if date_from:
+            orders = orders.filter(created_at__date__gte=date_from)
+        if date_to:
+            orders = orders.filter(created_at__date__lte=date_to)
+
+        # Сортировка
+        sort = request.GET.get('sort', 'newest')
+        if sort == 'newest':
+            orders = orders.order_by('-created_at')
+        elif sort == 'oldest':
+            orders = orders.order_by('created_at')
+        elif sort == 'price-high':
+            orders = orders.order_by('-total_price')
+        elif sort == 'price-low':
+            orders = orders.order_by('total_price')
+        else:
+            orders = orders.order_by('-created_at')
+
+        data = []
+        for order in orders:
+            comments = [item.comment for item in order.items.all() if item.comment]
+            data.append({
+                'id': order.id,
+                'user': order.user.username if order.user else 'Гость',
+                'phone': order.phone,
+                'total_price': float(order.total_price),
+                'address': order.address,
+                'status': order.status,
+                'status_display': order.get_status_display(),
+                'created_at': order.created_at.isoformat(),
+                'created_time': order.created_at.strftime('%H:%M') if order.created_at else '',
+                'created_date': order.created_at.date().isoformat() if order.created_at else '',
+                'delivery_time_from': order.delivery_time_from.strftime('%H:%M') if order.delivery_time_from else '',
+                'delivery_time_to': order.delivery_time_to.strftime('%H:%M') if order.delivery_time_to else '',
+                'items_comments': comments,
+            })
+        return JsonResponse({'orders': data})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@staff_member_required
+def get_analytics_data(request):
+    start = request.GET.get('start_date')
+    end = request.GET.get('end_date')
+    if not start or not end:
+        return JsonResponse({'error': 'start_date and end_date are required'}, status=400)
+    
+    # Преобразуем строки в объекты date
+    try:
+        start_date = datetime.strptime(start, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format, use YYYY-MM-DD'}, status=400)
+
+    orders = Order.objects.filter(created_at__date__range=[start_date, end_date])
+    total_revenue = orders.aggregate(Sum('total_price'))['total_price__sum'] or 0
+    orders_count = orders.count()
+    avg_check = total_revenue / orders_count if orders_count else 0
+
+    # Динамика по дням
+    daily = orders.annotate(day=TruncDate('created_at')).values('day').annotate(
+        revenue=Sum('total_price'),
+        count=Count('id')
+    ).order_by('day')
+    days = [d['day'].isoformat() for d in daily]
+    revenues = [float(d['revenue']) for d in daily]
+    order_counts = [d['count'] for d in daily]
+
+    # Топ-5 товаров
+    top = OrderItem.objects.filter(order__in=orders).values('product__name').annotate(
+        qty=Sum('quantity')
+    ).order_by('-qty')[:5]
+    top_products = [{'name': t['product__name'], 'qty': t['qty']} for t in top]
+
+    return JsonResponse({
+        'total_revenue': float(total_revenue),
+        'orders_count': orders_count,
+        'avg_check': float(avg_check),
+        'days': days,
+        'revenues': revenues,
+        'order_counts': order_counts,
+        'top_products': top_products,
+        'start_date': start_date.isoformat(),
+        'end_date': end_date.isoformat(),
+    })
+
+@staff_member_required
+def analytics_api(request):
+    try:
+        start = request.GET.get('start_date')
+        end = request.GET.get('end_date')
+        if not start or not end:
+            return JsonResponse({'error': 'start_date and end_date required'}, status=400)
+
+        # Преобразуем строки в объекты date
+        try:
+            start_date = datetime.strptime(start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'error': 'Invalid date format, use YYYY-MM-DD'}, status=400)
+
+        # Завершённые заказы за период
+        orders = Order.objects.filter(created_at__date__range=[start_date, end_date])
+        total_revenue = orders.aggregate(Sum('total_price'))['total_price__sum'] or 0
+        orders_count = orders.count()
+        avg_check = total_revenue / orders_count if orders_count else 0
+
+        # Динамика по дням (без .extra)
+        daily_stats = orders.annotate(day=TruncDate('created_at')) \
+            .values('day') \
+            .annotate(
+                revenue=Sum('total_price'),
+                count=Count('id')
+            ) \
+            .order_by('day')
+
+        days = [str(item['day']) for item in daily_stats]
+        revenues = [float(item['revenue']) for item in daily_stats]
+        order_counts = [item['count'] for item in daily_stats]
+
+        # Топ‑5 товаров
+        top_items = OrderItem.objects.filter(order__in=orders) \
+            .values('product__name') \
+            .annotate(qty=Sum('quantity')) \
+            .order_by('-qty')[:5]
+
+        top_products = [{'name': t['product__name'], 'qty': t['qty']} for t in top_items]
+
+        return JsonResponse({
+            'total_revenue': float(total_revenue),
+            'orders_count': orders_count,
+            'avg_check': float(avg_check),
+            'days': days,
+            'revenues': revenues,
+            'order_counts': order_counts,
+            'top_products': top_products,
+        })
+    except Exception as e:
+        # Логируем ошибку на сервер
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
