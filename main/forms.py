@@ -45,7 +45,7 @@ class UserRegisterForm(UserCreationForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['phone', 'address']
+        fields = ['phone']
         widgets = {
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Телефон'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ваш адрес'}),

@@ -26,10 +26,6 @@ urlpatterns = [
     path('api/analytics-data/', views.api_analytics_data, name='api_analytics_data'),
     path('api/analytics/', views.get_analytics_data, name='analytics'),
     path('api/analytics/', views.get_analytics_data, name='analytics_api'),
-    path('order/<int:order_id>/support-messages/', views.get_order_support_messages, name='order_support_messages'),
-    path('order/<int:order_id>/support-reply/', views.send_order_support_reply, name='order_support_reply'),
-    path('order/<int:order_id>/client-support-messages/', views.get_client_order_messages, name='client_support_messages'),
-    path('order/<int:order_id>/client-support-send/', views.send_client_support_message, name='client_support_send'),
     
     # Комментарии к товарам
     path('update_comment/<int:product_id>/', views.update_item_comment, name='update_comment'),
@@ -89,11 +85,6 @@ urlpatterns = [
     path('category/delete/<int:category_id>/', views.delete_category, name='delete_category'),
     path('order-item/update/<int:item_id>/<str:action>/', views.update_order_item, name='update_order_item'),
     path('order-item/remove/<int:item_id>/', views.remove_order_item, name='remove_order_item'),
-    path('api/support/messages/', views.get_support_messages, name='support_messages'),
-    path('api/support/send/', views.send_support_message, name='send_support_message'),
-    path('api/support/admin/users/', views.get_support_users, name='support_admin_users'),
-    path('api/support/admin/messages/<int:user_id>/', views.get_user_messages, name='support_user_messages'),
-    path('api/support/admin/reply/', views.send_support_reply, name='support_admin_reply'),
     path('api/online-couriers/', views.get_online_couriers, name='online_couriers'),
     path('api/operator/new-orders/', views.get_new_orders, name='new_orders_api'),
 

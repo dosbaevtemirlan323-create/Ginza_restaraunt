@@ -8,10 +8,6 @@
     /* ========== БАЗОВЫЕ СТИЛИ ========== */
     .op-card { transition: transform 0.2s, box-shadow 0.2s; border: none !important; }
     .op-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
-    .badge-status { font-size: 0.75rem; padding: 0.5em 1em; }
-    .order-item-row { border-bottom: 1px dashed #dee2e6; padding: 10px 0; }
-    .order-item-row:last-child { border-bottom: none; }
-    .sticky-report-header { position: sticky; top: 0; background: white; z-index: 10; border-bottom: 2px solid #f8f9fa; }
     .order-unviewed { background-color: #fff3cd !important; border-left: 5px solid #ffc107 !important; }
     .order-unviewed .card-body { font-weight: bold; }
     @keyframes pulse-warning {
@@ -39,58 +35,11 @@
         .history-filters .row { gap: 10px; }
         .modal-custom .modal-dialog { margin: 0.5rem; max-width: calc(100% - 1rem); }
     }
-
-    .modal-custom.show {
-        animation: fadeIn 0.2s ease-out;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
-    .transition-hover {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .transition-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 1rem 2rem rgba(0,0,0,0.1) !important;
-    }
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #212529 0%, #343a40 100%);
-    }
-    /* Стили чата */
-    .chat-messages-area {
-        display: flex;
-        flex-direction: column;
-    }
-    .chat-message {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 15px;
-        width: 100%;
-    }
-    .chat-message.operator {
-        align-items: flex-end !important;
-    }
-    .chat-message.client {
-        align-items: flex-start !important;
-    }
-    .message-bubble {
-        max-width: 70%;
-        padding: 10px 15px;
-        border-radius: 18px;
-        word-wrap: break-word;
-    }
-    .chat-message.operator .message-bubble {
-        background: #dcf8c5 !important;
-        border-bottom-right-radius: 5px;
-        border-bottom-left-radius: 18px;
-    }
-    .chat-message.client .message-bubble {
-        background: white !important;
-        border: 1px solid #ddd;
-        border-bottom-left-radius: 5px;
-        border-bottom-right-radius: 18px;
-    }
+    .modal-custom.show { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .transition-hover { transition: transform 0.2s, box-shadow 0.2s; }
+    .transition-hover:hover { transform: translateY(-5px); box-shadow: 0 1rem 2rem rgba(0,0,0,0.1) !important; }
+    .bg-gradient-primary { background: linear-gradient(135deg, #212529 0%, #343a40 100%); }
     .order-chat-messages { max-height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
     .order-chat-message { margin-bottom: 12px; display: flex; flex-direction: column; }
     .order-chat-message.user { align-items: flex-end; }
@@ -98,79 +47,14 @@
     .order-chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 18px; background: white; border: 1px solid #e0e0e0; }
     .order-chat-message.user .order-chat-bubble { background: #ffc107; border: none; }
     .order-chat-time { font-size: 10px; color: #999; margin-top: 4px; }
-    .analytics-metric { background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-    .metric-value { font-size: 28px; font-weight: bold; }
-
-    /* Сетка заказов – три колонки на больших экранах */
-    @media (min-width: 992px) {
-        .row-cols-lg-3 > * { flex: 0 0 auto; width: 33.33333333%; }
-    }
     .container { max-width: 1400px !important; }
-    /* Шире контейнер */
-    .container {
-        max-width: 1400px !important;
-    }
-
-    /* Три колонки для карточек заказов на больших экранах */
-    @media (min-width: 992px) {
-        .row-cols-lg-3 > * {
-            flex: 0 0 auto;
-            width: 33.33333%;
-        }
-    }
-
-    /* Аналитика modal — оптимизированная высота и прокрутка */
-    #reportModal.modal-custom .modal-dialog {
-        max-width: 1200px;
-        width: 90%;
-        margin: 1.75rem auto;
-    }
-    #reportModal .modal-content {
-        max-height: 90vh;
-        display: flex;
-        flex-direction: column;
-    }
-    #reportModal .modal-body {
-        overflow-y: auto;
-        max-height: calc(90vh - 120px);
-        padding: 1.5rem;
-    }
-    #reportModal .row.g-3 {
-        display: flex;
-        flex-wrap: wrap;
-    }
-    #reportModal .col-md-4 {
-        flex: 0 0 auto;
-        width: 33.33333333%;
-    }
-    @media (min-width: 992px) {
-        #reportModal .col-md-4 {
-            width: 33.3333%;
-        }
-    }
-    #reportModal canvas {
-        max-height: 280px;
-        width: 100%;
-    }
-    #reportModal .list-group-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    /* На мобильных устройствах колонки в 1 ряд */
-    @media (max-width: 768px) {
-        #reportModal .col-md-4 {
-            width: 100%;
-            margin-bottom: 1rem;
-        }
-    }
-
-    /* Сами карточки пусть занимают всю ширину колонки */
-    #all-orders-container .card {
-        width: 100%;
-    }
+    @media (min-width: 992px) { .row-cols-lg-3 > * { flex: 0 0 auto; width: 33.33333%; } }
+    #reportModal.modal-custom .modal-dialog { max-width: 1200px; width: 90%; margin: 1.75rem auto; }
+    #reportModal .modal-content { max-height: 90vh; display: flex; flex-direction: column; }
+    #reportModal .modal-body { overflow-y: auto; max-height: calc(90vh - 120px); padding: 1.5rem; }
+    #reportModal canvas { max-height: 280px; width: 100%; }
+    @media (max-width: 768px) { #reportModal .col-md-4 { width: 100%; margin-bottom: 1rem; } }
+    #all-orders-container .card { width: 100%; }
 </style>
 
 <div class="container mt-4 pb-5">
@@ -250,7 +134,6 @@
         <li class="nav-item"><button class="nav-link active rounded-pill" onclick="showTab('tab-all')">Все заказы</button></li>
         <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-products')"><i class="bi bi-grid"></i> Товары</button></li>
         <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-couriers')"><i class="bi bi-people"></i> Курьеры</button></li>
-        <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-support')"><i class="bi bi-chat-dots me-1"></i> Вопросы</button></li>
     </ul>
 
     <div class="tab-content">
@@ -419,50 +302,6 @@
                             {% empty %}
                             <p class="text-muted text-center py-3">Нет зарегистрированных курьеров</p>
                             {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ВКЛАДКА "ВОПРОСЫ" -->
-        <div class="tab-pane" id="tab-support">
-            <div class="support-chat-container border rounded-4 overflow-hidden">
-                <div class="row g-0">
-                    <div class="col-md-4 border-end">
-                        <div id="support-users-list" style="max-height: 70vh; overflow-y: auto;">
-                            <div class="text-center py-4 text-muted">Загрузка пользователей...</div>
-                        </div>
-                    </div>
-                    <div class="col-md-8">
-                        <div id="chat-area" style="display: none;">
-                            <div class="user-info-header p-3 border-bottom bg-light">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h5 class="fw-bold mb-0" id="chat-user-name">Выберите пользователя</h5>
-                                        <small class="text-muted" id="chat-user-phone"></small>
-                                    </div>
-                                    <span class="badge bg-warning text-dark rounded-pill">Активный чат</span>
-                                </div>
-                            </div>
-                            <div id="chat-messages-area" class="p-3" style="height: 60vh; overflow-y: auto; background: #f8f9fa;"></div>
-                            <div class="chat-input-area p-3 border-top bg-white">
-                                <div class="d-flex gap-2">
-                                    <textarea class="form-control rounded-3" id="reply-message-input" rows="2" placeholder="Введите ответ..."></textarea>
-                                    <button class="btn btn-warning rounded-3" id="send-reply-btn" onclick="sendReply()"><i class="bi bi-send"></i></button>
-                                </div>
-                                <div class="mt-2">
-                                    <input type="file" id="reply-file-input" class="d-none" accept="image/*,.pdf,.doc,.docx,.txt">
-                                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('reply-file-input').click()">
-                                        <i class="bi bi-paperclip"></i> Прикрепить файл
-                                    </button>
-                                    <span class="small text-muted ms-2" id="reply-file-name"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="no-chat-selected" class="text-center py-5">
-                            <i class="bi bi-chat-dots fs-1 text-muted opacity-25"></i>
-                            <p class="mt-3 text-muted">Выберите пользователя, чтобы начать диалог</p>
                         </div>
                     </div>
                 </div>
@@ -639,13 +478,10 @@
                 <button type="button" class="btn-close btn-close-white" onclick="closeModal('reportModal')"></button>
             </div>
             <div class="modal-body p-4">
-                <!-- Панель периода -->
                 <div class="card border-0 shadow-sm rounded-4 mb-4">
                     <div class="card-body p-3">
                         <div class="row g-2 align-items-center">
-                            <div class="col-auto">
-                                <span class="fw-semibold"><i class="bi bi-calendar3 me-1"></i> Период:</span>
-                            </div>
+                            <div class="col-auto"><span class="fw-semibold"><i class="bi bi-calendar3 me-1"></i> Период:</span></div>
                             <div class="col-auto">
                                 <div class="btn-group" role="group">
                                     <button type="button" class="btn btn-outline-secondary btn-sm period-btn" data-period="today">Сегодня</button>
@@ -678,7 +514,6 @@
                     </div>
                 </div>
 
-                <!-- KPI карточки -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm rounded-4 p-3 text-center h-100 transition-hover">
@@ -709,7 +544,6 @@
                     </div>
                 </div>
 
-                <!-- График -->
                 <div class="card border-0 shadow-sm rounded-4 mb-4">
                     <div class="card-header bg-white border-0 pt-3">
                         <div class="d-flex justify-content-between align-items-center flex-wrap">
@@ -725,25 +559,18 @@
                     </div>
                 </div>
 
-                <!-- Топ товаров -->
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-header bg-white border-0 pt-3">
                         <h6 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-warning"></i> Топ-5 товаров</h6>
                     </div>
                     <div class="card-body">
-                        <div id="top-products-list" class="mb-2">
-                            <div class="text-center text-muted py-3">Загрузка...</div>
-                        </div>
+                        <div id="top-products-list" class="mb-2"><div class="text-center text-muted py-3">Загрузка...</div></div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer border-0 bg-light p-4 rounded-bottom-4">
-                <button onclick="window.print()" class="btn btn-outline-dark rounded-pill px-4">
-                    <i class="bi bi-printer me-2"></i> Печать отчёта
-                </button>
-                <button onclick="exportAnalyticsToCSV()" class="btn btn-success rounded-pill px-4">
-                    <i class="bi bi-file-spreadsheet me-2"></i> Экспорт CSV
-                </button>
+                <button onclick="window.print()" class="btn btn-outline-dark rounded-pill px-4"><i class="bi bi-printer me-2"></i> Печать отчёта</button>
+                <button onclick="exportAnalyticsToCSV()" class="btn btn-success rounded-pill px-4"><i class="bi bi-file-spreadsheet me-2"></i> Экспорт CSV</button>
             </div>
         </div>
     </div>
@@ -751,118 +578,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-
-    // ========== ЗВУК НОВЫХ ЗАКАЗОВ (только одна правильная версия) ==========
-    let audioCtx = null;
-    let audioAllowed = false;
-
-    function initAudio() {
-        if (audioCtx) return;
-        try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            // Создаём "тихий" звук для запроса разрешения
-            const oscillator = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            oscillator.connect(gain);
-            gain.connect(audioCtx.destination);
-            gain.gain.value = 0;
-            oscillator.start();
-            oscillator.stop(0.001);
-            audioCtx.resume().then(() => {
-                audioAllowed = true;
-                console.log('✅ Звук разрешён');
-                showToast('🔊 Звук уведомлений включен', 'success');
-                // Убираем кнопку включения звука, если она есть
-                const btn = document.getElementById('enable-sound-btn');
-                if (btn) btn.remove();
-            }).catch(e => console.warn('Не удалось активировать звук:', e));
-        } catch(e) {
-            console.warn('Web Audio не поддерживается', e);
-        }
-    }
-
-    function playNewOrderSound() {
-        if (!audioAllowed || !audioCtx) return;
-        try {
-            const now = audioCtx.currentTime;
-            const oscillator = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            oscillator.connect(gain);
-            gain.connect(audioCtx.destination);
-            oscillator.frequency.value = 880;
-            gain.gain.value = 0;
-            gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-            oscillator.start(now);
-            oscillator.stop(now + 0.4);
-        } catch(e) { console.warn('Ошибка воспроизведения звука', e); }
-    }
-
-    // Единая кнопка для ручного включения звука (создаётся один раз)
-    function createSoundButton() {
-        if (document.getElementById('enable-sound-btn')) return;
-        const btn = document.createElement('button');
-        btn.id = 'enable-sound-btn';
-        btn.innerHTML = '🔊';
-        btn.style.cssText = 'position:fixed; bottom:20px; left:20px; z-index:10000; width:50px; height:50px; border-radius:50%; background:#ffc107; border:none; box-shadow:0 2px 10px rgba(0,0,0,0.2); cursor:pointer; font-size:24px;';
-        btn.onclick = function() {
-            initAudio();
-            this.style.display = 'none';
-        };
-        document.body.appendChild(btn);
-    }
-
-    // Создаём кнопку при загрузке страницы
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createSoundButton);
-    } else {
-        createSoundButton();
-    }
-
-    // Автоматически создать кнопку при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        createSoundButton();
-        // Если звук уже разрешён (например, после клика по кнопке) – не показываем кнопку
-        if (audioAllowed) {
-            const btn = document.getElementById('custom-sound-btn');
-            if (btn) btn.style.display = 'none';
-        }
-    });
-
-    // Показываем подсказку о необходимости кликнуть для звука
-    function showSoundNotification() {
-        if (!audioAllowed && !localStorage.getItem('sound_asked')) {
-            const toastHtml = `
-                <div class="sound-hint position-fixed bottom-0 end-0 m-3 p-3 bg-dark text-white rounded-3 shadow" style="z-index: 10000; cursor: pointer;" onclick="initAudio(); this.remove(); localStorage.setItem('sound_asked', 'true');">
-                    🔔 Нажмите здесь, чтобы включить звук уведомлений
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', toastHtml);
-            setTimeout(() => {
-                const hint = document.querySelector('.sound-hint');
-                if (hint) hint.remove();
-            }, 10000);
-        }
-    }
-
-    // Вызываем подсказку через 2 секунды после загрузки, если звук ещё не разрешён
-    setTimeout(() => {
-        if (!audioAllowed && !localStorage.getItem('sound_asked')) {
-            showSoundNotification();
-        }
-    }, 2000);
-
-    // Также можно добавить постоянную кнопку для ручного включения звука
-    const soundBtn = document.createElement('button');
-    soundBtn.innerHTML = '🔊';
-    soundBtn.style.cssText = 'position:fixed; bottom:20px; left:20px; z-index:10000; border-radius:50%; width:50px; height:50px; background:#ffc107; border:none; box-shadow:0 2px 10px rgba(0,0,0,0.2); cursor:pointer;';
-    soundBtn.onclick = function() {
-        initAudio();
-        showToast('Звук уведомлений включен', 'success');
-        this.remove();
-    };
-    document.body.appendChild(soundBtn);
-
     // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
     function getCookie(name) {
         let value = "; " + document.cookie;
@@ -932,9 +647,7 @@
             closeModal(event.target.id);
         }
     };
-    function openAnalyticsModal() {
-        openModal('reportModal');
-    }
+    function openAnalyticsModal() { openModal('reportModal'); }
 
     // ========== ВКЛАДКИ ==========
     function showTab(tabId) {
@@ -945,7 +658,6 @@
         const activeButton = document.querySelector(`.nav-link[onclick="showTab('${tabId}')"]`);
         if (activeButton) activeButton.classList.add('active');
         if (tabId === 'tab-couriers') loadOnlineCouriers();
-        if (tabId === 'tab-support') loadSupportUsers();
         if (tabId === 'tab-all') loadAllOrders();
     }
 
@@ -974,18 +686,6 @@
                 showToast(data.message, 'success');
                 updateStatsCounts();
                 loadAllOrders();
-                const badges = {
-                    new: document.getElementById('badge-new'),
-                    work: document.getElementById('badge-work'),
-                    ready: document.getElementById('badge-ready'),
-                    delivery: document.getElementById('badge-delivery')
-                };
-                if (data.counts) {
-                    if (badges.new) badges.new.innerText = data.counts.new || 0;
-                    if (badges.work) badges.work.innerText = data.counts.cooking || 0;
-                    if (badges.ready) badges.ready.innerText = data.counts.ready || 0;
-                    if (badges.delivery) badges.delivery.innerText = data.counts.delivering || 0;
-                }
             } else {
                 showToast(data.message || 'Ошибка изменения статуса', 'danger');
             }
@@ -999,17 +699,8 @@
         fetch('/api/operator/counts/')
             .then(res => res.json())
             .then(data => {
-                if (data.counts) {
-                    const badges = {
-                        new: document.getElementById('badge-new'),
-                        work: document.getElementById('badge-work'),
-                        ready: document.getElementById('badge-ready'),
-                        delivery: document.getElementById('badge-delivery')
-                    };
-                    if (badges.new) badges.new.innerText = data.counts.new || 0;
-                    if (badges.work) badges.work.innerText = data.counts.cooking || 0;
-                    if (badges.ready) badges.ready.innerText = data.counts.ready || 0;
-                    if (badges.delivery) badges.delivery.innerText = data.counts.delivering || 0;
+                if (data.counts && document.getElementById('new-count')) {
+                    document.getElementById('new-count').innerText = data.counts.new || 0;
                 }
             })
             .catch(err => console.error(err));
@@ -1017,12 +708,15 @@
 
     // ========== ВСЕ ЗАКАЗЫ ==========
     let allOrdersData = [];
+    let notifiedNewOrderIds = new Set();
+
     function loadAllOrders() {
         const statusFilter = document.getElementById('all-status-filter')?.value || 'all';
         const searchId = document.getElementById('all-search-id')?.value.trim() || '';
         const dateFrom = document.getElementById('all-date-from')?.value;
         const dateTo = document.getElementById('all-date-to')?.value;
         const sortType = document.getElementById('all-sort')?.value || 'newest';
+        
         let url = '/api/operator/all-orders/';
         const params = new URLSearchParams();
         if (statusFilter !== 'all') params.append('status', statusFilter);
@@ -1031,10 +725,13 @@
         if (dateTo) params.append('end_date', dateTo);
         if (sortType) params.append('sort', sortType);
         if (params.toString()) url += '?' + params.toString();
+
         fetch(url)
             .then(res => res.json())
             .then(data => {
                 allOrdersData = data.orders || [];
+                
+                // Обработка полей даты и цен (оставляем как есть)
                 allOrdersData.forEach(order => {
                     if (order.created_at) {
                         const date = new Date(order.created_at);
@@ -1043,6 +740,7 @@
                     }
                     order.total_price = parseFloat(order.total_price) || 0;
                 });
+                
                 renderAllOrders();
             })
             .catch(err => {
@@ -1051,6 +749,38 @@
                 if (container) container.innerHTML = '<div class="text-center py-5 text-danger">Ошибка загрузки заказов</div>';
             });
     }
+    function checkNewOrdersBackground() {
+        // Запрашиваем строго статус 'new', игнорируя фильтры на странице
+        fetch('/api/operator/all-orders/?status=new')
+            .then(res => res.json())
+            .then(data => {
+                const rawOrders = data.orders || [];
+                
+                // Фильтруем только те, которые бэкенд считает непросмотренными
+                const newUnviewed = rawOrders.filter(order => !order.is_operator_viewed);
+                
+                newUnviewed.forEach(order => {
+                    // Если в текущей сессии вкладки мы этот пуш уже выводили — игнорируем
+                    if (notifiedNewOrderIds.has(order.id)) return; 
+                    
+                    // Стреляет уведомление
+                    showNotificationWithAction(
+                        '🆕 Новый заказ!',
+                        `Заказ №${order.id} от ${order.user} на сумму ${parseFloat(order.total_price).toFixed(2)} ₽`,
+                        () => showOrderDetails(order.id),
+                        'info'
+                    );
+                    
+                    // Запоминаем, что пуш сработал
+                    notifiedNewOrderIds.add(order.id);
+                });
+            })
+            .catch(err => console.error("Ошибка фонового мониторинга заказов:", err));
+    }
+
+    // Запускаем фоновый процесс раз в 10 секунд
+    setInterval(checkNewOrdersBackground, 10000);
+
     function renderAllOrders() {
         const container = document.getElementById('all-orders-container');
         if (!container) return;
@@ -1086,7 +816,7 @@
             else if (order.status === 'cancelled') actionButtons = `<span class="badge bg-danger">Отменён</span>`;
             html += `
                 <div class="col">
-                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 ${order.is_operator_viewed ? '' : 'order-unviewed'}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="fw-bold mb-0">Заказ №${order.id}</h6>
@@ -1101,7 +831,7 @@
                             <div class="d-flex gap-2 justify-content-between align-items-center">
                                 <button class="btn btn-outline-dark rounded-pill btn-sm" onclick="showOrderDetails(${order.id})">Детали</button>
                                 ${actionButtons}
-                                ${(order.status !== 'completed' && order.status !== 'cancelled') ? `<button class="btn btn-success btn-sm rounded-pill" onclick="nextStatus(${order.id}, '${order.status}')">Далее</button>` : ''}
+                                ${(order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'ready' && order.status !== 'delivering') ? `<button class="btn btn-success btn-sm rounded-pill" onclick="nextStatus(${order.id}, '${order.status}')">Далее</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1136,6 +866,19 @@
         document.getElementById('modalOrderId').innerText = orderId;
         document.getElementById('modalOrderContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning"></div> Загрузка...</div>';
         modal.show();
+
+        // Отметить заказ как просмотренный
+        fetch(`/api/mark-order-viewed/${orderId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } })
+            .then(() => {
+                // Обновить данные в allOrdersData
+                const orderIndex = allOrdersData.findIndex(o => o.id == orderId);
+                if (orderIndex !== -1 && !allOrdersData[orderIndex].is_operator_viewed) {
+                    allOrdersData[orderIndex].is_operator_viewed = true;
+                    renderAllOrders(); // перерисовать список, чтобы убрать подсветку
+                }
+            })
+            .catch(err => console.error('Ошибка отметки просмотра:', err));
+
         fetch(`/api/order-detail/${orderId}/`)
             .then(res => res.json())
             .then(data => {
@@ -1198,6 +941,8 @@
             .catch(err => { console.error(err); document.getElementById('modalOrderContent').innerHTML = '<div class="alert alert-danger">Ошибка загрузки деталей</div>'; });
         modal._element.addEventListener('hidden.bs.modal', function () { if (chatPollInterval) clearInterval(chatPollInterval); currentOrderChatOrderId = null; });
     }
+
+
     function loadOrderChat(orderId, silent = false) {
         fetch(`/order/${orderId}/messages/`)
             .then(res => res.json())
@@ -1376,102 +1121,6 @@
             .catch(err => console.error(err));
     }
 
-    // ========== ПОДДЕРЖКА ==========
-    let currentUserId = null;
-    let supportChatInterval = null;
-    function loadSupportUsers() {
-        fetch('/api/support/admin/users/')
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('support-users-list');
-                if (!container) return;
-                if (data.users && data.users.length) {
-                    container.innerHTML = '';
-                    data.users.forEach(user => {
-                        const unreadBadge = user.unread_count > 0 ? `<span class="support-user-badge ms-2 bg-danger text-white rounded-pill px-2 py-0 small">${user.unread_count}</span>` : '';
-                        container.innerHTML += `<div class="support-user-item p-2 border-bottom cursor-pointer" onclick="selectUser(${user.id}, '${escapeHtml(user.username)}')" data-user-id="${user.id}">
-                            <div class="fw-bold d-flex justify-content-between">${escapeHtml(user.username)}${unreadBadge}</div>
-                            <div class="small text-muted">${escapeHtml(user.last_message || 'Нет сообщений')}</div>
-                            <div class="small text-muted">${user.last_time || ''}</div>
-                        </div>`;
-                    });
-                } else {
-                    container.innerHTML = '<div class="text-center py-5 text-muted">Нет обращений</div>';
-                }
-            })
-            .catch(err => console.error(err));
-    }
-    function selectUser(userId, userName) {
-        if (supportChatInterval) clearInterval(supportChatInterval);
-        currentUserId = userId;
-        document.querySelectorAll('.support-user-item').forEach(el => el.classList.remove('active'));
-        const activeItem = document.querySelector(`.support-user-item[data-user-id="${userId}"]`);
-        if (activeItem) activeItem.classList.add('active');
-        document.getElementById('chat-user-name').innerText = userName;
-        document.getElementById('chat-area').style.display = 'block';
-        document.getElementById('no-chat-selected').style.display = 'none';
-        loadUserMessages(userId);
-        supportChatInterval = setInterval(() => { if (currentUserId) loadUserMessages(currentUserId, true); }, 3000);
-    }
-    function loadUserMessages(userId, silent = false) {
-        fetch(`/api/support/admin/messages/${userId}/`)
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('chat-messages-area');
-                if (!container) return;
-                if (data.messages && data.messages.length) {
-                    container.innerHTML = '';
-                    data.messages.forEach(msg => {
-                        const isOperator = msg.is_admin;
-                        container.innerHTML += `<div class="chat-message ${isOperator ? 'operator' : 'client'} mb-2">
-                            <div class="message-bubble p-2 rounded-3 shadow-sm ${isOperator ? 'bg-success bg-opacity-25' : 'bg-white border'}">
-                                <div>${escapeHtml(msg.text)}</div>
-                                ${msg.file_url ? `<div class="small"><a href="${msg.file_url}" target="_blank">📎 ${escapeHtml(msg.file_name)}</a></div>` : ''}
-                                <div class="small text-muted">${msg.created_at}</div>
-                            </div>
-                        </div>`;
-                    });
-                    container.scrollTop = container.scrollHeight;
-                } else if (!silent) container.innerHTML = '<div class="text-center text-muted">Нет сообщений</div>';
-            })
-            .catch(err => console.error(err));
-    }
-    function sendReply() {
-        if (!currentUserId) { alert('Выберите пользователя'); return; }
-        const text = document.getElementById('reply-message-input').value.trim();
-        const file = document.getElementById('reply-file-input').files[0];
-        if (!text && !file) { alert('Введите текст или прикрепите файл'); return; }
-        const btn = document.getElementById('send-reply-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        const formData = new FormData();
-        formData.append('user_id', currentUserId);
-        if (text) formData.append('text', text);
-        if (file) formData.append('file', file);
-        fetch('/api/support/admin/reply/', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                document.getElementById('reply-message-input').value = '';
-                document.getElementById('reply-file-input').value = '';
-                document.getElementById('reply-file-name').innerText = '';
-                loadUserMessages(currentUserId);
-            } else alert(data.message || 'Ошибка');
-        })
-        .catch(err => { console.error(err); alert('Ошибка отправки'); })
-        .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i>'; });
-    }
-    if (document.getElementById('reply-file-input')) {
-        document.getElementById('reply-file-input').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            document.getElementById('reply-file-name').innerText = fileName ? `📎 ${fileName}` : '';
-        });
-    }
-
     // ========== ИНИЦИАЛИЗАЦИЯ ==========
     document.addEventListener('DOMContentLoaded', function() {
         loadAllOrders();
@@ -1484,112 +1133,56 @@
             if (tabAll && tabAll.classList.contains('active')) loadAllOrders();
         }, 15000);
     });
-    function showBrowserNotification(orderId, message) {
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'granted') {
-            const notification = new Notification('🆕 Новый заказ!', {
-                body: `Заказ №${orderId}: ${message}`,
-                icon: '/static/logo.png',
-                tag: `order-${orderId}`,
-                data: { orderId: orderId }
-            });
-            notification.onclick = function(event) {
-                event.preventDefault();
-                window.focus();
-                openModal(`modal-${orderId}`);
-                showTab('tab-all');
-                notification.close();
-            };
-        } else if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    }
-    function addNewOrderToUI(order) {
-        const container = document.getElementById('new-orders-container');
-        if (!container) return;
-        if (document.getElementById(`order-card-${order.id}`)) return;
 
-        let commentsText = '';
-        if (order.items && order.items.length) {
-            const commentsList = order.items.filter(item => item.comment).map(item => item.comment).join(', ');
-            if (commentsList) commentsText = ` | <i class="bi bi-chat-dots me-1"></i> ${escapeHtml(commentsList)}`;
-        }
-        let deliveryHtml = '';
-        if (order.delivery_time_from || order.delivery_time) {
-            let timeStr = '';
-            if (order.delivery_time_from) {
-                if (order.delivery_time_to) {
-                    timeStr = `${order.delivery_time_from} – ${order.delivery_time_to}`;
-                } else {
-                    timeStr = order.delivery_time_from;
-                }
-            } else if (order.delivery_time) {
-                timeStr = order.delivery_time;
-            }
-            if (timeStr) deliveryHtml = ` | <i class="bi bi-clock me-1"></i> ${escapeHtml(timeStr)}`;
-        }
-
-        const orderHtml = `
-            <div class="card mb-3 border-start border-warning border-5 shadow-sm rounded-4 op-card pulse-new order-unviewed" id="order-card-${order.id}">
-                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1 flex-wrap gap-2">
-                            <h5 class="mb-0 fw-bold">Заказ №${order.id}</h5>
-                            <span class="badge bg-light text-dark border">${escapeHtml(order.created_at)}</span>
-                            <span class="badge bg-warning text-dark">💰 ${order.total_price} ₽</span>
-                        </div>
-                        <p class="small text-muted mb-0">
-                            <i class="bi bi-person me-1"></i> ${escapeHtml(order.user)} | 
-                            <i class="bi bi-geo-alt me-1"></i> ${escapeHtml(order.address)}
-                            ${deliveryHtml}
-                            ${commentsText}
-                        </p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-dark rounded-pill px-3" onclick="openModal('modal-${order.id}')">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button onclick="window.changeStatusAjax('${order.id}', 'cooking', 'new')" class="btn btn-success rounded-pill px-4 fw-bold">
-                            <i class="bi bi-play-fill me-1"></i> В работу
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.insertAdjacentHTML('afterbegin', orderHtml);
-        updateBadge('badge-new', 1);
-        
-        // Уведомления
-        if (!notifiedOrderIds.has(order.id)) {
-            notifiedOrderIds.add(order.id);
-            playNewOrderSound();
-            showBrowserNotification(order.id, `Сумма ${order.total_price} ₽. ${order.address.substring(0, 50)}`);
-            showToastWithAction(`Новый заказ №${order.id} на сумму ${order.total_price} ₽`, order.id);
-        }
-    }
-
-    function showToastWithAction(message, orderId) {
+    // Универсальное уведомление (тост + браузерное) с действием по клику
+    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
+        // Контейнер для тостов
         let container = document.getElementById('toast-container');
         if (!container) {
             container = document.createElement('div');
             container.id = 'toast-container';
-            container.style.cssText = 'position:fixed; bottom:20px; right:20px; z-index:9999;';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
             document.body.appendChild(container);
         }
+
         const toast = document.createElement('div');
-        toast.className = 'ginza-toast shadow-lg bg-white rounded-3 p-3 mb-2 d-flex align-items-center justify-content-between';
-        toast.innerHTML = `
-            <div>${message}</div>
-            <button class="btn btn-sm btn-warning rounded-pill ms-3" onclick="openModal('modal-${orderId}'); this.closest('.ginza-toast').remove();">
-                Открыть
-            </button>
-        `;
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
+        toast.style.cursor = 'pointer';
+
+        // Обработка клика – может быть функция или URL
+        toast.addEventListener('click', () => {
+            if (typeof onClickAction === 'function') {
+                onClickAction();
+            } else if (typeof onClickAction === 'string') {
+                window.location.href = onClickAction;
+            }
+        });
+
         container.appendChild(toast);
         setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 500);
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
         }, 8000);
+
+        // Браузерное уведомление
+        if (Notification.permission === 'granted') {
+            const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
+            notification.onclick = function() {
+                window.focus();
+                if (typeof onClickAction === 'function') onClickAction();
+                else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+                notification.close();
+            };
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
     }
 </script>
 {% endblock %}

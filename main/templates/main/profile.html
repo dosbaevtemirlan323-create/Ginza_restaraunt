@@ -397,7 +397,7 @@
 
                 <div id="ordersList">
                     {% for order in orders %}
-                    <div class="card mb-3 border-0 bg-light rounded-4 overflow-hidden shadow-sm transition-hover order-card" onclick="location.href='/order/{{ order.id }}/'">
+                    <div class="card mb-3 border-0 bg-light rounded-4 overflow-hidden shadow-sm transition-hover order-card" onclick="location.href='/order/{{ order.id }}/'" data-order-id="{{ order.id }}">
                         <div class="card-body p-0">
                             <div class="p-3 d-flex justify-content-between align-items-center bg-white border-bottom flex-wrap gap-2">
                                 <div>
@@ -418,7 +418,7 @@
                                     <small class="text-muted d-block"><i class="bi bi-clock me-1"></i> Доставка: {{ order.delivery_time|date:"d E, H:i" }}</small>
                                     {% endif %}
                                 </div>
-                                <span class="badge rounded-pill 
+                                <span class="badge rounded-pill status-badge
                                     {% if order.status == 'new' %}bg-warning text-dark
                                     {% elif order.status == 'cooking' %}bg-primary
                                     {% elif order.status == 'ready' %}bg-info
@@ -714,5 +714,175 @@
             setTimeout(() => { openReceipt({{ auto_open_id }}); }, 1000);
         });
     {% endif %}
+
+    // ========== УВЕДОМЛЕНИЯ И АВТООБНОВЛЕНИЕ СТАТУСОВ ==========
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
+        toast.style.cursor = 'pointer';
+
+        toast.addEventListener('click', () => {
+            if (typeof onClickAction === 'function') {
+                onClickAction();
+            } else if (typeof onClickAction === 'string') {
+                window.location.href = onClickAction;
+            }
+        });
+
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 8000);
+
+        if (Notification.permission === 'granted') {
+            const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
+            notification.onclick = function() {
+                window.focus();
+                if (typeof onClickAction === 'function') onClickAction();
+                else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+                notification.close();
+            };
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+
+    function showStatusNotification(message, orderId) {
+        if (!orderId) return;
+        const orderLink = `/order/${orderId}/`;
+        showNotificationWithAction('Статус заказа', message, orderLink, 'info');
+    }
+
+    // Функция обновления карточки заказа при изменении статуса
+    function updateOrderCard(orderId, newStatus, statusDisplay) {
+        const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+        if (!card) return;
+        
+        // Обновляем бейдж статуса (в верхней части карточки)
+        const badge = card.querySelector('.badge.rounded-pill.status-badge');
+        if (badge) {
+            badge.innerText = statusDisplay;
+            // Обновляем классы для цвета
+            badge.className = 'badge rounded-pill status-badge ';
+            if (newStatus === 'completed') badge.classList.add('bg-success');
+            else if (newStatus === 'delivering') badge.classList.add('bg-info');
+            else if (newStatus === 'cooking') badge.classList.add('bg-primary');
+            else if (newStatus === 'ready') badge.classList.add('bg-info');
+            else if (newStatus === 'new') badge.classList.add('bg-warning', 'text-dark');
+            else badge.classList.add('bg-secondary');
+        }
+        
+        // Обновляем дополнительный бейдж рядом с номером заказа (например, "Едет к вам")
+        const titleDiv = card.querySelector('.p-3.d-flex .fw-bold.mb-0');
+        if (titleDiv) {
+            const existingExtraBadge = titleDiv.querySelector('.ms-2.badge');
+            if (existingExtraBadge) existingExtraBadge.remove();
+            
+            if (newStatus === 'delivering') {
+                const span = document.createElement('span');
+                span.className = 'ms-2 badge bg-primary animate-pulse';
+                span.style.fontSize = '0.6rem';
+                span.innerHTML = '🚚 ЕДЕТ К ВАМ';
+                titleDiv.appendChild(span);
+            } else if (newStatus === 'completed') {
+                const span = document.createElement('span');
+                span.className = 'ms-2 badge bg-success';
+                span.style.fontSize = '0.6rem';
+                span.innerHTML = '✅ Доставлен';
+                titleDiv.appendChild(span);
+            } else if (newStatus === 'cooking') {
+                const span = document.createElement('span');
+                span.className = 'ms-2 badge bg-primary';
+                span.style.fontSize = '0.6rem';
+                span.innerHTML = '🍳 Готовится';
+                titleDiv.appendChild(span);
+            } else if (newStatus === 'ready') {
+                const span = document.createElement('span');
+                span.className = 'ms-2 badge bg-info';
+                span.style.fontSize = '0.6rem';
+                span.innerHTML = '✅ Готов';
+                titleDiv.appendChild(span);
+            }
+        }
+    }
+
+    // Периодическая проверка статусов
+    const userIsAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+    let lastUserOrdersState = {};
+    let isFirstOrderCheck = true;
+
+    function checkUserOrdersStatus() {
+        if (!userIsAuthenticated) return;
+        fetch('/api/user/orders-status/')
+            .then(res => res.json())
+            .then(data => {
+                const newState = {};
+                if (data.orders) {
+                    data.orders.forEach(order => {
+                        newState[order.id] = { status: order.status, display: order.status_display };
+                    });
+                }
+
+                if (isFirstOrderCheck) {
+                    lastUserOrdersState = newState;
+                    isFirstOrderCheck = false;
+                    return;
+                }
+
+                for (const [id, info] of Object.entries(newState)) {
+                    const old = lastUserOrdersState[id];
+                    if (!old) {
+                        showStatusNotification(`🆕 Новый заказ №${id} (статус: ${info.display})`, id);
+                    } else if (old.status !== info.status) {
+                        showStatusNotification(`🔄 Заказ №${id} → ${info.display}`, id);
+                        updateOrderCard(id, info.status, info.display);
+                    }
+                }
+                lastUserOrdersState = newState;
+            })
+            .catch(err => console.error("Ошибка получения статусов заказов:", err));
+    }
+
+    // Первоначальная инициализация (без уведомлений)
+    fetch('/api/user/orders-status/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.orders) {
+                data.orders.forEach(order => {
+                    lastUserOrdersState[order.id] = { status: order.status, display: order.status_display };
+                });
+            }
+            isFirstOrderCheck = false;
+        })
+        .catch(err => console.error(err));
+
+    // Запускаем проверку каждые 5 секунд
+    setInterval(checkUserOrdersStatus, 5000);
 </script>
 {% endblock %}

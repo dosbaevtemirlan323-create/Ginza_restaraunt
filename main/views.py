@@ -9,8 +9,8 @@ from django.db.models import Prefetch, Sum, F, Q, Count
 from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
-from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, SupportMessage, ProductRecommendation, OrderStatusHistory, Discount 
 from .cart import Cart
+from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, ProductRecommendation, OrderStatusHistory, Discount
 from .forms import UserRegisterForm
 import uuid
 import requests
@@ -319,11 +319,16 @@ def order_create(request):
         return redirect('menu')
     
     if request.method == 'POST':
-        address_ids = request.POST.getlist('address_ids')
+        # --- Получаем данные из формы ---
+        address_id = request.POST.get('address_id')
         new_address = request.POST.get('new_address')
         phone = request.POST.get('phone')
         payment_method = request.POST.get('payment_method')
         use_points = request.POST.get('use_points') == 'on'
+        
+        # --- Скидка из скрытых полей ---
+        discount_percent = Decimal(request.POST.get('applied_discount_percent', 0))
+        discount_amount = Decimal(request.POST.get('discount_amount', 0))
         
         # --- Желаемое время доставки ---
         delivery_time_from_str = request.POST.get('delivery_time_from')
@@ -351,163 +356,134 @@ def order_create(request):
             except ValueError:
                 pass
         
-        # --- Сбор адресов ---
-        final_addresses = []
+        # --- Один адрес ---
+        final_address = None
+        lat = None
+        lng = None
+        
         if new_address and new_address.strip():
-            final_addresses.append(new_address.strip())
-        if address_ids:
-            db_addresses = Address.objects.filter(id__in=address_ids, user=request.user)
-            for addr_obj in db_addresses:
-                final_addresses.append(addr_obj.address_line)
-        final_addresses = list(dict.fromkeys(final_addresses))
-        prefix = "Байконур, "
-        final_addresses = [addr for addr in final_addresses 
-                           if addr and len(addr.strip()) > len(prefix) and addr.strip() != prefix.strip()]
-        if not final_addresses:
+            final_address = new_address.strip()
+            # Пытаемся геокодировать, но не блокируем создание заказа
+            is_valid, lat, lng = validate_address(final_address)
+            if not is_valid:
+                lat = None
+                lng = None
+                # Не выводим ошибку, просто продолжим без координат
+        elif address_id:
+            addr_obj = get_object_or_404(Address, id=address_id, user=request.user)
+            final_address = addr_obj.address_line
+            lat = addr_obj.lat
+            lng = addr_obj.lng
+        else:
             messages.error(request, "Пожалуйста, выберите или введите адрес доставки")
             return redirect('cart_detail')
         
-        # Валидация нового адреса
-        if new_address and new_address.strip():
-            clean_new_address = new_address.strip()
-            if len(clean_new_address) > len(prefix) and clean_new_address != prefix.strip():
-                is_valid, lat, lng = validate_address(clean_new_address)
-                if not is_valid:
-                    messages.error(request, f"Адрес '{clean_new_address}' не найден. Проверьте правильность написания (укажите улицу и номер дома)")
-                    return redirect('cart_detail')
-        
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        
-        address_count = len(final_addresses)
+        # --- Расчёт итоговой цены с учётом скидки ---
         total_cart_price = cart.get_total_price()
-        total_full_price = total_cart_price * address_count
-
-        # --- Расчёт баллов ---
+        price_after_discount = total_cart_price * (100 - discount_percent) / 100
+        
+        # --- Баллы ---
+        profile, _ = Profile.objects.get_or_create(user=request.user)
         total_points_to_spend = Decimal('0')
         if use_points and profile.points > 0:
-            # 30% от суммы заказа (уже было)
-            max_by_price = (total_full_price * Decimal('0.30')).quantize(Decimal('1'))
-            # 30% от имеющихся баллов
+            max_by_price = (price_after_discount * Decimal('0.30')).quantize(Decimal('1'))
             max_by_points = (Decimal(profile.points) * Decimal('0.30')).quantize(Decimal('1'))
-            # Ограничение – минимум из двух
             max_deductible = min(max_by_price, max_by_points)
             total_points_to_spend = min(Decimal(profile.points), max_deductible)
-
-        points_per_order = [0] * address_count
-        if total_points_to_spend > 0:
-            base_per_order = int(total_points_to_spend // address_count)
-            remainder = int(total_points_to_spend % address_count)
-            for i in range(address_count):
-                points_per_order[i] = base_per_order
-                if i < remainder:
-                    points_per_order[i] += 1
-
-        actual_payment_amount = total_full_price - total_points_to_spend
-
-        # --- Геокодирование адресов ---
-        addresses_with_coords = []
-        for addr in final_addresses:
-            is_valid, lat, lng = validate_address(addr)
+        
+        final_price = price_after_discount - total_points_to_spend
+        
+        # --- Геокодирование, если координат нет ---
+        if lat is None or lng is None:
+            is_valid, lat, lng = validate_address(final_address)
             if not is_valid:
-                messages.error(request, f"Адрес '{addr}' не распознан. Укажите улицу и дом.")
-                return redirect('cart_detail')
-            addresses_with_coords.append((addr, lat, lng))
-
-        # --- ОПЛАТА НАЛИЧНЫМИ (создаём заказы сразу) ---
+                lat = None
+                lng = None
+        
+        # --- ОПЛАТА НАЛИЧНЫМИ ---
         if payment_method == 'cash':
-            created_orders = []
             try:
-                for idx, (addr_text, lat, lng) in enumerate(addresses_with_coords):
-                    points_used = Decimal(str(points_per_order[idx])) if idx < len(points_per_order) else 0
-                    current_order_price = total_cart_price - points_used
-                    order = Order.objects.create(
-                        user=request.user,
-                        address=addr_text,
-                        phone=phone,
-                        payment_method='cash',
-                        total_price=current_order_price,
-                        points_used=int(points_used),
-                        status='new',
-                        is_paid=False,
-                        delivery_time_from=delivery_time_from,
-                        delivery_time_to=delivery_time_to,
-                        lat=lat,
-                        lng=lng,
-                    )
-                    # --- Запись в историю статусов ---
-                    OrderStatusHistory.objects.create(
+                order = Order.objects.create(
+                    user=request.user,
+                    address=final_address,
+                    phone=phone,
+                    payment_method='cash',
+                    total_price=final_price,
+                    points_used=int(total_points_to_spend),
+                    status='new',
+                    is_paid=False,
+                    delivery_time_from=delivery_time_from,
+                    delivery_time_to=delivery_time_to,
+                    lat=lat,
+                    lng=lng,
+                )
+                OrderStatusHistory.objects.create(
+                    order=order,
+                    old_status='',
+                    new_status='new',
+                    changed_by=request.user
+                )
+                for item in cart:
+                    OrderItem.objects.create(
                         order=order,
-                        old_status='',
-                        new_status='new',
-                        changed_by=request.user
+                        product=item['product'],
+                        price=item['price'],
+                        quantity=item['quantity'],
+                        comment=item.get('comment', '')
                     )
-                    # --- Товары заказа ---
-                    for item in cart:
-                        OrderItem.objects.create(
-                            order=order,
-                            product=item['product'],
-                            price=item['price'],
-                            quantity=item['quantity'],
-                            comment=item.get('comment', '')
-                        )
-                    created_orders.append(order)
                 
                 # Списываем баллы
                 if total_points_to_spend > 0:
                     profile.points -= int(total_points_to_spend)
                     profile.save()
                 # Начисляем кэшбэк
-                total_earned = 0
-                for o in created_orders:
-                    earned = int(o.total_price * Decimal('0.05'))
-                    total_earned += earned
-                profile.points += total_earned
+                earned = int(final_price * Decimal('0.05'))
+                profile.points += earned
                 profile.save()
                 
                 cart.clear()
-                # Отправка в ресторан (эмулятор)
-                for order in created_orders:
-                    try:
-                        send_order_to_restaurant(order)
-                        send_receipt_email(order)
-                    except Exception as e:
-                        print(f"Error sending to restaurant: {e}")
+                # Отправка в ресторан
+                try:
+                    send_order_to_restaurant(order)
+                    send_receipt_email(order)
+                except Exception as e:
+                    print(f"Error sending to restaurant: {e}")
                 
-                request.session['open_receipt_id'] = created_orders[0].id
-                messages.success(request, f"Заказ №{created_orders[0].id} оформлен! Оплата наличными при получении.")
+                request.session['open_receipt_id'] = order.id
+                messages.success(request, f"Заказ №{order.id} оформлен! Оплата наличными при получении.")
                 return render(request, 'main/order_success.html', {
-                    'order': created_orders[0],
-                    'earned': total_earned,
-                    'count': address_count
+                    'order': order,
+                    'earned': earned,
+                    'count': 1
                 })
             except Exception as e:
                 print(f"CRITICAL ERROR: {e}")
                 import traceback
                 traceback.print_exc()
-                for o in created_orders:
-                    o.delete()
                 messages.error(request, f"Ошибка при создании заказа: {e}")
                 return redirect('cart_detail')
         
-        # --- ОПЛАТА КАРТОЙ (сохраняем данные в сессию и уходим в ЮKassa) ---
+        # --- ОПЛАТА КАРТОЙ (сохраняем в сессию) ---
         request.session['pending_order'] = {
-            'final_addresses_with_coords': addresses_with_coords,
+            'address': final_address,
             'phone': phone,
             'payment_method': payment_method,
             'use_points': use_points,
             'total_cart_price': float(total_cart_price),
-            'address_count': address_count,
-            'points_per_order': points_per_order,
+            'discount_percent': float(discount_percent),
+            'discount_amount': float(discount_amount),
             'total_points_to_spend': float(total_points_to_spend),
             'delivery_time_from': delivery_time_from.isoformat() if delivery_time_from else None,
             'delivery_time_to': delivery_time_to.isoformat() if delivery_time_to else None,
+            'lat': lat,
+            'lng': lng,
         }
         
         # Создаём платёж в ЮKassa
         idempotence_key = str(uuid.uuid4())
         try:
             payment = Payment.create({
-                "amount": {"value": str(actual_payment_amount), "currency": "RUB"},
+                "amount": {"value": str(final_price), "currency": "RUB"},
                 "confirmation": {
                     "type": "redirect",
                     "return_url": request.build_absolute_uri('/payment/success/')
@@ -516,7 +492,6 @@ def order_create(request):
                 "description": f"Заказ GINZA",
                 "metadata": {
                     "user_id": request.user.id,
-                    "address_count": str(address_count)
                 }
             }, idempotence_key)
         except Exception as e:
@@ -531,7 +506,6 @@ def order_create(request):
 
 @login_required
 def payment_success(request):
-    """Обработка успешной оплаты. Создаём заказы из сессии."""
     pending_order = request.session.get('pending_order')
     pending_payment_id = request.session.get('pending_payment_id')
     
@@ -555,18 +529,20 @@ def payment_success(request):
         return redirect('cart_detail')
     
     # Восстанавливаем данные из сессии
-    addresses_with_coords = pending_order['final_addresses_with_coords']
+    address = pending_order['address']
     phone = pending_order['phone']
     payment_method = pending_order['payment_method']
     total_cart_price = Decimal(str(pending_order['total_cart_price']))
-    address_count = pending_order['address_count']
-    points_per_order = pending_order['points_per_order']
+    discount_percent = Decimal(str(pending_order['discount_percent']))
+    discount_amount = Decimal(str(pending_order['discount_amount']))
     total_points_to_spend = Decimal(str(pending_order['total_points_to_spend']))
     delivery_time_from_str = pending_order.get('delivery_time_from')
     delivery_time_to_str = pending_order.get('delivery_time_to')
+    lat = pending_order.get('lat')
+    lng = pending_order.get('lng')
+    
     delivery_time_from = None
     delivery_time_to = None
-
     if delivery_time_from_str:
         try:
             delivery_time_from = datetime.fromisoformat(delivery_time_from_str)
@@ -580,87 +556,76 @@ def payment_success(request):
     
     profile = request.user.profile
     cart = Cart(request)
-    created_orders = []
+    
+    # Цена после скидки
+    price_after_discount = total_cart_price * (100 - discount_percent) / 100
+    final_price = price_after_discount - total_points_to_spend
     
     try:
-        for idx, (addr_text, lat, lng) in enumerate(addresses_with_coords):
-            points_used = Decimal(str(points_per_order[idx])) if idx < len(points_per_order) else 0
-            current_order_price = total_cart_price - points_used
-            
-            order = Order.objects.create(
-                user=request.user,
-                address=addr_text,
-                phone=phone,
-                payment_method=payment_method,
-                total_price=current_order_price,
-                points_used=int(points_used),
-                status='new',
-                payment_id=pending_payment_id,
-                is_paid=True,
-                delivery_time_from=delivery_time_from,
-                delivery_time_to=delivery_time_to,
-                lat=lat,
-                lng=lng,
-            )
-            # --- Запись в историю статусов ---
-            OrderStatusHistory.objects.create(
+        order = Order.objects.create(
+            user=request.user,
+            address=address,
+            phone=phone,
+            payment_method=payment_method,
+            total_price=final_price,
+            points_used=int(total_points_to_spend),
+            status='new',
+            payment_id=pending_payment_id,
+            is_paid=True,
+            delivery_time_from=delivery_time_from,
+            delivery_time_to=delivery_time_to,
+            lat=lat,
+            lng=lng,
+        )
+        OrderStatusHistory.objects.create(
+            order=order,
+            old_status='',
+            new_status='new',
+            changed_by=request.user
+        )
+        for item in cart:
+            OrderItem.objects.create(
                 order=order,
-                old_status='',
-                new_status='new',
-                changed_by=request.user
+                product=item['product'],
+                price=item['price'],
+                quantity=item['quantity'],
+                comment=item.get('comment', '')
             )
-            # --- Товары заказа ---
-            for item in cart:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item['product'],
-                    price=item['price'],
-                    quantity=item['quantity'],
-                    comment=item.get('comment', '')
-                )
-            created_orders.append(order)
         
         # Списываем баллы
         if total_points_to_spend > 0:
             profile.points -= int(total_points_to_spend)
             profile.save()
         # Начисляем кэшбэк
-        total_earned = 0
-        for o in created_orders:
-            earned = int(o.total_price * Decimal('0.05'))
-            total_earned += earned
-        profile.points += total_earned
+        earned = int(final_price * Decimal('0.05'))
+        profile.points += earned
         profile.save()
         
-        # Очищаем корзину и сессию
         cart.clear()
         request.session.pop('pending_order', None)
         request.session.pop('pending_payment_id', None)
         
         # Отправка в ресторан
-        for order in created_orders:
-            try:
-                success = send_order_to_restaurant(order)
-                if success:
-                    send_receipt_email(order)
-            except Exception as e:
-                print(f"Error sending to restaurant: {e}")
+        try:
+            success = send_order_to_restaurant(order)
+            if success:
+                send_receipt_email(order)
+        except Exception as e:
+            print(f"Error sending to restaurant: {e}")
         
-        request.session['open_receipt_id'] = created_orders[0].id
-        messages.success(request, f"Заказ №{created_orders[0].id} успешно оплачен и создан!")
+        request.session['open_receipt_id'] = order.id
+        messages.success(request, f"Заказ №{order.id} успешно оплачен и создан!")
         
         return render(request, 'main/order_success.html', {
-            'order': created_orders[0],
-            'earned': total_earned,
-            'count': address_count
+            'order': order,
+            'earned': earned,
+            'count': 1
         })
     
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
         import traceback
         traceback.print_exc()
-        for o in created_orders:
-            o.delete()
         messages.error(request, f"Ошибка при создании заказа: {e}")
         return redirect('cart_detail')
 
@@ -768,10 +733,9 @@ def optimize_courier_route(courier_user):
             order.route_order = idx
             order.save(update_fields=['route_order'])
 
-
+""""
 @staff_member_required
 def get_support_users(request):
-    """Получение списка пользователей с сообщениями для оператора"""
     
     users_with_messages = User.objects.filter(
         support_messages__isnull=False
@@ -796,7 +760,7 @@ def get_support_users(request):
 
 @staff_member_required
 def get_user_messages(request, user_id):
-    """Сообщения конкретного пользователя"""
+ 
     user = get_object_or_404(User, id=user_id)
     messages = SupportMessage.objects.filter(user=user).order_by('created_at')
     messages.filter(is_read=False).update(is_read=True)
@@ -812,7 +776,7 @@ def get_user_messages(request, user_id):
             'is_admin': msg.is_from_admin
         })
     return JsonResponse({'messages': data})
-
+"""
 
 @staff_member_required
 def delete_product(request, product_id):
@@ -824,10 +788,9 @@ def delete_product(request, product_id):
     # Получаем адрес возврата из GET-параметра 'next', если нет — по умолчанию 'menu'
     next_url = request.GET.get('next', 'menu')
     return redirect(next_url)
-
+""""
 @staff_member_required
 def send_support_reply(request):
-    """Отправка ответа от оператора"""
     if request.method != 'POST':
         return JsonResponse({'status': 'error'}, status=405)
     
@@ -862,7 +825,7 @@ def send_support_reply(request):
 
 @staff_member_required
 def get_order_support_messages(request, order_id):
-    """Сообщения поддержки по конкретному заказу (оператор-клиент)"""
+
     order = get_object_or_404(Order, id=order_id)
     messages = SupportMessage.objects.filter(order=order).order_by('created_at')
     data = []
@@ -879,7 +842,7 @@ def get_order_support_messages(request, order_id):
 
 @staff_member_required
 def send_order_support_reply(request, order_id):
-    """Отправка ответа оператора по конкретному заказу"""
+
     if request.method != 'POST':
         return JsonResponse({'status': 'error'}, status=405)
     order = get_object_or_404(Order, id=order_id)
@@ -909,7 +872,7 @@ def send_order_support_reply(request, order_id):
 
 @login_required
 def get_client_order_messages(request, order_id):
-    """Получение чата поддержки по заказу (для клиента)"""
+
     order = get_object_or_404(Order, id=order_id, user=request.user)
     messages = SupportMessage.objects.filter(order=order).order_by('created_at')
     data = []
@@ -926,7 +889,7 @@ def get_client_order_messages(request, order_id):
 
 @login_required
 def send_client_support_message(request, order_id):
-    """Отправка сообщения клиентом в поддержку по заказу"""
+
     if request.method != 'POST':
         return JsonResponse({'status': 'error'}, status=405)
     order = get_object_or_404(Order, id=order_id, user=request.user)
@@ -953,7 +916,7 @@ def send_client_support_message(request, order_id):
             'is_admin': False
         }
     })
-
+"""
 
 @login_required
 def view_receipt(request, order_id):
@@ -1533,6 +1496,24 @@ def change_order_status(request, order_id, new_status):
     if new_status not in ['new', 'cooking', 'ready', 'delivering', 'completed', 'cancelled']:
         return JsonResponse({'status': 'error', 'message': 'Некорректный статус'}, status=400)
     
+    # Запрещаем оператору переводить из ready в delivering
+    if old_status == 'ready' and new_status == 'delivering' and request.user.is_staff:
+        return JsonResponse({'status': 'error', 'message': 'Оператор не может передать заказ курьеру.'}, status=403)
+
+    # Оператор не может изменять статус delivering (кроме отмены)
+    if old_status == 'delivering' and new_status != 'cancelled' and request.user.is_staff:
+        return JsonResponse({'status': 'error', 'message': 'Оператор не может изменить статус заказа в доставке.'}, status=403)
+
+    # Только курьер может завершить доставку
+    if old_status == 'delivering' and new_status == 'completed':
+        if not (hasattr(request.user, 'profile') and request.user.profile.role == 'courier' and order.courier == request.user):
+            return JsonResponse({'status': 'error', 'message': 'Только назначенный курьер может завершить заказ.'}, status=403)
+    
+    
+
+    if new_status not in ['new', 'cooking', 'ready', 'delivering', 'completed', 'cancelled']:
+        return JsonResponse({'status': 'error', 'message': 'Некорректный статус'}, status=400)
+    
     # Сохраняем старый статус
     order.status = new_status
     order.save()
@@ -1998,12 +1979,15 @@ def add_address_ajax(request):
             if not address_line.startswith(city_prefix):
                 address_line = city_prefix + address_line
             
+            # Пытаемся получить координаты, но НЕ БЛОКИРУЕМ сохранение при ошибке
             is_valid, lat, lng = validate_address(address_line)
             if not is_valid:
-                return JsonResponse({'status': 'error', 'message': 'Адрес не найден. Укажите улицу и номер дома'}, status=400)
+                lat = None
+                lng = None
+                # Не показываем ошибку пользователю – просто сохраняем без координат
             
             new_addr = Address.objects.create(
-                user=request.user, 
+                user=request.user,
                 address_line=address_line,
                 lat=lat,
                 lng=lng
@@ -2038,6 +2022,7 @@ def send_message(request, order_id):
 
 
 # --- ТЕХНИЧЕСКАЯ ПОДДЕРЖКА ---
+""""
 @login_required
 def get_support_messages(request):
     messages = SupportMessage.objects.filter(user=request.user).order_by('created_at')
@@ -2052,7 +2037,7 @@ def get_support_messages(request):
             'is_admin': msg.is_from_admin
         })
     return JsonResponse({'messages': data})
-
+"""
 
 @login_required
 def check_single_order_status(request, order_id):
@@ -2063,7 +2048,7 @@ def check_single_order_status(request, order_id):
         'status_display': order.get_status_display()
     })
 
-
+""""
 @login_required
 def send_support_message(request):
     if request.method != 'POST':
@@ -2097,6 +2082,7 @@ def send_support_message(request):
             'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
         }
     })
+"""
 
 @staff_member_required
 def get_order_counts(request):
@@ -2193,6 +2179,7 @@ def get_all_orders_data(request):
                 'delivery_time_from': order.delivery_time_from.strftime('%H:%M') if order.delivery_time_from else '',
                 'delivery_time_to': order.delivery_time_to.strftime('%H:%M') if order.delivery_time_to else '',
                 'items_comments': comments,
+                'is_operator_viewed': order.is_operator_viewed,
             })
         return JsonResponse({'orders': data})
     except Exception as e:

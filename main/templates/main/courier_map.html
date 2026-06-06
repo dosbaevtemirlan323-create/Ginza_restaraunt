@@ -19,13 +19,6 @@
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     .location-btn { position: fixed; bottom: 30px; right: 30px; z-index: 1000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .delivery-progress { background: linear-gradient(90deg, #28a745, #ffc107); height: 4px; border-radius: 2px; transition: width 0.3s; }
-    .chat-messages { max-height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 12px; }
-    .chat-message { margin-bottom: 12px; display: flex; flex-direction: column; }
-    .chat-message.courier { align-items: flex-end; }
-    .chat-message.client { align-items: flex-start; }
-    .message-bubble { max-width: 80%; padding: 8px 12px; border-radius: 18px; background: white; border: 1px solid #e0e0e0; }
-    .chat-message.courier .message-bubble { background: #ffc107; border: none; }
-    .message-time { font-size: 10px; color: #999; margin-top: 4px; }
     .new-order-animation { animation: slideIn 0.5s ease; background: #fff9e6; }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     @media (max-width: 768px) { .location-btn { bottom: 80px; right: 20px; } }
@@ -146,7 +139,7 @@
     </div>
 </div>
 
-<!-- Модалки -->
+<!-- Модалка деталей заказа -->
 <div class="modal fade" id="orderDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4">
@@ -159,24 +152,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="chatModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="fw-bold" id="chatModalTitle">Чат с клиентом</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="chatMessages" class="chat-messages mb-3"></div>
-                <div class="input-group">
-                    <textarea id="chatMessageText" class="form-control rounded-3" rows="2" placeholder="Введите сообщение..."></textarea>
-                    <button class="btn btn-warning rounded-3" onclick="sendChatMessage()"><i class="bi bi-send"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <button class="btn btn-warning location-btn shadow-lg" onclick="centerOnCourier()"><i class="bi bi-geo-alt-fill fs-5"></i></button>
 
 <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=2b6a7d3b-b4ef-4682-a0e0-69dda3376fba" type="text/javascript"></script>
@@ -185,7 +160,6 @@
     // ---------------------------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----------------------------
     let myMap, watchId;
     let currentLocation = [45.624828, 63.312162];
-    let currentOrderId = null;
     let routeSegments = [];
     let currentTransportMode = 'driving';
     let routeDistances = [];
@@ -315,14 +289,12 @@
         return coords;
     }
 
-    // ---------------------------- ОПТИМИЗАЦИЯ МАРШРУТА (жадный TSP) ----------------------------
-    // Сортировка заказов по возрастанию расстояния от текущего местоположения (ближайший первым)
+    // ---------------------------- ОПТИМИЗАЦИЯ МАРШРУТА ----------------------------
     async function optimizeRoute() {
         if (!myOrdersData.length) return;
         const currentCoords = currentLocation;
         if (!currentCoords) return;
 
-        // Получаем координаты и расстояния от курьера
         const ordersWithDist = [];
         for (let order of myOrdersData) {
             const coords = await getCoordsForAddress(order.address, order.id);
@@ -333,15 +305,12 @@
                 ordersWithDist.push({ order, coords: null, distance: Infinity });
             }
         }
-        // Сортируем по возрастанию расстояния (ближайший первый)
         ordersWithDist.sort((a, b) => a.distance - b.distance);
         const newOrderedList = ordersWithDist.map(item => item.order);
         
-        // Обновляем глобальный массив
         myOrdersData.length = 0;
         myOrdersData.push(...newOrderedList);
         
-        // Перерисовываем список
         renderMyOrdersList();
         console.log('🚀 Маршрут оптимизирован (ближайший первым):', myOrdersData.map(o => o.id));
         return ordersWithDist;
@@ -384,9 +353,6 @@
                     <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="event.stopPropagation(); showOrderDetails(${order.id})">
                         <i class="bi bi-eye"></i> Состав
                     </button>
-                    <button class="btn btn-sm btn-outline-info rounded-pill" onclick="event.stopPropagation(); openChat(${order.id}, '${escapeHtml(order.phone)}')">
-                        <i class="bi bi-chat-dots"></i> Чат
-                    </button>
                     <a href="tel:${phoneRaw}" class="btn btn-sm btn-outline-success rounded-pill" onclick="event.stopPropagation()">
                         <i class="bi bi-telephone"></i> Звонок
                     </a>
@@ -418,7 +384,6 @@
         routeSegments = [];
         routeDistances = [];
 
-        // Точки: сначала текущая позиция, затем заказы в оптимизированном порядке
         const points = [currentLocation];
         for (let order of myOrdersData) {
             const coords = await getCoordsForAddress(order.address, order.id);
@@ -495,7 +460,7 @@
     // ---------------------------- ОБНОВЛЕНИЕ МАРШРУТА ----------------------------
     async function refreshRoute() {
         if (myOrdersData.length) {
-            await optimizeRoute();   // сортировка: ближайший первым
+            await optimizeRoute();
             await buildColorfulRoute();
         }
     }
@@ -545,49 +510,6 @@
         new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
     };
 
-    window.openChat = function(orderId, clientName) {
-        currentOrderId = orderId;
-        document.getElementById('chatModalTitle').innerHTML = `Чат с ${escapeHtml(clientName)}`;
-        loadMessages(orderId);
-        new bootstrap.Modal(document.getElementById('chatModal')).show();
-    };
-    
-    function loadMessages(orderId) {
-        fetch(`/order/${orderId}/messages/`).then(r => r.json()).then(data => {
-            const container = document.getElementById('chatMessages');
-            container.innerHTML = '';
-            if (data.messages?.length) {
-                data.messages.forEach(msg => {
-                    const isCourier = msg.sender === '{{ request.user.username }}';
-                    const div = document.createElement('div');
-                    div.className = `chat-message ${isCourier ? 'courier' : 'client'}`;
-                    div.innerHTML = `<div class="message-bubble"><div>${escapeHtml(msg.text)}</div><div class="message-time">${escapeHtml(msg.time)}</div></div>`;
-                    container.appendChild(div);
-                });
-                container.scrollTop = container.scrollHeight;
-            } else {
-                container.innerHTML = '<div class="text-center text-muted py-4">Нет сообщений</div>';
-            }
-        });
-    }
-    
-    window.sendChatMessage = function() {
-        const text = document.getElementById('chatMessageText').value.trim();
-        if (!text || !currentOrderId) return;
-        const formData = new FormData();
-        formData.append('text', text);
-        fetch(`/order/${currentOrderId}/send_message/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-            body: formData
-        }).then(r => r.json()).then(data => {
-            if (data.status === 'ok') {
-                document.getElementById('chatMessageText').value = '';
-                loadMessages(currentOrderId);
-            }
-        });
-    };
-
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
     // ---------------------------- ПОЛЛИНГ ДОСТУПНЫХ ЗАКАЗОВ ----------------------------
@@ -599,8 +521,13 @@
                     const newOrderIds = data.orders.filter(order => !lastAvailableOrderIds.has(order.id));
                     if (newOrderIds.length > 0) {
                         newOrderIds.forEach(order => {
-                            playNewOrderSound();
-                            showBrowserNotification('📦 Новый заказ!', `Заказ №${order.id} готов к доставке`);
+                            playNewOrderSound(); // звук можно оставить
+                            showNotificationWithAction(
+                                '📦 Новый заказ!',
+                                `Заказ №${order.id} готов к доставке на сумму ${order.total_price} ₽`,
+                                `/courier/take/${order.id}/`,
+                                'info'
+                            );
                             addNewOrderToList(order);
                         });
                         if (myOrdersData.length > 0) setTimeout(() => refreshRoute(), 500);
@@ -612,13 +539,6 @@
             .catch(err => console.error('Ошибка загрузки заказов:', err));
     }
 
-    function showBrowserNotification(title, body) {
-        if (Notification.permission === 'granted') {
-            new Notification(title, { body: body, icon: '/static/img/logo.png', vibrate: [200, 100, 200] });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission();
-        }
-    }
 
     function updateAvailableOrders(orders) {
         const container = document.getElementById('available-orders-container');
@@ -728,5 +648,56 @@
     function recalculateRoute() { refreshRoute(); }
 
     if (Notification.permission === 'default') Notification.requestPermission();
+
+    // Универсальное уведомление (тост + браузерное) с действием по клику
+    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
+        // Контейнер для тостов
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
+        toast.style.cursor = 'pointer';
+
+        // Обработка клика – может быть функция или URL
+        toast.addEventListener('click', () => {
+            if (typeof onClickAction === 'function') {
+                onClickAction();
+            } else if (typeof onClickAction === 'string') {
+                window.location.href = onClickAction;
+            }
+        });
+
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(20px)";
+            setTimeout(() => toast.remove(), 600);
+        }, 8000);
+
+        // Браузерное уведомление
+        if (Notification.permission === 'granted') {
+            const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
+            notification.onclick = function() {
+                window.focus();
+                if (typeof onClickAction === 'function') onClickAction();
+                else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+                notification.close();
+            };
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
 </script>
 {% endblock %}
