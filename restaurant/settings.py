@@ -31,6 +31,8 @@ ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://ginzarestaraunt-production.up.railway.app',
+    'https://ginza-restaraunt-production.up.railway.app',
+    'https://ginza-baikonur.up.railway.app',    # добавлено
 ]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
