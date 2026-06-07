@@ -148,6 +148,10 @@ def menu_view(request):
         products_filter = Product.objects.all()
     else:
         products_filter = Product.objects.filter(is_active=True)
+
+    products_filter = products_filter.annotate(
+        total_sold=Sum('orderitem__quantity')
+    )
     
     categories = Category.objects.prefetch_related(
         Prefetch('products', queryset=products_filter.prefetch_related('reviews'))
