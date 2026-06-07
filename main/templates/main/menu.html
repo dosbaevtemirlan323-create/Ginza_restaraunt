@@ -543,6 +543,30 @@
             max-width: calc(100% - 1rem);
         }
     }
+
+    /* Кнопка сброса фильтров */
+    .reset-filters-btn {
+        background: #fff;
+        border: 1px solid #ffc107;
+        color: #ffc107;
+        border-radius: 50px;
+        padding: 6px 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .reset-filters-btn:hover {
+        background: #ffc107;
+        color: #000;
+        border-color: #ffc107;
+    }
+    @media (max-width: 576px) {
+        .reset-filters-btn {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -565,7 +589,7 @@
                 <div class="calories-filter shadow-sm">
                     <i class="bi bi-fire"></i>
                     <span>до</span>
-                    <input type="number" id="caloriesFilter" placeholder="ккал" value="" oninput="filterByCalories()" min="0" max="2000" maxlength="4" step="1">
+                    <input type="number" id="caloriesFilter" placeholder="ккал" value="" min="0" max="2000" step="1">
                     <span>ккал</span>
                 </div>
                 
@@ -578,6 +602,11 @@
                     <option value="calories-asc">🔥 По калориям (низкие)</option>
                     <option value="calories-desc">🔥 По калориям (высокие)</option>
                 </select>
+
+                <!-- Кнопка сброса всех фильтров -->
+                <button class="reset-filters-btn shadow-sm" id="resetFiltersBtn">
+                    <i class="bi bi-arrow-repeat me-1"></i>Сбросить
+                </button>
                 
                 <button class="btn btn-white shadow-sm rounded-3 d-sm-none" onclick="toggleGridView()">
                     <i id="viewIcon" class="bi bi-grid-fill text-warning"></i>
@@ -636,12 +665,10 @@
                             <h5 class="fw-bold product-name mb-0 fs-6 fs-md-5">{{ product.name }}</h5>
                             <span class="text-muted small ms-2">{{ product.weight }}г</span>
                         </div>
-                        <!-- Звёзды (пустые) + средняя оценка -->
                         <div class="rating-stars">
                             <i class="bi bi-star-fill text-warning"></i>
                             <span class="rating-value ms-1">{{ product.get_rating|default:0|floatformat:1 }}</span>
                         </div>
-                        <!-- Калорийность -->
                         <div class="mt-1">
                             <span class="small text-muted calories-text"><i class="bi bi-fire text-warning me-1"></i> {{ product.calories|default:"—" }} ккал</span>
                         </div>
@@ -695,10 +722,10 @@
             {% for product in category.products.all %}
                 <div class="product-item" 
                      data-price="{{ product.price }}" 
-                     data-name="{{ product.name|lower }}"
+                     data-name="{{ product.name|lower }}" 
                      data-order="{{ forloop.counter }}"
                      data-rating="{{ product.get_rating|default:0 }}"
-                     data-popular="{{ product.orderitem__count|default:0 }}"
+                     data-popular="{{ product.total_sold|default:0 }}"
                      data-calories="{{ product.calories|default:0 }}">
                     
                     <div class="card product-card shadow-sm h-100 position-relative {% if not product.is_active %}product-inactive{% endif %}" 
@@ -745,13 +772,11 @@
                                 <span class="text-muted small ms-2">{{ product.weight }}г</span>
                             </div>
                             
-                            <!-- Звезды рейтинга -->
                             <div class="rating-stars">
                                 <i class="bi bi-star-fill text-warning"></i>
                                 <span class="rating-value ms-1">{{ product.get_rating|default:0|floatformat:1 }}</span>
                             </div>
                             
-                            <!-- Калорийность -->
                             <div class="mt-1">
                                 <span class="small text-muted calories-text"><i class="bi bi-fire text-warning me-1"></i> {{ product.calories|default:"—" }} ккал</span>
                             </div>
@@ -819,7 +844,6 @@
                                     <h6 class="fw-bold mb-2">Описание</h6>
                                     <p class="text-muted mb-3">{{ product.description|default:"Описание отсутствует" }}</p>
 
-                                    <!-- КНОПКА ДОБАВЛЕНИЯ ПЕРЕМЕЩЕНА СЮДА (ВВЕРХ ОТЗЫВОВ) -->
                                     <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'add'); closeModal('productDetailModal{{ product.id }}');" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-2 py-md-3 shadow mb-4">
                                         Добавить за {{ product.price }} ₽
                                     </button>
@@ -911,7 +935,6 @@
     </div>
 </div>
 
-<!-- Модалка добавления категории -->
 <div class="modal-custom" id="addCategoryModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4">
@@ -932,7 +955,6 @@
     </div>
 </div>
 
-<!-- Модалки редактирования категорий -->
 {% for category in categories %}
 <div class="modal-custom" id="editCategoryModal{{ category.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -976,7 +998,6 @@
 {% endif %}
 {% endfor %}
 
-<!-- Модалки редактирования товаров -->
 {% for product in all_products %}
 <div class="modal-custom" id="editProductModal{{ product.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -1034,14 +1055,13 @@
 </div>
 {% endfor %}
 
-<!-- Кнопка быстрого добавления -->
 <button class="btn btn-success add-category-fab shadow-lg" onclick="openModal('addProductModal')">
     <i class="bi bi-plus-lg fs-4"></i>
 </button>
 {% endif %}
 
 <script>
-// Функции для работы с модальными окнами на чистом JS
+// Функции для работы с модальными окнами
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -1060,60 +1080,322 @@ function closeModal(modalId) {
     }
 }
 
-// Закрытие модалки по клику на фон
 window.onclick = function(event) {
     if (event.target.classList && event.target.classList.contains('modal-custom')) {
         closeModal(event.target.id);
     }
 };
 
-// Открытие модалки товара
 function openProductModal(productId) {
     openModal('productDetailModal' + productId);
 }
 
-// Функция фильтрации по калориям
-function filterByCalories() {
-    let input = document.getElementById('caloriesFilter');
-    let maxCalories = parseInt(input.value);
+// ========== ЕДИНАЯ ФУНКЦИЯ ФИЛЬТРАЦИИ ==========
+let currentFilters = {
+    searchQuery: '',
+    maxCalories: null,   // null означает "без фильтра"
+    activeCategory: 'all'
+};
+
+function applyFilters() {
+    const searchTerm = currentFilters.searchQuery.toLowerCase().trim();
+    const maxCalories = currentFilters.maxCalories;
+    const activeCat = currentFilters.activeCategory;
     
-    // Ограничиваем значение
-    if (isNaN(maxCalories)) {
-        maxCalories = 0;
-        input.value = 0;
-    }
-    if (maxCalories > 2000) {
-        maxCalories = 2000;
-        input.value = 2000;
-    }
-    if (maxCalories < 0) {
-        maxCalories = 0;
-        input.value = 0;
+    // Сначала обрабатываем отображение категорий
+    const allSections = document.querySelectorAll('.category-section');
+    if (activeCat === 'all') {
+        allSections.forEach(section => section.style.display = 'block');
+    } else {
+        allSections.forEach(section => {
+            if (section.id === `cat-${activeCat}`) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
     }
     
-    const products = document.querySelectorAll('.product-item');
-    
-    products.forEach(product => {
-        const calories = parseInt(product.dataset.calories);
-        if (maxCalories > 0 && !isNaN(maxCalories) && calories > maxCalories) {
-            product.style.display = 'none';
-        } else if (product.style.display !== 'none') {
-            product.style.display = 'block';
+    // Теперь фильтруем товары внутри видимых секций
+    const allProducts = document.querySelectorAll('.product-item');
+    allProducts.forEach(product => {
+        const name = product.dataset.name || '';
+        const calories = parseInt(product.dataset.calories) || 0;
+        
+        let matchSearch = true;
+        let matchCalories = true;
+        
+        if (searchTerm !== '') {
+            matchSearch = name.includes(searchTerm);
         }
+        
+        if (maxCalories !== null && !isNaN(maxCalories) && maxCalories > 0) {
+            matchCalories = calories <= maxCalories;
+        }
+        
+        const shouldShow = matchSearch && matchCalories;
+        product.style.display = shouldShow ? 'block' : 'none';
     });
     
-    // Обновляем видимость категорий
-    document.querySelectorAll('.category-section').forEach(section => {
-        const visibleProducts = section.querySelectorAll('.product-item[style="display: block;"]').length;
-        if (visibleProducts === 0 && maxCalories > 0) {
-            section.style.display = 'none';
+    // Скрываем секции, в которых не осталось видимых товаров (только если активная категория 'all')
+    if (currentFilters.activeCategory === 'all') {
+        allSections.forEach(section => {
+            const visibleProducts = section.querySelectorAll('.product-item[style="display: block;"]').length;
+            if (visibleProducts === 0) {
+                section.style.display = 'none';
+            }
+        });
+    }
+    
+    // После фильтрации применяем текущую сортировку
+    applySorting();
+}
+
+// Сортировка (без изменения видимости)
+function applySorting() {
+    const sortValue = document.getElementById('sortSelect')?.value || 'default';
+    const grids = document.querySelectorAll('.dish-grid');
+    
+    grids.forEach(grid => {
+        const items = Array.from(grid.querySelectorAll('.product-item'));
+        if (items.length === 0) return;
+        
+        items.sort((a, b) => {
+            let result = 0;
+            if (sortValue === 'price-asc') {
+                result = (parseFloat(a.dataset.price) || 0) - (parseFloat(b.dataset.price) || 0);
+            } else if (sortValue === 'price-desc') {
+                result = (parseFloat(b.dataset.price) || 0) - (parseFloat(a.dataset.price) || 0);
+            } else if (sortValue === 'rating-desc') {
+                result = (parseFloat(b.dataset.rating) || 0) - (parseFloat(a.dataset.rating) || 0);
+            } else if (sortValue === 'popular') {
+                result = (parseFloat(b.dataset.popular) || 0) - (parseFloat(a.dataset.popular) || 0);
+            } else if (sortValue === 'calories-asc') {
+                result = (parseFloat(a.dataset.calories) || 0) - (parseFloat(b.dataset.calories) || 0);
+            } else if (sortValue === 'calories-desc') {
+                result = (parseFloat(b.dataset.calories) || 0) - (parseFloat(a.dataset.calories) || 0);
+            } else {
+                // default: по data-order
+                result = (parseInt(a.dataset.order) || 0) - (parseInt(b.dataset.order) || 0);
+            }
+            if (result === 0) {
+                return (parseInt(a.dataset.order) || 0) - (parseInt(b.dataset.order) || 0);
+            }
+            return result;
+        });
+        
+        items.forEach(item => grid.appendChild(item));
+    });
+}
+
+// Обработчики изменения фильтров
+function initFilters() {
+    const searchInput = document.getElementById('menuSearch');
+    const caloriesInput = document.getElementById('caloriesFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const resetBtn = document.getElementById('resetFiltersBtn');
+    const categoryBtns = document.querySelectorAll('.filter-btn[data-cat]');
+    
+    // Поиск
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            currentFilters.searchQuery = e.target.value;
+            applyFilters();
+        });
+    }
+    
+    // Калории
+    if (caloriesInput) {
+        caloriesInput.addEventListener('input', function(e) {
+            let val = parseInt(e.target.value);
+            if (isNaN(val) || val <= 0) {
+                currentFilters.maxCalories = null;
+                caloriesInput.value = '';
+            } else {
+                if (val > 2000) val = 2000;
+                currentFilters.maxCalories = val;
+                caloriesInput.value = val;
+            }
+            applyFilters();
+        });
+    }
+    
+    // Сортировка
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            applySorting();
+        });
+    }
+    
+    // Категории
+    categoryBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const catId = this.dataset.cat;
+            currentFilters.activeCategory = catId;
+            // Обновить активный класс кнопок
+            categoryBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            applyFilters();
+        });
+    });
+    
+    // Кнопка сброса всех фильтров
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            resetAllFilters();
+        });
+    }
+}
+
+// Функция полного сброса
+function resetAllFilters() {
+    // Сброс поиска
+    const searchInput = document.getElementById('menuSearch');
+    if (searchInput) {
+        searchInput.value = '';
+        currentFilters.searchQuery = '';
+    }
+    
+    // Сброс калорий
+    const caloriesInput = document.getElementById('caloriesFilter');
+    if (caloriesInput) {
+        caloriesInput.value = '';
+        currentFilters.maxCalories = null;
+    }
+    
+    // Сброс категории на "все"
+    currentFilters.activeCategory = 'all';
+    const allBtn = document.querySelector('.filter-btn[data-cat="all"]');
+    if (allBtn) {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        allBtn.classList.add('active');
+    }
+    
+    // Сброс сортировки на "По умолчанию"
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.value = 'default';
+    }
+    
+    // Применить фильтры (покажет всё)
+    applyFilters();
+    
+    // Дополнительно: прокрутить страницу вверх
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Показать уведомление
+    showToast('Все фильтры сброшены', 'success');
+}
+
+// Вспомогательная функция для уведомлений
+function showToast(message, type = 'info') {
+    // Создаём контейнер, если его нет
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'ginza-toast shadow-lg';
+    toast.style.background = '#fff';
+    toast.style.borderRadius = '12px';
+    toast.style.padding = '12px 20px';
+    toast.style.marginTop = '10px';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '12px';
+    toast.style.fontSize = '14px';
+    toast.style.fontWeight = '500';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    toast.style.borderLeft = type === 'success' ? '4px solid #28a745' : '4px solid #ffc107';
+    
+    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+    toast.innerHTML = `<i class="bi ${icon} me-2" style="color: ${type === 'success' ? '#28a745' : '#ffc107'}"></i><div>${message}</div>`;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 600);
+    }, 3000);
+}
+
+// Переключение вида сетки (мобилки)
+function toggleGridView() {
+    const grids = document.querySelectorAll('.dish-grid');
+    const icon = document.getElementById('viewIcon');
+    
+    grids.forEach(grid => {
+        if (grid.classList.contains('compact-view')) {
+            grid.classList.remove('compact-view');
+            if (icon) {
+                icon.classList.remove('bi-list-ul');
+                icon.classList.add('bi-grid-fill');
+            }
+            localStorage.setItem('menuViewMode', 'grid');
         } else {
-            section.style.display = 'block';
+            grid.classList.add('compact-view');
+            if (icon) {
+                icon.classList.remove('bi-grid-fill');
+                icon.classList.add('bi-list-ul');
+            }
+            localStorage.setItem('menuViewMode', 'compact');
         }
     });
 }
 
-// Функции для отправки форм без перезагрузки страницы
+// Восстановление режима отображения
+document.addEventListener('DOMContentLoaded', function() {
+    const savedMode = localStorage.getItem('menuViewMode');
+    if (savedMode === 'compact') {
+        document.querySelectorAll('.dish-grid').forEach(grid => {
+            grid.classList.add('compact-view');
+        });
+        const icon = document.getElementById('viewIcon');
+        if (icon) {
+            icon.classList.remove('bi-grid-fill');
+            icon.classList.add('bi-list-ul');
+        }
+    }
+    
+    // Инициализация фильтров после загрузки DOM
+    initFilters();
+    
+    // Первоначальное применение фильтров (чтобы учесть возможные начальные значения)
+    applyFilters();
+    
+    // Настройка Intersection Observer для подсветки активной категории при скролле
+    const observerOptions = { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && currentFilters.activeCategory === 'all') {
+                const catId = entry.target.id.replace('cat-', '');
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if (btn.dataset.cat === catId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.category-section').forEach(section => {
+        observer.observe(section);
+    });
+});
+
+// Функции для отправки форм (оставлены без изменений)
 function submitProductForm(event) {
     event.preventDefault();
     const form = event.target;
@@ -1127,9 +1409,7 @@ function submitProductForm(event) {
     fetch(form.action, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
     .then(response => {
         if (response.ok) {
@@ -1143,12 +1423,11 @@ function submitProductForm(event) {
         }
     })
     .catch(err => {
-        console.error('Ошибка:', err);
+        console.error(err);
         alert('Ошибка при добавлении блюда');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     });
-    
     return false;
 }
 
@@ -1165,9 +1444,7 @@ function submitCategoryForm(event) {
     fetch(form.action, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
     .then(response => {
         if (response.ok) {
@@ -1181,12 +1458,11 @@ function submitCategoryForm(event) {
         }
     })
     .catch(err => {
-        console.error('Ошибка:', err);
+        console.error(err);
         alert('Ошибка при создании категории');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     });
-    
     return false;
 }
 
@@ -1203,9 +1479,7 @@ function submitEditCategoryForm(event, categoryId) {
     fetch(form.action, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
     .then(response => {
         if (response.ok) {
@@ -1219,12 +1493,11 @@ function submitEditCategoryForm(event, categoryId) {
         }
     })
     .catch(err => {
-        console.error('Ошибка:', err);
+        console.error(err);
         alert('Ошибка при обновлении категории');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     });
-    
     return false;
 }
 
@@ -1241,9 +1514,7 @@ function submitEditProductForm(event, productId) {
     fetch(form.action, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
     .then(response => {
         if (response.ok) {
@@ -1257,12 +1528,11 @@ function submitEditProductForm(event, productId) {
         }
     })
     .catch(err => {
-        console.error('Ошибка:', err);
+        console.error(err);
         alert('Ошибка при обновлении блюда');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     });
-    
     return false;
 }
 
@@ -1281,240 +1551,35 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = 'ginza-toast shadow-lg';
-    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
-    toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div>${message}</div>`;
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(20px)";
-        setTimeout(() => toast.remove(), 600);
-    }, 3000);
+// Функция для работы с избранным (если используется)
+function toggleFavorite(productId, btn) {
+    // Заглушка, реализуйте по необходимости
+    console.log('Toggle favorite', productId);
 }
 
-// Переключение вида сетки (мобилки)
-function toggleGridView() {
-    const grids = document.querySelectorAll('.dish-grid');
-    const icon = document.getElementById('viewIcon');
-    
-    grids.forEach(grid => {
-        // Проверяем, есть ли класс compact-view
-        if (grid.classList.contains('compact-view')) {
-            // Переключаем на обычный вид (2 колонки на мобильных, 4 на десктопе)
-            grid.classList.remove('compact-view');
-            if (icon) {
-                icon.classList.remove('bi-list-ul');
-                icon.classList.add('bi-grid-fill');
-            }
-            // Сохраняем выбор пользователя
-            localStorage.setItem('menuViewMode', 'grid');
-        } else {
-            // Включаем компактный вид (1 колонка на мобильных, 2 на десктопе)
-            grid.classList.add('compact-view');
-            if (icon) {
-                icon.classList.remove('bi-grid-fill');
-                icon.classList.add('bi-list-ul');
-            }
-            localStorage.setItem('menuViewMode', 'compact');
-        }
-    });
+// Функция обновления корзины (должна быть определена глобально)
+window.updateCartQuantity = function(productId, action) {
+    console.log('Update cart:', productId, action);
+    // Здесь ваш код для обновления корзины, например через fetch
+    // После успешного обновления можно вызвать showToast
+    showToast(action === 'add' ? 'Товар добавлен' : 'Количество изменено', 'success');
 }
-
-// При загрузке страницы восстанавливаем выбранный режим
-document.addEventListener('DOMContentLoaded', function() {
-    const savedMode = localStorage.getItem('menuViewMode');
-    if (savedMode === 'compact') {
-        document.querySelectorAll('.dish-grid').forEach(grid => {
-            grid.classList.add('compact-view');
-        });
-        const icon = document.getElementById('viewIcon');
-        if (icon) {
-            icon.classList.remove('bi-grid-fill');
-            icon.classList.add('bi-list-ul');
-        }
-    }
-});
-
-// Живой поиск
-const searchInput = document.getElementById('menuSearch');
-if (searchInput) {
-    searchInput.addEventListener('input', function(e) {
-        const query = e.target.value.toLowerCase().trim();
-        const products = document.querySelectorAll('.product-item');
-        
-        products.forEach(product => {
-            const name = product.dataset.name;
-            if (name && name.includes(query)) {
-                product.style.display = 'block';
-            } else {
-                product.style.display = 'none';
-            }
-        });
-        
-        document.querySelectorAll('.category-section').forEach(section => {
-            const visibleProducts = section.querySelectorAll('.product-item[style="display: block;"]').length;
-            if (visibleProducts === 0 && query !== '') {
-                section.style.display = 'none';
-            } else {
-                section.style.display = 'block';
-            }
-        });
-    });
-}
-
-// Сортировка
-const sortSelect = document.getElementById('sortSelect');
-if (sortSelect) {
-    sortSelect.addEventListener('change', function() {
-        const val = this.value;
-        const grids = document.querySelectorAll('.dish-grid');
-        
-        grids.forEach(grid => {
-            const items = Array.from(grid.querySelectorAll('.product-item'));
-            
-            items.sort((a, b) => {
-                if (val === 'price-asc') {
-                    return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
-                } else if (val === 'price-desc') {
-                    return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
-                } else if (val === 'rating-desc') {
-                    return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
-                } else if (val === 'popular') {
-                    return parseFloat(b.dataset.popular) - parseFloat(a.dataset.popular);
-                } else if (val === 'calories-asc') {
-                    return parseFloat(a.dataset.calories) - parseFloat(b.dataset.calories);
-                } else if (val === 'calories-desc') {
-                    return parseFloat(b.dataset.calories) - parseFloat(a.dataset.calories);
-                } else {
-                    return parseInt(a.dataset.order) - parseInt(b.dataset.order);
-                }
-            });
-            
-            items.forEach(item => grid.appendChild(item));
-        });
-    });
-}
-
-// Функция для обновления активной кнопки категории
-function updateActiveCategoryButton(categoryId) {
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    filterBtns.forEach(btn => {
-        const btnCatId = btn.dataset.cat;
-        if (btnCatId === categoryId || (categoryId === 'all' && btnCatId === 'all')) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-}
-
-// Функция для скролла к категории
-function scrollToCategory(categoryId) {
-    if (categoryId === 'all') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        updateActiveCategoryButton('all');
-        return;
-    }
-    
-    const targetSection = document.getElementById(`cat-${categoryId}`);
-    if (targetSection) {
-        const navHeight = document.querySelector('.category-nav')?.offsetHeight || 72;
-        const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - navHeight - 10;
-        
-        window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
-        });
-        
-        updateActiveCategoryButton(categoryId);
-    }
-}
-
-// Обработка кликов по кнопкам категорий
-const filterBtns = document.querySelectorAll('.filter-btn');
-filterBtns.forEach(btn => {
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const catId = this.dataset.cat;
-        
-        updateActiveCategoryButton(catId);
-        
-        if (catId === 'all') {
-            document.querySelectorAll('.category-section').forEach(section => {
-                section.style.display = 'block';
-            });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-            document.querySelectorAll('.category-section').forEach(section => {
-                if (section.id === `cat-${catId}`) {
-                    section.style.display = 'block';
-                    setTimeout(() => scrollToCategory(catId), 50);
-                } else {
-                    section.style.display = 'none';
-                }
-            });
-        }
-    });
-});
-
-// Подсветка активной категории при скролле
-const observerOptions = {
-    threshold: 0.3,
-    rootMargin: '-80px 0px -50% 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const catId = entry.target.id.replace('cat-', '');
-            updateActiveCategoryButton(catId);
-        }
-    });
-}, observerOptions);
-
-document.querySelectorAll('.category-section').forEach(section => {
-    if (section.style.display !== 'none') {
-        observer.observe(section);
-    }
-});
-
-// При загрузке страницы определяем видимую категорию
-function setInitialActiveCategory() {
-    const sections = document.querySelectorAll('.category-section');
-    let activeFound = false;
-    
-    for (const section of sections) {
-        if (section.style.display !== 'none') {
-            const rect = section.getBoundingClientRect();
-            const navHeight = document.querySelector('.category-nav')?.offsetHeight || 72;
-            
-            if (rect.top <= navHeight + 100 && rect.bottom >= navHeight) {
-                const catId = section.id.replace('cat-', '');
-                updateActiveCategoryButton(catId);
-                activeFound = true;
-                break;
-            }
-        }
-    }
-    
-    if (!activeFound) {
-        updateActiveCategoryButton('all');
-    }
-}
-
-setTimeout(setInitialActiveCategory, 150);
-
-let scrollTimeout;
-window.addEventListener('scroll', function() {
-    if (scrollTimeout) clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(setInitialActiveCategory, 100);
-});
 </script>
+
+<!-- Дополнительные стили для тостов -->
+<style>
+    .ginza-toast {
+        animation: slideInRight 0.3s ease;
+    }
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
 {% endblock %}
