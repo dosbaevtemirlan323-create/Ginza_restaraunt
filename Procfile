@@ -1,1 +1,1 @@
-web: python manage.py migrate && daphne -b 0.0.0.0 -p 8000 restaurant.asgi:application
+web: python manage.py flush --no-input && python manage.py loaddata datadump_clean.json && daphne -b 0.0.0.0 -p $PORT restaurant.asgi:application
