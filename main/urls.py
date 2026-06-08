@@ -78,6 +78,7 @@ urlpatterns = [
     path('update-courier-location/', views.update_courier_location, name='update_courier_location'),
     path('order/<int:order_id>/messages/', views.get_order_messages, name='get_order_messages'),
     path('order/<int:order_id>/send_message/', views.send_message, name='send_message'),
+    path('ajax/create-tag/', views.ajax_create_tag, name='ajax_create_tag'),
     
     # --- УПРАВЛЕНИЕ КАТЕГОРИЯМИ И ЗАКАЗАМИ ---
     path('category/add/', views.add_category, name='add_category'),

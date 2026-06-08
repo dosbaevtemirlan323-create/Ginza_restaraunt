@@ -10,7 +10,7 @@ from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
 from .cart import Cart
-from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, OrderStatusHistory, Discount
+from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, OrderStatusHistory, Discount, Tag
 from .forms import UserRegisterForm
 import uuid
 import requests
@@ -81,10 +81,84 @@ HARD_RULES_BY_NAME = {
     'донер': ['картофель фри', 'соус белый', 'соус красный', 'кола'],
 }
 
+# ========== УМНЫЕ РЕКОМЕНДАЦИИ (анализ состава корзины) ==========
+RECOMMENDATION_TYPES = {
+    'sauces': ['соус белый', 'соус красный', 'соус сырный'],
+    'fries': ['картофель фри', 'картофель по-деревенски'],
+    'bread': ['черный хлеб', 'белый хлеб'],
+    'drinks': ['кола', 'сок в ассортименте'],
+    'rice': ['рис припущенный'],
+}
+
+def get_smart_recommendations(cart_products):
+    """
+    Умные рекомендации на основе состава корзины.
+    Возвращает список до 4 товаров, которых не хватает.
+    """
+    if not cart_products:
+        return []
+
+    # 1. Категории блюд, которые есть в корзине
+    cart_category_ids = set(p.category_id for p in cart_products if p.category)
+
+    # 2. Чего уже достаточно (есть в корзине)
+    has_sauces = any(p.category_id == 10 for p in cart_products)        # соусы
+    has_bread = any(p.category_id == 11 for p in cart_products)         # хлеб
+    has_fries = any(p.category_id == 8 for p in cart_products)          # гарниры
+    has_drinks = any(p.category_id == 9 for p in cart_products)         # напитки
+
+    # 3. Какие типы блюд присутствуют (по названиям категорий)
+    category_names = {p.category.name.lower() for p in cart_products if p.category}
+    has_meat = any(c in category_names for c in ['шашлыки', 'вторые блюда'])
+    has_pizza = 'пицца' in category_names
+    has_pasta = 'паста' in category_names
+    has_fastfood = 'фастфуд' in category_names
+    has_salad = 'салаты' in category_names
+
+    # 4. Определяем, чего не хватает
+    need_sauces = (has_meat or has_pizza or has_pasta or has_fastfood) and not has_sauces
+    need_bread = (has_meat or has_pasta or has_salad) and not has_bread
+    need_fries = (has_meat or has_pizza or has_fastfood) and not has_fries
+    need_drinks = (has_pizza or has_fastfood) and not has_drinks
+
+    # 5. Сопоставляем недостающие типы с реальными товарами
+    recommendations = []
+
+    # Приоритет: соусы, хлеб, гарниры, напитки
+    if need_sauces:
+        sauce = Product.objects.filter(category_id=10, is_active=True).first()
+        if sauce:
+            recommendations.append(sauce)
+    if need_bread and len(recommendations) < 4:
+        bread = Product.objects.filter(category_id=11, is_active=True).first()
+        if bread:
+            recommendations.append(bread)
+    if need_fries and len(recommendations) < 4:
+        fry = Product.objects.filter(category_id=8, is_active=True).first()
+        if fry:
+            recommendations.append(fry)
+    if need_drinks and len(recommendations) < 4:
+        drink = Product.objects.filter(category_id=9, is_active=True).first()
+        if drink:
+            recommendations.append(drink)
+
+    # Если всё равно не набрали 4 (например, нет товаров в категориях) – добираем популярными
+    if len(recommendations) < 4:
+        cart_ids = [p.id for p in cart_products]
+        existing_ids = [p.id for p in recommendations]
+        extra = Product.objects.filter(is_active=True) \
+            .exclude(id__in=cart_ids) \
+            .exclude(id__in=existing_ids) \
+            .annotate(total_sold=Sum('orderitem__quantity')) \
+            .order_by('-total_sold')[:4 - len(recommendations)]
+        recommendations.extend(extra)
+
+    return recommendations
+
 def get_hardcoded_recommendations(cart_products):
-    """Возвращает QuerySet товаров по жестким правилам"""
     if not cart_products:
         return Product.objects.none()
+
     recommended_ids = set()
     cart_ids = [p.id for p in cart_products]
     names = [p.name.lower() for p in cart_products]
@@ -94,7 +168,7 @@ def get_hardcoded_recommendations(cart_products):
         if base_id in cart_ids:
             recommended_ids.update(recs)
 
-    # 2. По названию, если по ID ничего не нашли
+    # 2. По названию (если ID-правила не сработали)
     if not recommended_ids:
         for base_name, rec_names in HARD_RULES_BY_NAME.items():
             if any(base_name in n for n in names):
@@ -103,21 +177,31 @@ def get_hardcoded_recommendations(cart_products):
                     if prod:
                         recommended_ids.add(prod.id)
 
-    # Исключаем то, что уже в корзине
+    # Убираем уже имеющиеся в корзине
     recommended_ids -= set(cart_ids)
 
     if not recommended_ids:
         return Product.objects.none()
-    return Product.objects.filter(id__in=recommended_ids, is_active=True)
+
+    # Получаем продукты
+    products = Product.objects.filter(id__in=recommended_ids, is_active=True)
+
+    # Приоритет: сначала соусы (кат.10), хлеб (11), гарниры (8), напитки (9), потом всё остальное
+    priority = {10: 1, 11: 2, 8: 3, 9: 4}
+    product_list = sorted(products, key=lambda p: priority.get(p.category_id, 5))
+    
+    return product_list   # возвращаем список, а не QuerySet
 
 Configuration.configure('1285119', 'test_yOeCjmKe1rtmfgAat4OUl_9V89XI0Z4gIqR3HZXr7wg')
 
 
 def get_cross_sell_products(cart_products, user=None, limit=4):
-    """Для страницы корзины – сначала жесткие правила, затем популярные"""
-    hard = get_hardcoded_recommendations(cart_products)
-    if hard.exists():
-        return list(hard[:limit])
+    # 1. Умные рекомендации (анализ состава)
+    smart = get_smart_recommendations(cart_products)
+    if smart:
+        return smart[:limit]
+
+    # 2. Запасной вариант – популярные товары (если корзина пуста или не нашлось умных)
     if not cart_products:
         return []
     cart_ids = [p.id for p in cart_products]
@@ -215,6 +299,7 @@ def menu_view(request):
         'user_favorites': user_favorites,
         'recommended_for_menu': recommended_for_menu,
         'all_products': Product.objects.all(),
+        'all_tags': Tag.objects.all(),
     }
     return render(request, 'main/menu.html', context)
 
@@ -1135,11 +1220,17 @@ def add_product(request):
         weight = request.POST.get('weight')
         calories = request.POST.get('calories')
         image = request.FILES.get('image')
-        Product.objects.create(
+
+        product = Product.objects.create(
             name=name, price=price, category_id=category_id,
             description=description, weight=weight, calories=calories,
             image=image
         )
+        
+        tag_ids = request.POST.getlist('tags')   # получаем список id выбранных тегов
+        if tag_ids:
+            product.tags.set(tag_ids)            # связываем many-to-many
+        
         messages.success(request, "Блюдо успешно добавлено!")
     return redirect('menu')
 
@@ -1312,12 +1403,17 @@ def edit_product(request, product_id):
             product.image = request.FILES.get('image')
         
         product.save()
+
+        tag_ids = request.POST.getlist('tags')
+        product.tags.set(tag_ids) 
+
         messages.success(request, f"Блюдо '{product.name}' обновлено")
         return redirect('menu')
     
     return render(request, 'main/edit_product.html', {
         'product': product,
-        'categories': categories
+        'categories': categories,
+        'all_tags': Tag.objects.all(), 
     })
 
 
@@ -2321,3 +2417,16 @@ def analytics_api(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@staff_member_required
+@csrf_exempt
+def ajax_create_tag(request):
+    """Создаёт новый тег через AJAX"""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name and not Tag.objects.filter(name__iexact=name).exists():
+            tag = Tag.objects.create(name=name)
+            return JsonResponse({'status': 'ok', 'id': tag.id, 'name': tag.name})
+        return JsonResponse({'status': 'error', 'message': 'Тег уже существует или имя пустое'})
+    return JsonResponse({'status': 'error'}, status=405)

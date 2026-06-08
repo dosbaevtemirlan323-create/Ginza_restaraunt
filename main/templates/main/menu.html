@@ -642,7 +642,7 @@
     </div>
 </div>
 
-<!-- Блок категорий — гарантированно видим и прибит -->
+<!-- Блок категорий -->
 <div class="category-nav mt-2 mt-md-4">
     <div class="container">
         <div class="filter-container" id="categoryLinks">
@@ -689,6 +689,12 @@
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <h5 class="fw-bold product-name mb-0 fs-6 fs-md-5">{{ product.name }}</h5>
                             <span class="text-muted small ms-2">{{ product.weight }}г</span>
+                        </div>
+                        <!-- ТЕГИ ДЛЯ РЕКОМЕНДУЕМЫХ -->
+                        <div class="product-tags mt-1">
+                            {% for tag in product.tags.all %}
+                                <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                            {% endfor %}
                         </div>
                         <div class="rating-stars">
                             <i class="bi bi-star-fill text-warning"></i>
@@ -798,6 +804,13 @@
                                 <span class="text-muted small ms-2">{{ product.weight }}г</span>
                             </div>
                             
+                            <!-- ТЕГИ В ОСНОВНЫХ КАРТОЧКАХ -->
+                            <div class="product-tags mt-1">
+                                {% for tag in product.tags.all %}
+                                    <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
+                            
                             <div class="rating-stars">
                                 <i class="bi bi-star-fill text-warning"></i>
                                 <span class="rating-value ms-1">{{ product.get_rating|default:0|floatformat:1 }}</span>
@@ -856,10 +869,16 @@
                                         <span class="fs-4 fw-bold text-warning">{{ product.price }} ₽</span>
                                     </div>
                                     
+                                    <!-- ТЕГИ В МОДАЛКЕ ДЕТАЛЕЙ -->
+                                    <div class="product-tags mb-2">
+                                        {% for tag in product.tags.all %}
+                                            <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    
                                     <div class="d-flex align-items-center gap-2 mb-3">
                                         <i class="bi bi-star-fill text-warning fs-5"></i>
                                         <span class="fw-bold">{{ product.get_rating|default:0|floatformat:1 }}</span>
-                                        <span class="text-muted small"></span>
                                     </div>
                                     
                                     <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -950,6 +969,26 @@
                     <div class="mb-3">
                         <textarea name="description" class="form-control rounded-3" rows="3" placeholder="Состав и описание"></textarea>
                     </div>
+                    
+                    <!-- ВЫБОР ТЕГОВ ПРИ ДОБАВЛЕНИИ -->
+                    <div class="mb-3">
+                        <label class="form-label">Теги</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in all_tags %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="add_tag_{{ tag.id }}">
+                                    <label class="form-check-label" for="add_tag_{{ tag.id }}">{{ tag.name }}</label>
+                                </div>
+                            {% empty %}
+                                <span class="text-muted small">Нет созданных тегов. Создайте их в админ-панели.</span>
+                            {% endfor %}
+                        </div>
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" placeholder="Новый тег" id="new-tag-name-add">
+                            <button class="btn btn-outline-secondary" type="button" onclick="createTag(this, 'new')">➕ Добавить</button>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label class="small text-muted mb-2">Фотография блюда</label>
                         <input type="file" name="image" class="form-control rounded-pill" accept="image/*">
@@ -1040,6 +1079,28 @@
                     <div class="mb-3">
                         <input type="text" name="name" class="form-control rounded-pill" value="{{ product.name }}" required>
                     </div>
+                    
+                    <!-- ВЫБОР ТЕГОВ ПРИ РЕДАКТИРОВАНИИ -->
+                    <div class="mb-3">
+                        <label class="form-label">Теги</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in all_tags %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}"
+                                        id="tag_{{ tag.id }}_{{ product.id }}"
+                                        {% if tag in product.tags.all %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_{{ tag.id }}_{{ product.id }}">{{ tag.name }}</label>
+                                </div>
+                            {% empty %}
+                                <span class="text-muted small">Нет созданных тегов. Создайте их в админ-панели.</span>
+                            {% endfor %}
+                        </div>
+                        <div class="input-group input-group-sm mt-2">
+                            <input type="text" class="form-control" placeholder="Новый тег" id="new-tag-name-edit-{{ product.id }}">
+                            <button class="btn btn-outline-secondary" type="button" onclick="createTag(this, {{ product.id }})">➕ Добавить</button>
+                        </div>
+                    </div>
+                    
                     <div class="row mb-3">
                         <div class="col">
                             <input type="number" step="0.01" name="price" class="form-control rounded-pill" value="{{ product.price }}" required>
@@ -1591,6 +1652,41 @@ function toggleFavorite(productId, btn) {
 window.updateCartQuantity = function(productId, action) {
     console.log('Update cart:', productId, action);
     showToast(action === 'add' ? 'Товар добавлен' : 'Количество изменено', 'success');
+}
+
+function createTag(btn, productId) {
+    let container = btn.closest('.mb-3').querySelector('.d-flex.flex-wrap.gap-2');
+    let input = btn.previousElementSibling;
+    let tagName = input.value.trim();
+    if (!tagName) return;
+    
+    fetch('/ajax/create-tag/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'name=' + encodeURIComponent(tagName)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            // Добавляем чекбокс в список
+            let newId = data.id;
+            let newCheckbox = document.createElement('div');
+            newCheckbox.className = 'form-check';
+            newCheckbox.innerHTML = `
+                <input class="form-check-input" type="checkbox" name="tags" value="${newId}" id="tag_${newId}_${productId}" checked>
+                <label class="form-check-label" for="tag_${newId}_${productId}">${data.name}</label>
+            `;
+            container.appendChild(newCheckbox);
+            input.value = '';
+            showToast('Тег добавлен', 'success');
+        } else {
+            showToast(data.message || 'Ошибка', 'error');
+        }
+    })
+    .catch(err => showToast('Ошибка сервера', 'error'));
 }
 </script>
 

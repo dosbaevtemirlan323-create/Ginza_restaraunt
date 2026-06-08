@@ -11,6 +11,8 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'price', 'weight', 'is_active']
     list_filter = ['category', 'is_active']
     search_fields = ['name']
+    filter_horizontal = ('tags',)
+    filter_vertical = ('tags',)
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem

@@ -10,7 +10,7 @@
                     </h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="editProductForm">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -61,6 +61,29 @@
                                 </option>
                                 {% endfor %}
                             </select>
+                        </div>
+                        
+                        <!-- БЛОК ТЕГОВ -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-tags me-1 text-warning"></i>Теги
+                            </label>
+                            <div class="d-flex flex-wrap gap-2 mb-2" id="tags-checkboxes">
+                                {% for tag in all_tags %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}"
+                                            id="tag_{{ tag.id }}_{{ product.id }}"
+                                            {% if tag in product.tags.all %}checked{% endif %}>
+                                        <label class="form-check-label" for="tag_{{ tag.id }}_{{ product.id }}">{{ tag.name }}</label>
+                                    </div>
+                                {% empty %}
+                                    <span class="text-muted small">Нет созданных тегов. Создайте ниже.</span>
+                                {% endfor %}
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" placeholder="Новый тег" id="new-tag-name-edit-page">
+                                <button class="btn btn-outline-secondary" type="button" onclick="createTagOnPage()">➕ Добавить</button>
+                            </div>
                         </div>
                         
                         <div class="mb-3">
@@ -114,4 +137,93 @@
         object-fit: cover;
     }
 </style>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.style.background = '#fff';
+    toast.style.borderRadius = '12px';
+    toast.style.padding = '12px 20px';
+    toast.style.marginTop = '10px';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '12px';
+    toast.style.fontSize = '14px';
+    toast.style.fontWeight = '500';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    toast.style.borderLeft = type === 'success' ? '4px solid #28a745' : '4px solid #ffc107';
+    
+    const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
+    toast.innerHTML = `<i class="bi ${icon} me-2" style="color: ${type === 'success' ? '#28a745' : '#ffc107'}"></i><div>${message}</div>`;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 600);
+    }, 3000);
+}
+
+function createTagOnPage() {
+    let container = document.getElementById('tags-checkboxes');
+    let input = document.getElementById('new-tag-name-edit-page');
+    let tagName = input.value.trim();
+    if (!tagName) return;
+    
+    fetch('/ajax/create-tag/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'name=' + encodeURIComponent(tagName)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            let newId = data.id;
+            let newCheckbox = document.createElement('div');
+            newCheckbox.className = 'form-check';
+            newCheckbox.innerHTML = `
+                <input class="form-check-input" type="checkbox" name="tags" value="${newId}" id="tag_${newId}_new" checked>
+                <label class="form-check-label" for="tag_${newId}_new">${data.name}</label>
+            `;
+            container.appendChild(newCheckbox);
+            input.value = '';
+            showToast('Тег добавлен', 'success');
+        } else {
+            showToast(data.message || 'Ошибка', 'error');
+        }
+    })
+    .catch(err => showToast('Ошибка сервера', 'error'));
+}
+</script>
 {% endblock %}
