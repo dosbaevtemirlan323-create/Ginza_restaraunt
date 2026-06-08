@@ -35,7 +35,7 @@
     /* Для телефонов отступ сверху меньше, чтобы не перекрывалось */
     @media (max-width: 768px) {
         .category-nav {
-            top: 56px; /* подстроить под вашу шапку */
+            top: 56px;
             padding: 8px 0;
         }
     }
@@ -1118,7 +1118,7 @@ function openProductModal(productId) {
     openModal('productDetailModal' + productId);
 }
 
-// ========== ЕДИНАЯ ФУНКЦИЯ ФИЛЬТРАЦИИ ==========
+// ========== ФИЛЬТРАЦИЯ И СОРТИРОВКА ==========
 let currentFilters = {
     searchQuery: '',
     maxCalories: null,
@@ -1374,7 +1374,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedMode = localStorage.getItem('menuViewMode');
     const isMobile = window.innerWidth < 768;
     
-    // На телефонах по умолчанию компактный вид
     if (isMobile && savedMode === null) {
         document.querySelectorAll('.dish-grid').forEach(grid => {
             grid.classList.add('compact-view');
@@ -1408,7 +1407,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initFilters();
     applyFilters();
     
-    // Intersection Observer для подсветки категорий
     const observerOptions = { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -1430,7 +1428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ========== ОБНОВЛЁННЫЕ ФУНКЦИИ ФОРМ ==========
+// ========== ОТПРАВКА ФОРМ (AJAX) ==========
 function submitProductForm(event) {
     event.preventDefault();
     const form = event.target;
@@ -1588,7 +1586,6 @@ function getCookie(name) {
 
 function toggleFavorite(productId, btn) {
     console.log('Toggle favorite', productId);
-    // Здесь можно реализовать AJAX запрос для избранного
 }
 
 window.updateCartQuantity = function(productId, action) {
