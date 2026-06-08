@@ -113,9 +113,9 @@
                         <h5 class="mb-0 fw-bold"><i class="bi bi-map me-2"></i>Оптимальный маршрут</h5>
                         <div class="d-flex gap-2">
                             <select id="transport-mode" class="form-select form-select-sm w-auto rounded-pill" style="font-size: 0.8rem;">
-                                <option value="driving">🚗 Автомобиль</option>
-                                <option value="pedestrian">🚶 Пешком</option>
-                                <option value="bicycle">🚲 Велосипед</option>
+                                <option value="driving">🚗 Автомобиль (40 км/ч)</option>
+                                <option value="bicycle">🚲 Велосипед (10 км/ч)</option>
+                                <option value="pedestrian">🚶 Пешком (5 км/ч)</option>
                             </select>
                             <button class="btn btn-sm btn-outline-light rounded-pill" onclick="recalculateRoute()">
                                 <i class="bi bi-arrow-repeat"></i>
@@ -161,8 +161,15 @@
     let myMap, watchId;
     let currentLocation = [45.624828, 63.312162];
     let routeSegments = [];
-    let currentTransportMode = 'driving';
-    let routeDistances = [];
+    let currentTransportMode = 'driving';  // 'driving', 'bicycle', 'pedestrian'
+    let routeSegmentsData = []; // для хранения расстояний и времени каждого сегмента
+
+    // Скорости в м/с
+    const SPEEDS = {
+        driving: 40 * 1000 / 3600,   // 40 км/ч -> 11.111 м/с
+        bicycle: 10 * 1000 / 3600,   // 10 км/ч -> 2.7778 м/с
+        pedestrian: 5 * 1000 / 3600  // 5 км/ч -> 1.3889 м/с
+    };
 
     // Данные заказов из Django
     let myOrdersData = [
@@ -232,7 +239,7 @@
     // ---------------------------- РЕЖИМ ТРАНСПОРТА ----------------------------
     function loadTransportModeFromStorage() {
         const savedMode = localStorage.getItem('courier_transport_mode');
-        if (savedMode && ['driving', 'pedestrian', 'bicycle'].includes(savedMode)) {
+        if (savedMode && ['driving', 'bicycle', 'pedestrian'].includes(savedMode)) {
             currentTransportMode = savedMode;
         } else {
             currentTransportMode = 'driving';
@@ -243,6 +250,25 @@
 
     function saveTransportMode(mode) {
         localStorage.setItem('courier_transport_mode', mode);
+    }
+
+    // Получить routingMode для API Яндекса (driving или pedestrian)
+    function getYandexRoutingMode() {
+        return (currentTransportMode === 'driving') ? 'driving' : 'pedestrian';
+    }
+
+    // Рассчитать время в пути на основе расстояния (метры) и текущего режима
+    function calculateTravelTime(distanceMeters) {
+        const speed = SPEEDS[currentTransportMode];
+        if (!speed || distanceMeters <= 0) return 0;
+        return distanceMeters / speed; // секунды
+    }
+
+    function formatDuration(seconds) {
+        if (seconds < 60) return `${Math.ceil(seconds)} сек.`;
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins} мин. ${secs} сек.`;
     }
 
     // ---------------------------- ПОДГОТОВКА АДРЕСА ----------------------------
@@ -374,7 +400,7 @@
         if (progressBar) progressBar.style.width = percent + '%';
     }
 
-    // ---------------------------- ПОСТРОЕНИЕ МАРШРУТА ----------------------------
+    // ---------------------------- ПОСТРОЕНИЕ МАРШРУТА (с корректным временем) ----------------------------
     async function buildColorfulRoute() {
         if (!myOrdersData.length) {
             document.getElementById('route-details').classList.add('d-none');
@@ -382,7 +408,7 @@
         }
         routeSegments.forEach(seg => myMap.geoObjects.remove(seg));
         routeSegments = [];
-        routeDistances = [];
+        routeSegmentsData = [];
 
         const points = [currentLocation];
         for (let order of myOrdersData) {
@@ -396,6 +422,7 @@
         }
 
         const colors = ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1', '#20c997'];
+        const routingMode = getYandexRoutingMode();
         
         for (let i = 0; i < validPoints.length - 1; i++) {
             const from = validPoints[i];
@@ -404,7 +431,7 @@
             
             const route = new ymaps.multiRouter.MultiRoute({
                 referencePoints: [from, to],
-                params: { routingMode: currentTransportMode }
+                params: { routingMode: routingMode }
             }, {
                 boundsAutoApply: false,
                 routeActiveStrokeWidth: 5,
@@ -416,44 +443,57 @@
             myMap.geoObjects.add(route);
             routeSegments.push(route);
             
+            // Сохраняем индекс сегмента
+            const segIndex = i;
             route.model.events.add('requestsuccess', (function(idx) {
                 return function() {
-                    const active = route.getActiveRoute();
-                    if (active) {
-                        let dist = active.properties.get("distance").text;
-                        let dur = active.properties.get("duration").text;
-                        if (localStorage.getItem('courier_transport_mode') === 'bicycle') {
-                            let distanceMeters = active.properties.get("distance").value;
-                            let bicycleSeconds = distanceMeters / 4.17;
-                            let minutes = Math.floor(bicycleSeconds / 60);
-                            let seconds = Math.floor(bicycleSeconds % 60);
-                            dur = `${minutes} мин. ${seconds} сек.`;
-                        }
-                        routeDistances[idx] = { dist, dur };
-                        if (idx === 0) {
-                            document.getElementById('route-info-text').innerHTML = `<i class="bi bi-signpost"></i> ${dist} • ${dur}`;
-                            document.getElementById('route-distance').innerText = `${dist} • ${dur}`;
-                        }
-                        updateRouteStepsWithHints();
+                    const activeRoute = route.getActiveRoute();
+                    if (activeRoute) {
+                        const distanceMeters = activeRoute.properties.get("distance").value; // метры
+                        const durationSeconds = calculateTravelTime(distanceMeters);
+                        const distanceText = (distanceMeters / 1000).toFixed(1) + ' км';
+                        const durationText = formatDuration(durationSeconds);
+                        routeSegmentsData[idx] = { distanceMeters, durationSeconds, distanceText, durationText };
+                        updateRouteSummaryAndSteps();
                     }
                 };
-            })(i));
+            })(segIndex));
         }
         
-        function updateRouteStepsWithHints() {
-            const stepsHtml = [];
-            stepsHtml.push(`<div class="route-step"><div class="step-number completed"><i class="bi bi-truck"></i></div><div><strong>📍 Вы здесь</strong><br><small>${currentLocation[0].toFixed(4)}, ${currentLocation[1].toFixed(4)}</small></div></div>`);
+        function updateRouteSummaryAndSteps() {
+            // Рассчитаем общее расстояние и время по всем сегментам
+            let totalDistanceMeters = 0;
+            let totalDurationSeconds = 0;
+            for (let seg of routeSegmentsData) {
+                if (seg) {
+                    totalDistanceMeters += seg.distanceMeters;
+                    totalDurationSeconds += seg.durationSeconds;
+                }
+            }
+            const totalDistanceText = (totalDistanceMeters / 1000).toFixed(1) + ' км';
+            const totalDurationText = formatDuration(totalDurationSeconds);
+            document.getElementById('route-distance').innerHTML = `${totalDistanceText} • ${totalDurationText}`;
+            document.getElementById('route-info-text').innerHTML = `<i class="bi bi-signpost"></i> ${totalDistanceText} • ${totalDurationText}`;
+            
+            // Обновляем пошаговые подсказки
+            let stepsHtml = `<div class="route-step"><div class="step-number completed"><i class="bi bi-truck"></i></div><div><strong>📍 Вы здесь</strong><br><small>${currentLocation[0].toFixed(4)}, ${currentLocation[1].toFixed(4)}</small></div></div>`;
             myOrdersData.forEach((order, idx) => {
                 let hintHtml = '';
-                if (routeDistances[idx]) {
-                    hintHtml = `<div class="small text-success mt-1"><i class="bi bi-info-circle"></i> Расстояние: ${routeDistances[idx].dist} (${routeDistances[idx].dur})</div>`;
+                if (routeSegmentsData[idx]) {
+                    hintHtml = `<div class="small text-success mt-1"><i class="bi bi-info-circle"></i> Расстояние: ${routeSegmentsData[idx].distanceText} (${routeSegmentsData[idx].durationText})</div>`;
                 }
-                stepsHtml.push(`<div class="route-step"><div class="step-number ${idx === 0 ? 'current' : ''}">${idx+1}</div><div><strong>📦 Заказ №${order.id}</strong><br><small>${order.address}</small><br><small>📞 ${order.phone}</small>${hintHtml}</div></div>`);
+                stepsHtml += `<div class="route-step"><div class="step-number ${idx === 0 ? 'current' : ''}">${idx+1}</div><div><strong>📦 Заказ №${order.id}</strong><br><small>${order.address}</small><br><small>📞 ${order.phone}</small>${hintHtml}</div></div>`;
             });
-            document.getElementById('route-steps').innerHTML = stepsHtml.join('');
+            document.getElementById('route-steps').innerHTML = stepsHtml;
         }
         
-        updateRouteStepsWithHints();
+        // Если ни один сегмент ещё не загрузился, показываем заглушку
+        setTimeout(() => {
+            if (routeSegmentsData.length === 0) {
+                document.getElementById('route-steps').innerHTML = '<div class="text-muted text-center p-3">Загрузка маршрута...</div>';
+            }
+        }, 500);
+        
         document.getElementById('route-details').classList.remove('d-none');
     }
 
@@ -521,7 +561,7 @@
                     const newOrderIds = data.orders.filter(order => !lastAvailableOrderIds.has(order.id));
                     if (newOrderIds.length > 0) {
                         newOrderIds.forEach(order => {
-                            playNewOrderSound(); // звук можно оставить
+                            playNewOrderSound();
                             showNotificationWithAction(
                                 '📦 Новый заказ!',
                                 `Заказ №${order.id} готов к доставке на сумму ${order.total_price} ₽`,
@@ -538,7 +578,6 @@
             })
             .catch(err => console.error('Ошибка загрузки заказов:', err));
     }
-
 
     function updateAvailableOrders(orders) {
         const container = document.getElementById('available-orders-container');
@@ -623,35 +662,21 @@
         const modeSelect = document.getElementById('transport-mode');
         if (modeSelect) {
             modeSelect.addEventListener('change', function() {
-                let selected = this.value;
-                let effectiveMode = (selected === 'bicycle') ? 'pedestrian' : selected;
-                currentTransportMode = effectiveMode;
-                saveTransportMode(effectiveMode);
-                refreshRoute();
-                if (selected === 'bicycle') {
-                    const hint = document.getElementById('route-info-text');
-                    hint.innerHTML = '<i class="bi bi-info-circle"></i> 🚲 Велосипед: маршрут построен как пешеходный (скорость ~15 км/ч)';
-                    setTimeout(() => {
-                        if (myOrdersData.length > 0) {
-                            const activeDist = document.getElementById('route-distance').innerText;
-                            hint.innerHTML = `<i class="bi bi-signpost"></i> ${activeDist}`;
-                        } else {
-                            hint.innerHTML = '<i class="bi bi-info-circle"></i> Маршрут перестраивается автоматически';
-                        }
-                    }, 3000);
-                }
+                const newMode = this.value;
+                if (newMode === currentTransportMode) return;
+                currentTransportMode = newMode;
+                saveTransportMode(currentTransportMode);
+                refreshRoute();  // перестроим маршрут с новым расчётом времени
+                // Покажем сообщение о смене режима
+                const speedKmh = currentTransportMode === 'driving' ? 40 : (currentTransportMode === 'bicycle' ? 10 : 5);
+                showToast(`Режим сменён на ${modeSelect.options[modeSelect.selectedIndex].text}`, 'info');
             });
-            modeSelect.value = currentTransportMode === 'pedestrian' && localStorage.getItem('courier_transport_mode') === 'bicycle' ? 'bicycle' : currentTransportMode;
         }
     }
 
     function recalculateRoute() { refreshRoute(); }
 
-    if (Notification.permission === 'default') Notification.requestPermission();
-
-    // Универсальное уведомление (тост + браузерное) с действием по клику
-    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
-        // Контейнер для тостов
+    function showToast(message, type = 'info') {
         let container = document.getElementById('toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -662,31 +687,47 @@
             container.style.zIndex = '9999';
             document.body.appendChild(container);
         }
-
         const toast = document.createElement('div');
-        toast.className = 'ginza-toast shadow-lg';
-        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
-        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
-        toast.style.cursor = 'pointer';
-
-        // Обработка клика – может быть функция или URL
-        toast.addEventListener('click', () => {
-            if (typeof onClickAction === 'function') {
-                onClickAction();
-            } else if (typeof onClickAction === 'string') {
-                window.location.href = onClickAction;
-            }
-        });
-
+        toast.className = 'ginza-toast shadow-lg bg-white rounded-3 p-3 mb-2 d-flex align-items-center';
+        const icon = type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-info-circle-fill text-warning';
+        toast.innerHTML = `<i class="bi ${icon} me-2 fs-5"></i><div>${message}</div>`;
         container.appendChild(toast);
         setTimeout(() => {
-            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+            toast.style.transition = "opacity 0.4s ease";
             toast.style.opacity = "0";
-            toast.style.transform = "translateX(20px)";
-            setTimeout(() => toast.remove(), 600);
-        }, 8000);
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
 
-        // Браузерное уведомление
+    if (Notification.permission === 'default') Notification.requestPermission();
+
+    // Универсальное уведомление (тост + браузерное) с действием по клику
+    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg bg-white rounded-3 p-3 mb-2 d-flex align-items-center';
+        const icon = type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-info-circle-fill text-warning';
+        toast.innerHTML = `<i class="bi ${icon} me-3 fs-5"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
+        toast.style.cursor = 'pointer';
+        toast.addEventListener('click', () => {
+            if (typeof onClickAction === 'function') onClickAction();
+            else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+        });
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.4s ease";
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 500);
+        }, 8000);
         if (Notification.permission === 'granted') {
             const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
             notification.onclick = function() {
