@@ -91,8 +91,8 @@ DATABASES = {
         'NAME': 'railway',
         'USER': 'postgres',
         'PASSWORD': 'EXYApdVUHzPhbFCbcVTXToJRCgPpWgyN',
-        'HOST': 'hopper.proxy.rlwy.net',
-        'PORT': '32457',
+        'HOST': 'postgres.railway.internal',  # ВНУТРЕННИЙ ХОСТ ДЛЯ RAILWAY
+        'PORT': '5432',                      # ВНУТРЕННИЙ ПОРТ
     }
 }
 
