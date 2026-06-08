@@ -247,6 +247,7 @@ class ProductRecommendation(models.Model):
     class Meta:
         verbose_name = "Рекомендация"
         verbose_name_plural = "Рекомендации"
+        unique_together = [['source_type', 'source_product', 'source_category', 'source_user']]
 
     def __str__(self):
         if self.source_type == 'product' and self.source_product:

@@ -677,7 +677,7 @@ def auto_assign_order(order):
 
     if best_courier:
         old_status = order.status
-        order.courier = best_courier
+        order.courier = best_courier.username
         order.status = 'delivering'
         order.save()
         OrderStatusHistory.objects.create(
@@ -978,7 +978,7 @@ def courier_take_order(request, order_id):
     
     if active_count < 5:
         old_status = order.status
-        order.courier = request.user
+        order.courier = request.user.username
         order.status = 'delivering'
         order.save()
         OrderStatusHistory.objects.create(
