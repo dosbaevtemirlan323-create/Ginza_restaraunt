@@ -55,6 +55,15 @@
     #reportModal canvas { max-height: 280px; width: 100%; }
     @media (max-width: 768px) { #reportModal .col-md-4 { width: 100%; margin-bottom: 1rem; } }
     #all-orders-container .card { width: 100%; }
+
+    /* Стили для печати чека (скрытые элементы) */
+    @media print {
+        body * { visibility: hidden; }
+        .kitchen-ticket, .kitchen-ticket * { visibility: visible; }
+        .kitchen-ticket { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; font-family: monospace; font-size: 14px; }
+        .no-print { display: none; }
+    }
+    .kitchen-ticket { display: none; }
 </style>
 
 <div class="container mt-4 pb-5">
@@ -454,12 +463,15 @@
 </div>
 {% endfor %}
 
-<!-- ========== МОДАЛКА ДЕТАЛЕЙ ЗАКАЗА ========== -->
+<!-- ========== МОДАЛКА ДЕТАЛЕЙ ЗАКАЗА (с кнопкой печати) ========== -->
 <div class="modal fade" id="orderDetailModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title">Детали заказа №<span id="modalOrderId"></span></h5>
+                <button class="btn btn-sm btn-light ms-auto me-2 rounded-pill" onclick="printKitchenTicket()">
+                    <i class="bi bi-printer"></i> Распечатать чек
+                </button>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="modalOrderContent">
@@ -578,7 +590,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     function getCookie(name) {
         let value = "; " + document.cookie;
         let parts = value.split("; " + name + "=");
@@ -706,7 +718,7 @@
             .catch(err => console.error(err));
     }
 
-    // ========== ВСЕ ЗАКАЗЫ ==========
+    // ========== ВСЕ ЗАКАЗЫ (С ПОДДЕРЖКОЙ НЕПРОСМОТРЕННЫХ) ==========
     let allOrdersData = [];
     let notifiedNewOrderIds = new Set();
 
@@ -730,8 +742,6 @@
             .then(res => res.json())
             .then(data => {
                 allOrdersData = data.orders || [];
-                
-                // Обработка полей даты и цен (оставляем как есть)
                 allOrdersData.forEach(order => {
                     if (order.created_at) {
                         const date = new Date(order.created_at);
@@ -740,7 +750,6 @@
                     }
                     order.total_price = parseFloat(order.total_price) || 0;
                 });
-                
                 renderAllOrders();
             })
             .catch(err => {
@@ -749,37 +758,69 @@
                 if (container) container.innerHTML = '<div class="text-center py-5 text-danger">Ошибка загрузки заказов</div>';
             });
     }
+
+    // Фоновый мониторинг НОВЫХ и НЕПРОСМОТРЕННЫХ заказов
     function checkNewOrdersBackground() {
-        // Запрашиваем строго статус 'new', игнорируя фильтры на странице
         fetch('/api/operator/all-orders/?status=new')
             .then(res => res.json())
             .then(data => {
                 const rawOrders = data.orders || [];
-                
-                // Фильтруем только те, которые бэкенд считает непросмотренными
+                // Фильтруем заказы, которые ещё не просмотрены оператором (is_operator_viewed == false)
                 const newUnviewed = rawOrders.filter(order => !order.is_operator_viewed);
-                
                 newUnviewed.forEach(order => {
-                    // Если в текущей сессии вкладки мы этот пуш уже выводили — игнорируем
-                    if (notifiedNewOrderIds.has(order.id)) return; 
-                    
-                    // Стреляет уведомление
+                    if (notifiedNewOrderIds.has(order.id)) return;
                     showNotificationWithAction(
                         '🆕 Новый заказ!',
                         `Заказ №${order.id} от ${order.user} на сумму ${parseFloat(order.total_price).toFixed(2)} ₽`,
                         () => showOrderDetails(order.id),
                         'info'
                     );
-                    
-                    // Запоминаем, что пуш сработал
                     notifiedNewOrderIds.add(order.id);
                 });
             })
-            .catch(err => console.error("Ошибка фонового мониторинга заказов:", err));
+            .catch(err => console.error("Ошибка фонового мониторинга:", err));
     }
 
-    // Запускаем фоновый процесс раз в 10 секунд
-    setInterval(checkNewOrdersBackground, 10000);
+    // Универсальное уведомление (тост + браузерное)
+    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'ginza-toast shadow-lg bg-white rounded-3 p-3 mb-2 d-flex align-items-center';
+        const icon = type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-info-circle-fill text-warning';
+        toast.innerHTML = `<i class="bi ${icon} me-3 fs-5"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
+        toast.style.cursor = 'pointer';
+        toast.addEventListener('click', () => {
+            if (typeof onClickAction === 'function') onClickAction();
+            else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+        });
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = "opacity 0.4s ease";
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 500);
+        }, 8000);
+
+        if (Notification.permission === 'granted') {
+            const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
+            notification.onclick = function() {
+                window.focus();
+                if (typeof onClickAction === 'function') onClickAction();
+                else if (typeof onClickAction === 'string') window.location.href = onClickAction;
+                notification.close();
+            };
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
 
     function renderAllOrders() {
         const container = document.getElementById('all-orders-container');
@@ -814,9 +855,10 @@
             else if (order.status === 'delivering') actionButtons = `<span class="badge bg-info">В пути</span>`;
             else if (order.status === 'completed') actionButtons = `<span class="badge bg-secondary">Завершён</span>`;
             else if (order.status === 'cancelled') actionButtons = `<span class="badge bg-danger">Отменён</span>`;
+            const unviewedClass = (!order.is_operator_viewed && order.status === 'new') ? 'order-unviewed' : '';
             html += `
                 <div class="col">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 ${order.is_operator_viewed ? '' : 'order-unviewed'}">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 ${unviewedClass}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="fw-bold mb-0">Заказ №${order.id}</h6>
@@ -856,9 +898,11 @@
         loadAllOrders();
     }
 
-    // ========== ДЕТАЛИ ЗАКАЗА И ЧАТ ==========
+    // ========== ДЕТАЛИ ЗАКАЗА, ЧАТ, ОТМЕТКА ПРОСМОТРА, ПЕЧАТЬ ЧЕКА ==========
     let currentOrderChatOrderId = null;
     let chatPollInterval = null;
+    let currentOrderDataForPrint = null; // храним данные текущего заказа для печати
+
     function showOrderDetails(orderId) {
         const modalElement = document.getElementById('orderDetailModal');
         if (!modalElement) { showToast('Ошибка: модальное окно не найдено', 'danger'); return; }
@@ -867,17 +911,17 @@
         document.getElementById('modalOrderContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning"></div> Загрузка...</div>';
         modal.show();
 
-        // Отметить заказ как просмотренный
-        fetch(`/api/mark-order-viewed/${orderId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } })
-            .then(() => {
-                // Обновить данные в allOrdersData
-                const orderIndex = allOrdersData.findIndex(o => o.id == orderId);
-                if (orderIndex !== -1 && !allOrdersData[orderIndex].is_operator_viewed) {
-                    allOrdersData[orderIndex].is_operator_viewed = true;
-                    renderAllOrders(); // перерисовать список, чтобы убрать подсветку
-                }
-            })
-            .catch(err => console.error('Ошибка отметки просмотра:', err));
+        // Отметить заказ как просмотренный (снимаем подсветку)
+        fetch(`/api/mark-order-viewed/${orderId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        }).then(() => {
+            const orderIndex = allOrdersData.findIndex(o => o.id == orderId);
+            if (orderIndex !== -1 && !allOrdersData[orderIndex].is_operator_viewed) {
+                allOrdersData[orderIndex].is_operator_viewed = true;
+                renderAllOrders();
+            }
+        }).catch(err => console.error('Ошибка отметки просмотра:', err));
 
         fetch(`/api/order-detail/${orderId}/`)
             .then(res => res.json())
@@ -886,6 +930,7 @@
                     document.getElementById('modalOrderContent').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                     return;
                 }
+                currentOrderDataForPrint = data; // сохраняем для печати
                 let itemsHtml = '';
                 if (data.items && data.items.length) {
                     itemsHtml = '<ul class="list-group mb-3">';
@@ -942,7 +987,6 @@
         modal._element.addEventListener('hidden.bs.modal', function () { if (chatPollInterval) clearInterval(chatPollInterval); currentOrderChatOrderId = null; });
     }
 
-
     function loadOrderChat(orderId, silent = false) {
         fetch(`/order/${orderId}/messages/`)
             .then(res => res.json())
@@ -982,6 +1026,51 @@
                 } else alert('Ошибка отправки');
             })
             .catch(err => console.error(err));
+    }
+
+    // Функция печати кухонного чека
+    function printKitchenTicket() {
+        if (!currentOrderDataForPrint) {
+            showToast('Нет данных для печати', 'warning');
+            return;
+        }
+        const order = currentOrderDataForPrint;
+        let ticketHtml = `
+        <div class="kitchen-ticket" style="font-family: monospace; font-size: 14px; padding: 20px; max-width: 300px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <strong>GINZA КУХНЯ</strong><br>
+                Заказ №${order.id}<br>
+                ${new Date().toLocaleString()}
+            </div>
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            <table style="width: 100%; font-size: 12px;">
+                <thead><tr><th>Блюдо</th><th>Кол-во</th><th>Примечание</th></tr></thead>
+                <tbody>
+        `;
+        order.items.forEach(item => {
+            ticketHtml += `<tr>
+                <td>${escapeHtml(item.name)}</td>
+                <td style="text-align:center">×${item.quantity}</td>
+                <td>${escapeHtml(item.comment || '')}</td>
+            </tr>`;
+        });
+        ticketHtml += `
+                </tbody>
+            </table>
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            <div style="text-align: center;">${order.user} | ${order.phone}</div>
+            <div style="text-align: center; font-size: 10px; margin-top: 10px;">Спасибо за заказ!</div>
+        </div>
+        `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Кухонный чек №${order.id}</title>
+            <style>body { margin: 0; padding: 0; } @media print { body { margin: 0; } }</style>
+            </head><body>${ticketHtml}</body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        printWindow.close();
     }
 
     // ========== АНАЛИТИКА ==========
@@ -1075,27 +1164,6 @@
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const updateBtn = document.getElementById('analytics-update-btn');
-        if (updateBtn) updateBtn.addEventListener('click', loadAnalytics);
-        document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', (e) => setPeriod(e.target.dataset.period)));
-        const revenueBtn = document.getElementById('chart-type-revenue');
-        const ordersBtn = document.getElementById('chart-type-orders');
-        if (revenueBtn && ordersBtn) {
-            revenueBtn.addEventListener('click', () => {
-                currentChartMode = 'revenue';
-                revenueBtn.classList.add('active');
-                ordersBtn.classList.remove('active');
-                renderChart();
-            });
-            ordersBtn.addEventListener('click', () => {
-                currentChartMode = 'orders';
-                ordersBtn.classList.add('active');
-                revenueBtn.classList.remove('active');
-                renderChart();
-            });
-        }
-    });
 
     // ========== КУРЬЕРЫ ОНЛАЙН ==========
     function loadOnlineCouriers() {
@@ -1132,57 +1200,30 @@
             const tabAll = document.getElementById('tab-all');
             if (tabAll && tabAll.classList.contains('active')) loadAllOrders();
         }, 15000);
+        setInterval(checkNewOrdersBackground, 10000);
     });
 
-    // Универсальное уведомление (тост + браузерное) с действием по клику
-    function showNotificationWithAction(title, body, onClickAction, type = 'info') {
-        // Контейнер для тостов
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.style.position = 'fixed';
-            container.style.bottom = '20px';
-            container.style.right = '20px';
-            container.style.zIndex = '9999';
-            document.body.appendChild(container);
+    // Настройка кнопок периода аналитики
+    document.addEventListener('DOMContentLoaded', function() {
+        const updateBtn = document.getElementById('analytics-update-btn');
+        if (updateBtn) updateBtn.addEventListener('click', loadAnalytics);
+        document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', (e) => setPeriod(e.target.dataset.period)));
+        const revenueBtn = document.getElementById('chart-type-revenue');
+        const ordersBtn = document.getElementById('chart-type-orders');
+        if (revenueBtn && ordersBtn) {
+            revenueBtn.addEventListener('click', () => {
+                currentChartMode = 'revenue';
+                revenueBtn.classList.add('active');
+                ordersBtn.classList.remove('active');
+                renderChart();
+            });
+            ordersBtn.addEventListener('click', () => {
+                currentChartMode = 'orders';
+                ordersBtn.classList.add('active');
+                revenueBtn.classList.remove('active');
+                renderChart();
+            });
         }
-
-        const toast = document.createElement('div');
-        toast.className = 'ginza-toast shadow-lg';
-        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill';
-        toast.innerHTML = `<i class="bi ${icon} me-3 text-warning"></i><div><strong>${escapeHtml(title)}</strong><br>${escapeHtml(body)}</div>`;
-        toast.style.cursor = 'pointer';
-
-        // Обработка клика – может быть функция или URL
-        toast.addEventListener('click', () => {
-            if (typeof onClickAction === 'function') {
-                onClickAction();
-            } else if (typeof onClickAction === 'string') {
-                window.location.href = onClickAction;
-            }
-        });
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-            toast.style.opacity = "0";
-            toast.style.transform = "translateX(20px)";
-            setTimeout(() => toast.remove(), 600);
-        }, 8000);
-
-        // Браузерное уведомление
-        if (Notification.permission === 'granted') {
-            const notification = new Notification(title, { body: body, icon: '/static/logo.png' });
-            notification.onclick = function() {
-                window.focus();
-                if (typeof onClickAction === 'function') onClickAction();
-                else if (typeof onClickAction === 'string') window.location.href = onClickAction;
-                notification.close();
-            };
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission();
-        }
-    }
+    });
 </script>
 {% endblock %}
