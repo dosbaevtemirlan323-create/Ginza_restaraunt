@@ -10,7 +10,7 @@ from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
 from .cart import Cart
-from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, ProductRecommendation, OrderStatusHistory, Discount
+from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, OrderStatusHistory, Discount
 from .forms import UserRegisterForm
 import uuid
 import requests
@@ -33,57 +33,100 @@ from django.utils.timezone import now
 from collections import defaultdict   
 from datetime import datetime     # НОВОЕ: для автоназначения курьера (pip install geopy)
 
+# ========== ЖЁСТКИЕ ПРАВИЛА РЕКОМЕНДАЦИЙ ==========
+# Правила по ID (основные блюда → рекомендуемые ID)
+HARD_RULES_BY_ID = {
+    # Шашлыки
+    26: [84, 85, 86, 81, 45, 88, 89],
+    27: [84, 85, 86, 81, 45, 88, 89],
+    28: [84, 85, 86, 81, 45, 88, 89],
+    29: [84, 85, 86, 81, 45, 88, 89],
+    # Пицца
+    30: [84, 85, 86, 82, 83, 45],
+    31: [84, 85, 86, 82, 83, 45],
+    32: [84, 85, 86, 82, 83, 45],
+    33: [84, 85, 86, 82, 83, 45],
+    34: [84, 85, 86, 82, 83, 45],
+    35: [84, 85, 86, 82, 83, 45],
+    # Паста
+    22: [84, 85, 86, 88, 89, 82],
+    23: [84, 85, 86, 88, 89, 83],
+    24: [84, 85, 86, 88, 89, 82],
+    25: [84, 85, 86, 88, 89, 83],
+    # Вторые блюда
+    63: [84, 85, 86, 44, 45, 82, 83],
+    64: [84, 85, 86, 44, 45, 82, 83],
+    65: [84, 85, 86, 44, 45, 82, 83],
+    66: [84, 85, 86, 44, 45, 82, 83],
+    67: [84, 85, 86, 44, 45, 82, 83],
+    70: [84, 85, 86, 44, 45, 82, 83],
+    # Фастфуд
+    36: [81, 84, 85, 86, 82, 83],
+    39: [81, 84, 85, 86, 82, 83],
+    42: [81, 84, 85, 86, 82, 83],
+    # Салаты
+    1: [84, 85, 86, 88, 89],
+    2: [84, 85, 86, 88, 89],
+    3: [84, 85, 86, 88, 89],
+    4: [84, 85, 86, 88, 89],
+    5: [84, 85, 86, 88, 89],
+}
+
+# Правила по названию (дополнительно, если ID не сработает)
+HARD_RULES_BY_NAME = {
+    'шашлык': ['соус белый', 'соус красный', 'соус сырный', 'картофель фри', 'картофель по-деревенски', 'черный хлеб', 'белый хлеб'],
+    'пицца': ['соус белый', 'соус красный', 'соус сырный', 'кола', 'сок в ассортименте', 'картофель фри'],
+    'паста': ['соус белый', 'соус красный', 'соус сырный', 'черный хлеб', 'белый хлеб', 'кола'],
+    'бургер': ['картофель фри', 'соус белый', 'соус красный', 'кола'],
+    'донер': ['картофель фри', 'соус белый', 'соус красный', 'кола'],
+}
+
+def get_hardcoded_recommendations(cart_products):
+    """Возвращает QuerySet товаров по жестким правилам"""
+    if not cart_products:
+        return Product.objects.none()
+    recommended_ids = set()
+    cart_ids = [p.id for p in cart_products]
+    names = [p.name.lower() for p in cart_products]
+
+    # 1. По ID
+    for base_id, recs in HARD_RULES_BY_ID.items():
+        if base_id in cart_ids:
+            recommended_ids.update(recs)
+
+    # 2. По названию, если по ID ничего не нашли
+    if not recommended_ids:
+        for base_name, rec_names in HARD_RULES_BY_NAME.items():
+            if any(base_name in n for n in names):
+                for rec_name in rec_names:
+                    prod = Product.objects.filter(name__icontains=rec_name, is_active=True).first()
+                    if prod:
+                        recommended_ids.add(prod.id)
+
+    # Исключаем то, что уже в корзине
+    recommended_ids -= set(cart_ids)
+
+    if not recommended_ids:
+        return Product.objects.none()
+    return Product.objects.filter(id__in=recommended_ids, is_active=True)
+
 Configuration.configure('1285119', 'test_yOeCjmKe1rtmfgAat4OUl_9V89XI0Z4gIqR3HZXr7wg')
 
 
 def get_cross_sell_products(cart_products, user=None, limit=4):
+    """Для страницы корзины – сначала жесткие правила, затем популярные"""
+    hard = get_hardcoded_recommendations(cart_products)
+    if hard.exists():
+        return list(hard[:limit])
     if not cart_products:
         return []
-    
-    cart_product_ids = [p.id for p in cart_products]
-    recommended_ids = []
-    
-    # 1. Если пользователь авторизован – получаем товары, которые он уже заказывал (чтобы не рекомендовать)
-    bought_product_ids = set()
-    if user and user.is_authenticated:
-        bought_product_ids = set(
-            OrderItem.objects.filter(order__user=user, order__status='completed')
-            .values_list('product_id', flat=True)
-        )
-    
-    # 2. Для каждого товара в корзине ищем его рекомендации
-    for product_id in cart_product_ids:
-        recs = ProductRecommendation.objects.filter(
-            source_type='product',
-            source_product_id=product_id
-        ).prefetch_related('recommendationitem_set')
-        for rec in recs:
-            for item in rec.recommendationitem_set.select_related('product'):
-                prod = item.product
-                if (prod.id not in cart_product_ids and 
-                    prod.id not in recommended_ids and
-                    prod.id not in bought_product_ids):
-                    recommended_ids.append(prod.id)
-                    if len(recommended_ids) >= limit:
-                        break
-            if len(recommended_ids) >= limit:
-                break
-        if len(recommended_ids) >= limit:
-            break
-    
-    # 3. Если не набрали – добираем популярными товарами (исключая корзину и уже рекомендованные)
-    if len(recommended_ids) < limit:
-        needed = limit - len(recommended_ids)
-        exclude_ids = cart_product_ids + recommended_ids + list(bought_product_ids)
-        popular = Product.objects.filter(is_active=True) \
-            .exclude(id__in=exclude_ids) \
-            .annotate(total_sold=Sum('orderitem__quantity')) \
-            .order_by('-total_sold')[:needed]
-        for p in popular:
-            if p.id not in recommended_ids:
-                recommended_ids.append(p.id)
-    
-    return list(Product.objects.filter(id__in=recommended_ids, is_active=True))
+    cart_ids = [p.id for p in cart_products]
+    popular = Product.objects.filter(is_active=True) \
+        .exclude(id__in=cart_ids) \
+        .annotate(total_sold=Sum('orderitem__quantity')) \
+        .order_by('-total_sold')[:limit]
+    return list(popular)
+
 
 # --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 def validate_address(address):
@@ -1909,70 +1952,40 @@ def update_courier_location(request):
 
 
 def get_ai_recommendations(user, limit=8):
-    # Базовый запрос для активных продуктов
-    base_qs = Product.objects.filter(is_active=True)
+    """
+    Для блока «Повар рекомендует»:
+    - если пользователь авторизован: популярные блюда из его любимых категорий,
+    - иначе – глобально популярные.
+    """
+    base = Product.objects.filter(is_active=True)
+    if not user or not user.is_authenticated:
+        # Гость: глобально популярные
+        return base.annotate(total_sold=Sum('orderitem__quantity')).order_by('-total_sold')[:limit]
 
-    # --- НЕАВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ: показываем глобально популярные ---
-    if user is None or not user.is_authenticated:
-        return (base_qs
-                .annotate(total_sold=Sum('orderitem__quantity'))
-                .order_by('-total_sold', '-id')[:limit])
+    # Авторизованный: товары, которые он ещё не заказывал
+    tried = set(OrderItem.objects.filter(order__user=user).values_list('product_id', flat=True))
 
-    # --- АВТОРИЗОВАННЫЙ ПОЛЬЗОВАТЕЛЬ: персонализированные рекомендации ---
-    # 1. Собираем ID товаров, которые пользователь уже заказывал (чтобы исключить)
-    tried_products = set(OrderItem.objects.filter(order__user=user)
-                         .values_list('product_id', flat=True))
+    # Любимые категории (топ-2 по частоте заказов)
+    fav_cats = (OrderItem.objects.filter(order__user=user)
+                .values('product__category')
+                .annotate(cnt=Count('product__category'))
+                .order_by('-cnt')[:2])
+    cat_ids = [c['product__category'] for c in fav_cats if c['product__category']]
 
-    # 2. Пытаемся найти рекомендации, созданные администратором (source_type='user')
-    recommended_ids = []
-    user_recs = ProductRecommendation.objects.filter(
-        source_type='user',
-        source_user=user
-    ).prefetch_related('recommendationitem_set')
-    for rec in user_recs:
-        for item in rec.recommendationitem_set.select_related('product'):
-            if item.product.id not in tried_products:
-                recommended_ids.append(item.product.id)
-                if len(recommended_ids) >= limit:
-                    break
-        if len(recommended_ids) >= limit:
-            break
+    recs = Product.objects.none()
+    if cat_ids:
+        recs = base.filter(category_id__in=cat_ids).exclude(id__in=tried).distinct()
+        if recs.count() >= limit:
+            return recs[:limit]
 
-    # 3. Если не хватает – добираем из любимых категорий пользователя
-    if len(recommended_ids) < limit:
-        # Определяем топ-2 категорий, которые пользователь заказывал чаще всего
-        fav_cats = (OrderItem.objects.filter(order__user=user)
-                    .values('product__category')
-                    .annotate(cnt=Count('product__category'))
-                    .order_by('-cnt')[:2])
-        cat_ids = [c['product__category'] for c in fav_cats if c['product__category']]
-        if cat_ids:
-            needed = limit - len(recommended_ids)
-            rec_products = (base_qs
-                            .filter(category_id__in=cat_ids)
-                            .exclude(id__in=tried_products)
-                            .exclude(id__in=recommended_ids)
-                            .distinct()[:needed])
-            recommended_ids.extend([p.id for p in rec_products])
+    # Добираем популярными
+    needed = limit - recs.count()
+    popular = base.annotate(total_sold=Sum('orderitem__quantity')) \
+        .exclude(id__in=tried) \
+        .exclude(id__in=recs.values_list('id', flat=True)) \
+        .order_by('-total_sold')[:needed]
 
-    # 4. Если всё ещё не хватает – берём глобально популярные блюда, которые пользователь не заказывал
-    if len(recommended_ids) < limit:
-        needed = limit - len(recommended_ids)
-        popular = (base_qs
-                   .annotate(total_sold=Sum('orderitem__quantity'))
-                   .exclude(id__in=tried_products)
-                   .exclude(id__in=recommended_ids)
-                   .order_by('-total_sold')[:needed])
-        recommended_ids.extend([p.id for p in popular])
-
-    # 5. Получаем финальный список товаров
-    final_products = list(Product.objects.filter(id__in=recommended_ids, is_active=True))
-    # Если почему-то всё равно пусто (мало данных), подстраховка – глобально популярные
-    if not final_products:
-        return (base_qs
-                .annotate(total_sold=Sum('orderitem__quantity'))
-                .order_by('-total_sold')[:limit])
-    return final_products
+    return (recs | popular).distinct()[:limit] if recs else popular
 
 
 def get_single_recommendation(request):
