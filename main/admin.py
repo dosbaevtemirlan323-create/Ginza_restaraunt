@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Order, OrderItem, ProductRecommendation, RestaurantConfig, OrderMessage
+from .models import Category, Product, Order, OrderItem, RestaurantConfig, OrderMessage
 
 # Регистрируем новые модели, чтобы они появились в панели управления
 @admin.register(Category)
@@ -22,6 +22,5 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ['status', 'created_at']
     inlines = [OrderItemInline]
 
-admin.site.register(ProductRecommendation)
 admin.site.register(RestaurantConfig)
 admin.site.register(OrderMessage)

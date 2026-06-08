@@ -217,58 +217,6 @@ class OrderStatusHistory(models.Model):
         return f"Заказ {self.order.id}: {self.old_status} → {self.new_status} в {self.created_at}"
 
 
-# --- РЕКОМЕНДАЦИИ ---
-class ProductRecommendation(models.Model):
-    SOURCE_TYPES = (
-        ('product', 'Продукт'),
-        ('category', 'Категория'),
-        ('user', 'Пользователь'),
-    )
-    source_type = models.CharField(max_length=20, choices=SOURCE_TYPES, default='product')
-    source_product = models.ForeignKey(
-        Product, on_delete=models.CASCADE,
-        null=True, blank=True, related_name='recommendations_as_source'
-    )
-    source_category = models.ForeignKey(
-        Category, on_delete=models.CASCADE,
-        null=True, blank=True
-    )
-    source_user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        null=True, blank=True
-    )
-    recommended_products = models.ManyToManyField(
-        Product,
-        through='RecommendationItem',
-        related_name='recommendations_as_target',
-        verbose_name="Рекомендуемые товары"
-    )
-
-    class Meta:
-        verbose_name = "Рекомендация"
-        verbose_name_plural = "Рекомендации"
-        unique_together = [['source_type', 'source_product', 'source_category', 'source_user']]
-
-    def __str__(self):
-        if self.source_type == 'product' and self.source_product:
-            return f"Из {self.source_product.name}"
-        elif self.source_type == 'category' and self.source_category:
-            return f"Из категории {self.source_category.name}"
-        elif self.source_type == 'user' and self.source_user:
-            return f"Для пользователя {self.source_user.username}"
-        return "Рекомендация"
-
-
-class RecommendationItem(models.Model):
-    recommendation = models.ForeignKey(ProductRecommendation, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    score = models.FloatField(default=0.0, verbose_name="Вес рекомендации")
-    pairing_type = models.CharField(max_length=50, blank=True, verbose_name="Тип сочетания")
-
-    class Meta:
-        unique_together = ('recommendation', 'product')
-        verbose_name = "Элемент рекомендации"
-        verbose_name_plural = "Элементы рекомендаций"
 
 
 # --- НАСТРОЙКИ РЕСТОРАНА (новая модель) ---
@@ -361,48 +309,3 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.get_or_create(user=instance)
 
-@receiver(post_save, sender=Order)
-def update_recommendations_from_order(sender, instance, created, **kwargs):
-    """
-    Обновляет рекомендации на основе завершённого заказа.
-    """
-    if instance.status != 'completed':
-        return
-
-    product_ids = list(instance.items.values_list('product_id', flat=True))
-    if len(product_ids) < 2:
-        return
-
-    for i in range(len(product_ids)):
-        for j in range(i+1, len(product_ids)):
-            p1 = product_ids[i]
-            p2 = product_ids[j]
-            # Направление p1 -> p2
-            rec, _ = ProductRecommendation.objects.get_or_create(
-                source_type='product',
-                source_product_id=p1,
-                defaults={'source_category': None, 'source_user': None}
-            )
-            item, created = RecommendationItem.objects.get_or_create(
-                recommendation=rec,
-                product_id=p2,
-                defaults={'score': 1.0, 'pairing_type': 'co_purchase'}
-            )
-            if not created:
-                item.score += 1.0
-                item.save()
-
-            # Направление p2 -> p1 (симметрично)
-            rec2, _ = ProductRecommendation.objects.get_or_create(
-                source_type='product',
-                source_product_id=p2,
-                defaults={'source_category': None, 'source_user': None}
-            )
-            item2, created2 = RecommendationItem.objects.get_or_create(
-                recommendation=rec2,
-                product_id=p1,
-                defaults={'score': 1.0, 'pairing_type': 'co_purchase'}
-            )
-            if not created2:
-                item2.score += 1.0
-                item2.save()
