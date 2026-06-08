@@ -87,12 +87,8 @@ WSGI_APPLICATION = 'restaurant.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway',
-        'USER': 'postgres',
-        'PASSWORD': 'EXYApdVUHzPhbFCbcVTXToJRCgPpWgyN',
-        'HOST': 'postgres.railway.internal',  # ВНУТРЕННИЙ ХОСТ ДЛЯ RAILWAY
-        'PORT': '5432',                      # ВНУТРЕННИЙ ПОРТ
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
