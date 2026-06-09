@@ -612,6 +612,21 @@
 
     function submitAddressForm(event) {
         event.preventDefault();
+        
+        // 1. Валидация адреса на клиенте
+        const input = document.querySelector('#addAddressModal input[name="address_line"]');
+        let address = input.value.trim();
+        
+        // Убираем префикс, если он уже есть, для проверки
+        let rawAddress = address.replace(/^Байконур,\s*/, '');
+        
+        // Проверяем: длина >=5, есть цифры (номер дома) и есть буквы (улица)
+        if (rawAddress.length < 5 || !/\d/.test(rawAddress) || !/[а-яА-ЯёЁa-zA-Z]/.test(rawAddress)) {
+            alert('Укажите полный адрес (улица, номер дома).\nПример: ул. Янгеля, 5А');
+            return false;
+        }
+        
+        // 2. Отправка на сервер
         const form = event.target;
         const formData = new FormData(form);
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -633,14 +648,17 @@
                 showToast('Адрес добавлен!', 'success');
                 setTimeout(() => location.reload(), 1000);
             } else {
-                alert('Ошибка при добавлении адреса');
+                // Попробуем прочитать текст ошибки от сервера
+                response.text().then(text => {
+                    alert(text || 'Ошибка при добавлении адреса');
+                });
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
         })
         .catch(err => {
             console.error('Ошибка:', err);
-            alert('Ошибка при добавлении адреса');
+            alert('Ошибка соединения с сервером');
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         });
@@ -833,7 +851,6 @@
     }
 
     // Периодическая проверка статусов
-    const userIsAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
     let lastUserOrdersState = {};
     let isFirstOrderCheck = true;
 

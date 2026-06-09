@@ -1,6 +1,7 @@
+import logging
 import requests
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.template.loader import render_to_string
 
 def send_order_to_restaurant(order):
@@ -56,17 +57,17 @@ def send_receipt_email(order):
     """
     Отправка электронного чека на почту пользователя
     """
+    logger = logging.getLogger(__name__)
     subject = f'Электронный чек по заказу №{order.id} — GINZA'
     
-    # Используем новый шаблон чека
+    # Используем шаблон чека
     html_message = render_to_string('main/receipt_email.html', {'order': order})
     
-    # Создаем PDF версию для вложения (опционально)
+    # Попытка отправить с PDF-вложением (если установлен xhtml2pdf)
     try:
         from io import BytesIO
         from xhtml2pdf import pisa
         
-        # Создаем PDF из HTML
         html_content = render_to_string('main/receipt_print.html', {'order': order})
         pdf_file = BytesIO()
         pisa.CreatePDF(html_content, dest=pdf_file)
@@ -75,21 +76,23 @@ def send_receipt_email(order):
         email = EmailMessage(
             subject,
             html_message,
-            'no-reply@ginza-rest.ru',
+            settings.DEFAULT_FROM_EMAIL,      # берём из настроек
             [order.user.email]
         )
         email.content_subtype = "html"
         email.attach(f'cheque_{order.id}.pdf', pdf_file.read(), 'application/pdf')
         email.send()
+        logger.info(f"Чек для заказа №{order.id} отправлен с PDF")
     except Exception as e:
-        # Если нет xhtml2pdf, отправляем просто HTML
+        # Если нет xhtml2pdf или ошибка – отправляем просто HTML
+        logger.warning(f"Не удалось создать PDF для заказа {order.id}: {e}. Отправляю HTML.")
         send_mail(
             subject,
             'Ваш электронный чек во вложении',
-            'no-reply@ginza-rest.ru',
+            settings.DEFAULT_FROM_EMAIL,
             [order.user.email],
             html_message=html_message,
-            fail_silently=True,
+            fail_silently=False,
         )
 
 def geocode_address(address):

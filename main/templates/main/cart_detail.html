@@ -419,7 +419,7 @@
                                     <input type="text" name="new_address" id="new_address_input" 
                                         class="form-control rounded-start-pill border-light bg-light px-3" 
                                         placeholder="Улица, дом, кв (например: ул. Горького, 12, кв 14)" 
-                                        value="Байконур, "
+                                        value=""
                                         oninput="validateAddressInput(this.value)">
                                     <button type="button" class="btn btn-dark rounded-end-pill px-3" id="add-address-btn">
                                         <i class="bi bi-plus-lg"></i>
@@ -818,19 +818,14 @@
 
     function validateAddressInput(address) {
         const feedbackDiv = document.getElementById('address-feedback');
-        const prefix = "Байконур, ";
-        
-        // Пустой или слишком короткий адрес
-        if (!address || address.length < prefix.length + 3) {
-            if (feedbackDiv) feedbackDiv.style.display = 'none';
+        if (!address || address.length < 5 || !/\d/.test(address) || !/[а-яА-ЯёЁa-zA-Z]/.test(address)) {
+            if (feedbackDiv) {
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.className = 'address-error';
+                feedbackDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Укажите улицу и номер дома';
+            }
             return false;
-        }
-        
-        // Проверяем, что есть хотя бы одна цифра (номер дома) и есть что-то кроме префикса
-        const hasDigit = /\d/.test(address);
-        const hasContent = address.length > prefix.length + 2;
-        
-        if (hasDigit && hasContent) {
+        } else {
             if (feedbackDiv) {
                 feedbackDiv.style.display = 'block';
                 feedbackDiv.className = 'address-suggestion';
@@ -841,13 +836,6 @@
                 }, 2000);
             }
             return true;
-        } else {
-            if (feedbackDiv) {
-                feedbackDiv.style.display = 'block';
-                feedbackDiv.className = 'address-error';
-                feedbackDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Укажите улицу и номер дома';
-            }
-            return false;
         }
     }
 

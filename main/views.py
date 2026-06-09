@@ -1588,12 +1588,21 @@ def update_profile(request):
 @login_required
 def add_address(request):
     if request.method == 'POST':
-        address_line = request.POST.get('address_line')
+        address_line = request.POST.get('address_line', '').strip()
         if address_line:
-            Address.objects.create(user=request.user, address_line=address_line)
-            messages.success(request, "Адрес добавлен!")
+            # Добавляем префикс и проверку
+            city_prefix = "Байконур, "
+            if not address_line.startswith(city_prefix):
+                address_line = city_prefix + address_line
+            rest = address_line[len(city_prefix):].strip()
+            if len(rest) >= 5 and any(c.isdigit() for c in rest) and any(c.isalpha() for c in rest):
+                Address.objects.create(user=request.user, address_line=address_line)
+                messages.success(request, "Адрес добавлен!")
+            else:
+                messages.error(request, "Укажите улицу и номер дома (например: ул. Янгеля, 5А)")
+        else:
+            messages.error(request, "Введите адрес.")
     return redirect('profile')
-
 
 @login_required
 def delete_address(request, address_id):
@@ -1948,14 +1957,7 @@ def logout_view(request):
     return redirect('start')
 
 
-def send_receipt_email(order):
-    html_content = render_to_string('main/receipt.html', {'order': order}) 
-    email = EmailMessage(
-        f'Электронный чек по заказу №{order.id} — GINZA',
-        html_content, 'noreply@ginzaproject.ru', [order.user.email],
-    )
-    email.content_subtype = "html"
-    email.send()
+
 
 
 # --- УПРАВЛЕНИЕ КУРЬЕРАМИ ---
@@ -2101,30 +2103,35 @@ def get_single_recommendation(request):
 @login_required
 def add_address_ajax(request):
     if request.method == 'POST':
-        address_line = request.POST.get('address_line')
-        if address_line:
-            city_prefix = "Байконур, "
-            if not address_line.startswith(city_prefix):
-                address_line = city_prefix + address_line
-            
-            # Пытаемся получить координаты, но НЕ БЛОКИРУЕМ сохранение при ошибке
-            is_valid, lat, lng = validate_address(address_line)
-            if not is_valid:
-                lat = None
-                lng = None
-                # Не показываем ошибку пользователю – просто сохраняем без координат
-            
-            new_addr = Address.objects.create(
-                user=request.user,
-                address_line=address_line,
-                lat=lat,
-                lng=lng
-            )
-            return JsonResponse({
-                'status': 'ok',
-                'id': new_addr.id,
-                'address': new_addr.address_line
-            })
+        address_line = request.POST.get('address_line', '').strip()
+        if not address_line:
+            return JsonResponse({'status': 'error', 'message': 'Введите адрес'}, status=400)
+
+        city_prefix = "Байконур, "
+        if not address_line.startswith(city_prefix):
+            address_line = city_prefix + address_line
+
+        # Проверяем, что после префикса есть содержательная часть (улица и номер)
+        rest = address_line[len(city_prefix):].strip()
+        if len(rest) < 5 or not any(c.isdigit() for c in rest) or not any(c.isalpha() for c in rest):
+            return JsonResponse({'status': 'error', 'message': 'Укажите улицу и номер дома (например, ул. Янгеля, 5А)'}, status=400)
+
+        # Геокодирование (не блокируем сохранение)
+        is_valid, lat, lng = validate_address(address_line)
+        if not is_valid:
+            lat = lng = None
+
+        new_addr = Address.objects.create(
+            user=request.user,
+            address_line=address_line,
+            lat=lat,
+            lng=lng
+        )
+        return JsonResponse({
+            'status': 'ok',
+            'id': new_addr.id,
+            'address': new_addr.address_line
+        })
     return JsonResponse({'status': 'error'}, status=400)
 
 
