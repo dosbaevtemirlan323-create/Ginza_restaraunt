@@ -665,19 +665,7 @@
         offcanvasEl.addEventListener('hide.bs.offcanvas', () => floatBtnEl.classList.remove('cart-btn-hidden'));
     }
 
-    // Автоматическое обновление при выходе из аккаунта в другой вкладке
-    function checkUserSession() {
-        fetch('/api/check-last-order-status/')
-            .then(res => {
-                if (res.status === 403 || res.status === 401) {
-                    if (document.body.innerText.includes('Вы вышли')) {
-                        location.reload();
-                    }
-                }
-            })
-            .catch(() => {});
-    }
-    setInterval(checkUserSession, 3000);
+
 </script>
 
 {% block extra_js %}{% endblock %}

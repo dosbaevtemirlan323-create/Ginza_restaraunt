@@ -1953,7 +1953,7 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    messages.info(request, "Вы вышли из системы.")
+    #messages.info(request, "Вы вышли из системы.")
     return redirect('start')
 
 
