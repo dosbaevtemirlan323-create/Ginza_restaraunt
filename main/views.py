@@ -804,7 +804,7 @@ def auto_assign_order(order):
         role='courier',
         is_online=True
     ).filter(
-        Q(last_updated__gte=time_threshold) | Q(last_lat__isnull=False)
+        Q(last_coords_update__gte=time_threshold) | Q(last_lat__isnull=False)
     ).select_related('user')
 
     best_courier = None
@@ -1895,7 +1895,7 @@ def get_online_couriers(request):
     online_couriers = Profile.objects.filter(
         role='courier'
     ).filter(
-        Q(last_updated__gte=time_threshold) | Q(last_lat__isnull=False)
+        Q(last_coords_update__gte=time_threshold) | Q(last_lat__isnull=False)
     ).select_related('user')
     
     data = [{
@@ -2060,7 +2060,7 @@ def update_courier_location(request):
         if profile.role == 'courier':
             profile.last_lat = lat
             profile.last_lng = lng
-            profile.last_updated = timezone.now() 
+            profile.last_coords_update = timezone.now()
             profile.save()
             return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=400)
