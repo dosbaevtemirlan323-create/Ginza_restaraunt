@@ -31,7 +31,14 @@ from django.db.models.functions import Extract, TruncDate
 from geopy.distance import geodesic      
 from django.utils.timezone import now
 from collections import defaultdict   
-from datetime import datetime     # НОВОЕ: для автоназначения курьера (pip install geopy)
+from datetime import datetime
+import requests
+from django.conf import settings
+
+BAIKONUR_LAT_MIN = 45.58
+BAIKONUR_LAT_MAX = 45.66
+BAIKONUR_LNG_MIN = 63.27
+BAIKONUR_LNG_MAX = 63.35
 
 # ========== ЖЁСТКИЕ ПРАВИЛА РЕКОМЕНДАЦИЙ ==========
 # Правила по ID (основные блюда → рекомендуемые ID)
@@ -213,37 +220,45 @@ def get_cross_sell_products(cart_products, user=None, limit=4):
 
 
 # --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-def validate_address(address):
-    """
-    Проверяет адрес на наличие ключевых слов (улица, проспект, микрорайон и т.д.)
-    и номера дома. Возвращает (is_valid, lat, lng).
-    """
-    if "Байконур" in address and len(address) > 15:
-        return geocode_address(address)
-
-    address_lower = address.lower()
-
-    # Расширенный список ключевых слов
-    street_keywords = [
-        'ул.', 'улица', 'пр.', 'проспект', 'пер.', 'переулок',
-        'микрорайон', 'мкр', 'мкр.', 'посёлок', 'п.', 'городок',
-        'жилмассив', 'ж/м', 'жм', 'проезд', 'бульвар', 'набережная',
-        'шоссе', 'тупик', 'аллея', 'линия', 'квартал'
-    ]
-    
-    has_street = any(keyword in address_lower for keyword in street_keywords)
-    has_house = any(char.isdigit() for char in address)
-
-    # Для микрорайона/посёлка номер дома может не требоваться
-    micro_district = any(kw in address_lower for kw in ['микрорайон', 'мкр', 'посёлок', 'п.'])
-    if micro_district and has_street:
-        has_house = True
-
-    if not has_street or not has_house:
+def geocode_address(address):
+    """Геокодирование через Яндекс. Вернёт (success, lat, lng) с проверкой точности."""
+    api_key = "2b6a7d3b-b4ef-4682-a0e0-69dda3376fba"
+    url = "https://geocode-maps.yandex.ru/1.x/"
+    params = {"apikey": api_key, "geocode": address, "format": "json", "results": 1}
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        data = resp.json()
+        feature_member = data["response"]["GeoObjectCollection"]["featureMember"]
+        
+        if feature_member:
+            geo_object = feature_member[0]["GeoObject"]
+            
+            # Проверяем точность геокодирования
+            # Нам нужно убедиться, что пользователь ввёл конкретный дом или хотя бы улицу,
+            # а не просто Яндекс вернул координаты центра города из-за мусора в адресе.
+            meta_data = geo_object["metaDataProperty"]["GeocoderMetaData"]
+            precision = meta_data.get("precision")  # exact, number, near, range, street, etc.
+            kind = meta_data.get("kind")            # house, street, locality...
+            
+            # Если Яндекс распознал адрес только до уровня города/страны (мусорный ввод)
+            if kind in ['locality', 'province', 'country'] or precision == 'other':
+                return False, None, None
+            
+            # Извлекаем координаты
+            coords = geo_object["Point"]["pos"].split()
+            lng, lat = float(coords[0]), float(coords[1])
+            
+            # Проверка, что координаты внутри Байконура
+            if (BAIKONUR_LAT_MIN <= lat <= BAIKONUR_LAT_MAX and
+                BAIKONUR_LNG_MIN <= lng <= BAIKONUR_LNG_MAX):
+                return True, lat, lng
+            else:
+                return False, None, None
+                
         return False, None, None
-
-    # Здесь можно добавить реальное геокодирование через Yandex Maps API
-    return geocode_address(address)
+    except Exception as e:
+        print(f"Geocoding error: {e}")
+        return False, None, None
 
 
 # --- ГЛАВНАЯ И МЕНЮ ---
@@ -489,23 +504,26 @@ def order_create(request):
                 pass
         
         # --- Один адрес ---
+        # --- Получение адреса ---
         final_address = None
-        lat = None
-        lng = None
-        
+        lat = lng = None
+
         if new_address and new_address.strip():
             final_address = new_address.strip()
-            # Пытаемся геокодировать, но не блокируем создание заказа
-            is_valid, lat, lng = validate_address(final_address)
+            if not final_address.lower().startswith('байконур'):
+                final_address = "Байконур, " + final_address
+            is_valid, lat, lng = geocode_address(final_address)
             if not is_valid:
-                lat = None
-                lng = None
-                # Не выводим ошибку, просто продолжим без координат
+                messages.error(request, "Адрес не найден в г. Байконур. Проверьте правильность улицы и номера дома.")
+                return redirect('cart_detail')
         elif address_id:
             addr_obj = get_object_or_404(Address, id=address_id, user=request.user)
             final_address = addr_obj.address_line
-            lat = addr_obj.lat
-            lng = addr_obj.lng
+            # ВАЖНО: даже для сохранённого адреса проверяем его сейчас!
+            is_valid, lat, lng = geocode_address(final_address)
+            if not is_valid:
+                messages.error(request, f"Адрес «{final_address}» не найден в г. Байконур. Пожалуйста, удалите его из профиля и введите корректный.")
+                return redirect('cart_detail')
         else:
             messages.error(request, "Пожалуйста, выберите или введите адрес доставки")
             return redirect('cart_detail')
@@ -527,10 +545,10 @@ def order_create(request):
         
         # --- Геокодирование, если координат нет ---
         if lat is None or lng is None:
-            is_valid, lat, lng = validate_address(final_address)
+            is_valid, lat, lng = geocode_address(final_address)
             if not is_valid:
-                lat = None
-                lng = None
+                messages.error(request, "Не удалось определить координаты адреса. Попробуйте выбрать другой адрес.")
+                return redirect('cart_detail')
         
         # --- ОПЛАТА НАЛИЧНЫМИ ---
         if payment_method == 'cash':
@@ -1589,20 +1607,19 @@ def update_profile(request):
 def add_address(request):
     if request.method == 'POST':
         address_line = request.POST.get('address_line', '').strip()
-        if address_line:
-            # Добавляем префикс и проверку
-            city_prefix = "Байконур, "
-            if not address_line.startswith(city_prefix):
-                address_line = city_prefix + address_line
-            rest = address_line[len(city_prefix):].strip()
-            if len(rest) >= 5 and any(c.isdigit() for c in rest) and any(c.isalpha() for c in rest):
-                Address.objects.create(user=request.user, address_line=address_line)
-                messages.success(request, "Адрес добавлен!")
-            else:
-                messages.error(request, "Укажите улицу и номер дома (например: ул. Янгеля, 5А)")
-        else:
+        if not address_line:
             messages.error(request, "Введите адрес.")
-    return redirect('profile')
+            return redirect('profile')
+        # Добавляем префикс города, если его нет
+        if not address_line.lower().startswith('байконур'):
+            address_line = "Байконур, " + address_line
+        is_valid, lat, lng = geocode_address(address_line)
+        if not is_valid:
+            messages.error(request, "Адрес не найден в г. Байконур. Укажите существующую улицу и номер дома.")
+            return redirect('profile')
+        Address.objects.create(user=request.user, address_line=address_line, lat=lat, lng=lng)
+        messages.success(request, "Адрес добавлен!")
+        return redirect('profile')
 
 @login_required
 def delete_address(request, address_id):
@@ -2111,16 +2128,16 @@ def add_address_ajax(request):
         if not address_line.startswith(city_prefix):
             address_line = city_prefix + address_line
 
-        # Проверяем, что после префикса есть содержательная часть (улица и номер)
-        rest = address_line[len(city_prefix):].strip()
-        if len(rest) < 5 or not any(c.isdigit() for c in rest) or not any(c.isalpha() for c in rest):
-            return JsonResponse({'status': 'error', 'message': 'Укажите улицу и номер дома (например, ул. Янгеля, 5А)'}, status=400)
+        # Обязательное геокодирование через Яндекс.Карты
+        is_valid, lat, lng = geocode_address(address_line)  # используем функцию geocode_address, а не validate_address
 
-        # Геокодирование (не блокируем сохранение)
-        is_valid, lat, lng = validate_address(address_line)
         if not is_valid:
-            lat = lng = None
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Адрес не найден в г. Байконур. Проверьте правильность улицы и номера дома.'
+            }, status=400)
 
+        # Сохраняем адрес ТОЛЬКО с реальными координатами
         new_addr = Address.objects.create(
             user=request.user,
             address_line=address_line,
