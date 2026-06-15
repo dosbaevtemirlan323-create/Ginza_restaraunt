@@ -58,6 +58,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('order/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
     
     # --- ПАНЕЛЬ ОПЕРАТОРА И API ---
     path('operator/', views.operator_panel, name='operator_panel'),
