@@ -2454,3 +2454,67 @@ def ajax_create_tag(request):
             return JsonResponse({'status': 'ok', 'id': tag.id, 'name': tag.name})
         return JsonResponse({'status': 'error', 'message': 'Тег уже существует или имя пустое'})
     return JsonResponse({'status': 'error'}, status=405)
+
+@staff_member_required
+def cancel_order(request, order_id):
+    """Отмена заказа оператором (только для статуса 'new')"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Проверяем, что заказ в статусе 'new' и ещё не обработан
+    if order.status != 'new':
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Нельзя отменить заказ в статусе "{order.get_status_display()}". Отмена доступна только для новых заказов.'
+        }, status=400)
+    
+    # Проверяем, не были ли уже списаны баллы (если заказ в 'new' - баллы ещё не списаны, но проверим)
+    # Проверяем, не началось ли приготовление (нет истории статуса 'cooking')
+    if OrderStatusHistory.objects.filter(order=order, new_status='cooking').exists():
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Заказ уже передан на кухню. Отмена невозможна.'
+        }, status=400)
+    
+    # Сохраняем старый статус
+    old_status = order.status
+    
+    # Меняем статус на 'cancelled'
+    order.status = 'cancelled'
+    order.save()
+    
+    # Записываем историю
+    OrderStatusHistory.objects.create(
+        order=order,
+        old_status=old_status,
+        new_status='cancelled',
+        changed_by=request.user
+    )
+    
+    # Возвращаем баллы, если они были списаны (но в статусе 'new' списание ещё не происходит, это на будущее)
+    # В вашей системе списание баллов происходит при создании заказа, так что может быть уже списано.
+    # Если баллы были списаны - возвращаем их пользователю
+    if order.points_used > 0:
+        profile = order.user.profile
+        profile.points += order.points_used
+        profile.save()
+    
+    # Логируем
+    logger.info(f"Заказ №{order.id} отменён оператором {request.user.username}")
+    
+    # Обновляем счётчики и отправляем уведомление клиенту (если есть WebSocket)
+    # ... можно добавить отправку уведомления через WebSocket
+    
+    # Подсчёт актуальных счётчиков для обновления интерфейса
+    counts = {
+        'new': Order.objects.filter(status='new').count(),
+        'cooking': Order.objects.filter(status='cooking').count(),
+        'ready': Order.objects.filter(status='ready').count(),
+        'delivering': Order.objects.filter(status='delivering').count(),
+    }
+    
+    return JsonResponse({
+        'status': 'ok',
+        'message': f'Заказ №{order.id} успешно отменён.',
+        'counts': counts,
+        'order_id': order.id
+    })
