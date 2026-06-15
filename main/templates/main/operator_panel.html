@@ -874,6 +874,7 @@
                                 <button class="btn btn-outline-dark rounded-pill btn-sm" onclick="showOrderDetails(${order.id})">Детали</button>
                                 ${actionButtons}
                                 ${(order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'ready' && order.status !== 'delivering') ? `<button class="btn btn-success btn-sm rounded-pill" onclick="nextStatus(${order.id}, '${order.status}')">Далее</button>` : ''}
+                                ${order.status === 'new' ? `<button class="btn btn-danger btn-sm rounded-pill" onclick="cancelOrder(${order.id})"><i class="bi bi-x-circle"></i> Отменить</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1187,6 +1188,34 @@
                 }
             })
             .catch(err => console.error(err));
+    }
+
+
+    function cancelOrder(orderId) {
+        if (confirm('Вы уверены, что хотите ОТМЕНИТЬ заказ №' + orderId + '? Отменить можно только заказ в статусе "Новый".')) {
+            fetch(`/order/cancel/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    showToast(data.message, 'success');
+                    // Перезагружаем список заказов
+                    loadAllOrders();
+                    updateStatsCounts();
+                } else {
+                    showToast(data.message || 'Ошибка при отмене заказа', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                showToast('Ошибка сервера', 'error');
+            });
+        }
     }
 
     // ========== ИНИЦИАЛИЗАЦИЯ ==========
