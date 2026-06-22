@@ -219,13 +219,40 @@
                 padding: 6px 12px;
             }
         }
+
+        /* Стили для скидок */
+        .old-price {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 0.85rem;
+            margin-right: 6px;
+        }
+        .discount-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 6px;
+            display: inline-block;
+            line-height: 1.5;
+        }
+        .new-price {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        @media (max-width: 576px) {
+            .old-price { font-size: 0.75rem; }
+            .discount-badge { font-size: 0.6rem; padding: 1px 6px; }
+        }
     </style>
 
     <div class="row g-3 g-md-4">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
                 <div id="cart-content">
-                    {% if cart %}
+                    {% if cart_items %}
                         <div class="cart-table-mobile">
                             <div class="table-responsive d-none d-md-block">
                                 <table class="table align-middle">
@@ -238,7 +265,7 @@
                                         <tr>
                                     </thead>
                                     <tbody id="cart-items-tbody">
-                                        {% for item in cart %}
+                                        {% for item in cart_items %}
                                         <tr id="row-{{ item.product.id }}" class="clickable-item" onclick="openProductModal('{{ item.product.id }}')">
                                             <td data-label="Блюдо">
                                                 <div class="d-flex align-items-center">
@@ -254,6 +281,11 @@
                                                                 <i class="bi bi-chat-dots"></i> {{ item.comment|truncatechars:30 }}
                                                             </span>
                                                         </div>
+                                                        {% endif %}
+                                                        {% if item.has_discount %}
+                                                            <span class="discount-badge">
+                                                                {% if item.discount_percent %}-{{ item.discount_percent|floatformat:0 }}%{% elif item.discount_amount %}-{{ item.discount_amount|floatformat:2 }} ₽{% endif %}
+                                                            </span>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -272,7 +304,12 @@
                                                 </div>
                                             </td>
                                             <td class="text-end fw-bold" id="item-total-{{ item.product.id }}" data-label="Сумма">
-                                                {{ item.total_price }} ₽
+                                                {% if item.has_discount %}
+                                                    <span class="old-price">{{ item.original_price|floatformat:2 }} ₽</span>
+                                                    <span class="new-price">{{ item.discounted_price|floatformat:2 }} ₽</span>
+                                                {% else %}
+                                                    {{ item.original_price|floatformat:2 }} ₽
+                                                {% endif %}
                                             </td>
                                             <td class="text-end" onclick="event.stopPropagation()">
                                                 <button type="button" 
@@ -295,7 +332,7 @@
                             
                             <!-- Мобильное отображение -->
                             <div class="d-md-none" id="mobile-cart-items">
-                                {% for item in cart %}
+                                {% for item in cart_items %}
                                 <div class="cart-mobile-item mb-3 p-3 bg-white rounded-4 shadow-sm position-relative" id="mobile-row-{{ item.product.id }}">
                                     <button type="button" 
                                             onclick="removeCartItem('{{ item.product.id }}'); return false;" 
@@ -315,6 +352,11 @@
                                                     <i class="bi bi-chat-dots"></i> {{ item.comment|truncatechars:25 }}
                                                 </span>
                                                 {% endif %}
+                                                {% if item.has_discount %}
+                                                    <span class="discount-badge">
+                                                        {% if item.discount_percent %}-{{ item.discount_percent|floatformat:0 }}%{% elif item.discount_amount %}-{{ item.discount_amount|floatformat:2 }} ₽{% endif %}
+                                                    </span>
+                                                {% endif %}
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mt-2">
                                                 <div class="qty-controls d-inline-flex align-items-center bg-light rounded-pill p-1" onclick="event.stopPropagation()">
@@ -328,7 +370,14 @@
                                                             class="btn btn-sm btn-white rounded-circle shadow-sm" 
                                                             style="width:28px; height:28px;">+</button>
                                                 </div>
-                                                <span class="fw-bold text-warning" id="mobile-total-{{ item.product.id }}">{{ item.total_price }} ₽</span>
+                                                <span class="fw-bold text-warning" id="mobile-total-{{ item.product.id }}">
+                                                    {% if item.has_discount %}
+                                                        <span class="old-price">{{ item.original_price|floatformat:2 }} ₽</span>
+                                                        <span class="new-price">{{ item.discounted_price|floatformat:2 }} ₽</span>
+                                                    {% else %}
+                                                        {{ item.original_price|floatformat:2 }} ₽
+                                                    {% endif %}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -381,7 +430,7 @@
             <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white position-sticky" style="top: 100px;" id="order-card">
                 <h4 class="fw-bold mb-3 mb-md-4">Оформление</h4>
                 <div id="order-form-container">
-                    {% if cart %}
+                    {% if cart_items %}
                         <form method="post" action="{% url 'order_create' %}" id="order-form">
                             <input type="hidden" name="applied_discount_percent" id="applied_discount_percent" value="{{ final_discount }}">
                             <input type="hidden" name="discount_amount" id="discount_amount" value="{{ discount_amount|floatformat:2 }}">
@@ -457,7 +506,7 @@
                             <div class="card border-0 bg-light rounded-4 p-3 mb-3 mb-md-4">
                                 <div class="form-check form-switch">
                                     {% if user.is_authenticated %}
-                                        <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" {% if user.profile.points == 0 %}disabled{% endif %}>
+                                        <input class="form-check-input" type="checkbox" name="use_points" id="usePointsSwitch" {% if user.profile.points == 0 or has_operator_discount %}disabled{% endif %}>
                                         <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="usePointsSwitch">
                                             <span class="small fw-bold">Списать баллы</span>
                                             <span class="badge bg-dark rounded-pill">{{ user.profile.points }}</span>
@@ -473,6 +522,11 @@
                                 <div id="points-info" class="small text-muted mt-2" style="display: none;">
                                     Будет списано: <span id="points-to-deduct" class="fw-bold text-success">0</span> ₽
                                 </div>
+                                {% if has_operator_discount %}
+                                <div class="small text-danger mt-2">
+                                    <i class="bi bi-exclamation-triangle"></i> В корзине есть товары со специальной скидкой. Списание баллов недоступно.
+                                </div>
+                                {% endif %}
                                 {% if final_discount > 0 %}
                                 <div class="small text-success mt-2">
                                     <i class="bi bi-tag"></i> Ваша скидка: {{ final_discount }}%
@@ -493,7 +547,7 @@
 
                             <div class="d-flex justify-content-between mb-1">
                                 <span class="text-muted">Сумма заказа:</span>
-                                <span id="base-price" data-raw="{{ cart.get_total_price }}">{{ cart.get_total_price }} ₽</span>
+                                <span id="base-price" data-raw="{{ total_discounted }}">{{ total_discounted|floatformat:2 }} ₽</span>
                                 <span id="final-discount-percent" data-raw="{{ final_discount }}" style="display:none;"></span>
                             </div>
                             {% if final_discount > 0 %}
@@ -565,7 +619,7 @@
 </div>
 
 <!-- Модалки деталей товаров -->
-{% for item in cart %}
+{% for item in cart_items %}
 <div class="modal fade" id="productDetailModal{{ item.product.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content">
@@ -576,7 +630,17 @@
             <div class="modal-body p-4">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h3 class="fw-bold mb-0 fs-4">{{ item.product.name }}</h3>
-                    <span class="fs-4 fw-bold text-warning">{{ item.product.price }} ₽</span>
+                    <span class="fs-4 fw-bold text-warning">
+                        {% if item.has_discount %}
+                            <span class="old-price">{{ item.original_price|floatformat:2 }} ₽</span>
+                            <span class="new-price">{{ item.discounted_price|floatformat:2 }} ₽</span>
+                            <span class="discount-badge">
+                                {% if item.discount_percent %}-{{ item.discount_percent|floatformat:0 }}%{% elif item.discount_amount %}-{{ item.discount_amount|floatformat:2 }} ₽{% endif %}
+                            </span>
+                        {% else %}
+                            {{ item.original_price|floatformat:2 }} ₽
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <i class="bi bi-star-fill text-warning fs-5"></i>
@@ -615,7 +679,12 @@
                     {% endwith %}
                 </div>
                 <button type="button" onclick="updateCartQuantity('{{ item.product.id }}', 'add'); return false;" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-2 py-md-3 shadow mt-3">
-                    Добавить за {{ item.product.price }} ₽
+                    Добавить за 
+                    {% if item.has_discount %}
+                        {{ item.discounted_price|floatformat:2 }} ₽
+                    {% else %}
+                        {{ item.original_price|floatformat:2 }} ₽
+                    {% endif %}
                 </button>
             </div>
         </div>
@@ -1034,16 +1103,16 @@
         let availablePoints = parseInt("{{ user.profile.points|default:0 }}");
         let pointsToUse = 0;
         let usingPoints = false;
-        if (bonusSwitch && bonusSwitch.checked && availablePoints > 0 && addressValid) {
+        // Проверяем, что чекбокс активен (не disabled) и включен
+        if (bonusSwitch && !bonusSwitch.disabled && bonusSwitch.checked && availablePoints > 0 && addressValid) {
             usingPoints = true;
             let maxByPrice = Math.floor(priceAfterDiscount * 0.3);
-            let maxByPoints = Math.floor(availablePoints * 0.3);
-            let maxDeductible = Math.min(maxByPrice, maxByPoints);
-            pointsToUse = Math.min(availablePoints, maxDeductible);
+            let maxDeductible = Math.min(maxByPrice, availablePoints);
+            pointsToUse = maxDeductible;
             if (pointsInfo) pointsInfo.style.display = 'block';
             if (pointsToDeductDisplay) pointsToDeductDisplay.innerText = pointsToUse;
-        } else if (pointsInfo) {
-            pointsInfo.style.display = 'none';
+        } else {
+            if (pointsInfo) pointsInfo.style.display = 'none';
             pointsToUse = 0;
         }
         let finalPrice = Math.max(0, priceAfterDiscount - pointsToUse);
@@ -1055,6 +1124,6 @@
         const discountAmountInput = document.getElementById('discount_amount');
         if (discountPercentInput) discountPercentInput.value = discountPercent;
         if (discountAmountInput) discountAmountInput.value = discountAmount.toFixed(2);
-    }
+    }   
 </script>
 {% endblock %}
