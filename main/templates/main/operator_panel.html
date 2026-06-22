@@ -143,6 +143,7 @@
         <li class="nav-item"><button class="nav-link active rounded-pill" onclick="showTab('tab-all')">Все заказы</button></li>
         <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-products')"><i class="bi bi-grid"></i> Товары</button></li>
         <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-couriers')"><i class="bi bi-people"></i> Курьеры</button></li>
+        <li class="nav-item"><button class="nav-link rounded-pill" onclick="showTab('tab-discounts')"><i class="bi bi-percent"></i> Скидки</button></li>
     </ul>
 
     <div class="tab-content">
@@ -316,6 +317,60 @@
                 </div>
             </div>
         </div>
+        
+        <div class="tab-pane" id="tab-discounts">
+            <div class="card shadow-sm rounded-4 border-0 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold"><i class="bi bi-percent me-2"></i>Управление скидками</h5>
+                    <button class="btn btn-warning rounded-pill" onclick="openModal('addDiscountModal')">
+                        <i class="bi bi-plus-lg me-1"></i> Добавить скидку
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Значение</th>
+                                <th>Применяется к</th>
+                                <th>Период</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for discount in discounts %}
+                            <tr>
+                                <td>{{ discount.name }}</td>
+                                <td>{{ discount.get_discount_type_display }}</td>
+                                <td>{{ discount.value }}</td>
+                                <td>
+                                    {% if discount.applies_to == 'all' %}Всё меню
+                                    {% elif discount.applies_to == 'category' %}{{ discount.category.name }}
+                                    {% elif discount.applies_to == 'product' %}{{ discount.product.name }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ discount.start_date|date:"d.m.Y" }} - {{ discount.end_date|date:"d.m.Y" }}</td>
+                                <td>
+                                    <span class="badge {% if discount.active %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                        {% if discount.active %}Активна{% else %}Неактивна{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'toggle_discount' discount.id %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                        {% if discount.active %}Деактивировать{% else %}Активировать{% endif %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" class="text-center text-muted">Нет созданных скидок</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -462,6 +517,74 @@
     </div>
 </div>
 {% endfor %}
+
+<!-- ========== МОДАЛКА ДЛЯ СОЗДАНИЯ СКИДКИ ========== -->
+<div class="modal-custom" id="addDiscountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Новая скидка</h5>
+                <button type="button" class="btn-close-custom" onclick="closeModal('addDiscountModal')"></button>
+            </div>
+            <form method="post" action="{% url 'create_discount' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" name="name" class="form-control rounded-pill" placeholder="Название скидки" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <select name="discount_type" class="form-select rounded-pill" required>
+                                <option value="percent">Процент</option>
+                                <option value="fixed">Фиксированная сумма</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <input type="number" step="0.01" name="value" class="form-control rounded-pill" placeholder="Значение" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <select name="applies_to" id="applies_to" class="form-select rounded-pill" required>
+                            <option value="all">На всё меню</option>
+                            <option value="category">На категорию</option>
+                            <option value="product">На конкретное блюдо</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="category_select" style="display:none;">
+                        <select name="category" class="form-select rounded-pill">
+                            <option value="">Выберите категорию</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3" id="product_select" style="display:none;">
+                        <select name="product" class="form-select rounded-pill">
+                            <option value="">Выберите блюдо</option>
+                            {% for prod in products %}
+                            <option value="{{ prod.id }}">{{ prod.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="small text-muted">Дата начала</label>
+                            <input type="datetime-local" name="start_date" class="form-control rounded-pill" required>
+                        </div>
+                        <div class="col">
+                            <label class="small text-muted">Дата окончания</label>
+                            <input type="datetime-local" name="end_date" class="form-control rounded-pill" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-warning w-100 rounded-pill fw-bold">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 <!-- ========== МОДАЛКА ДЕТАЛЕЙ ЗАКАЗА (с кнопкой печати) ========== -->
 <div class="modal fade" id="orderDetailModal" tabindex="-1">
@@ -1254,5 +1377,26 @@
             });
         }
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const appliesTo = document.getElementById('applies_to');
+        const catSelect = document.getElementById('category_select');
+        const prodSelect = document.getElementById('product_select');
+        if (appliesTo) {
+            appliesTo.addEventListener('change', function() {
+                if (this.value === 'category') {
+                    catSelect.style.display = 'block';
+                    prodSelect.style.display = 'none';
+                } else if (this.value === 'product') {
+                    catSelect.style.display = 'none';
+                    prodSelect.style.display = 'block';
+                } else {
+                    catSelect.style.display = 'none';
+                    prodSelect.style.display = 'none';
+                }
+            });
+        }
+    });
+
 </script>
 {% endblock %}
