@@ -1447,10 +1447,9 @@ def api_order_detail(request, order_id):
 
 @staff_member_required
 def api_analytics_data(request):
-
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    
+
     orders_qs = Order.objects.filter(status='completed')
     if start_date and end_date:
         try:
@@ -1463,7 +1462,7 @@ def api_analytics_data(request):
         today = timezone.now().date()
         orders_qs = orders_qs.filter(created_at__date=today)
 
-    # --- Выручка, количество заказов, средний чек ---
+    # --- Базовая статистика ---
     total_revenue = orders_qs.aggregate(Sum('total_price'))['total_price__sum'] or 0
     orders_count = orders_qs.count()
     avg_check = int(total_revenue / orders_count) if orders_count else 0
@@ -1473,7 +1472,7 @@ def api_analytics_data(request):
         order__in=orders_qs,
         new_status__in=['cooking', 'ready']
     ).order_by('order_id', 'created_at')
-    
+
     cooking_durations = []
     order_times = {}
     for h in history:
@@ -1483,18 +1482,18 @@ def api_analytics_data(request):
         elif h.new_status == 'ready' and oid in order_times and order_times[oid].get('cooking'):
             delta = h.created_at - order_times[oid]['cooking']
             cooking_durations.append(delta.total_seconds() / 60)
-
     avg_cooking_time = round(sum(cooking_durations) / len(cooking_durations), 1) if cooking_durations else 0
 
-    # --- Среднее время доставки (delivering → completed) и лучший курьер ---
+    # --- Время доставки (delivering → completed) и статистика курьеров ---
     delivering_history = OrderStatusHistory.objects.filter(
         order__in=orders_qs,
         new_status__in=['delivering', 'completed']
     ).order_by('order_id', 'created_at')
-    
+
     delivering_durations = []
-    courier_times = {}  # courier_id -> {'total': сумма минут, 'count': количество}
+    courier_times = {}      # courier_id -> {'total': сумма минут, 'count': кол-во}
     courier_names = {}
+    courier_revenue = {}    # для общей выручки курьера
 
     order_deliver = {}
     for h in delivering_history:
@@ -1512,16 +1511,22 @@ def api_analytics_data(request):
                 courier_id = order.courier.id
                 courier_name = order.courier.username
                 courier_names[courier_id] = courier_name
+
                 if courier_id not in courier_times:
                     courier_times[courier_id] = {'total': 0, 'count': 0}
                 courier_times[courier_id]['total'] += minutes
                 courier_times[courier_id]['count'] += 1
+
+                # Суммируем выручку по курьеру
+                if courier_id not in courier_revenue:
+                    courier_revenue[courier_id] = 0
+                courier_revenue[courier_id] += float(order.total_price)
             except Order.DoesNotExist:
                 pass
 
     avg_delivery_time = round(sum(delivering_durations) / len(delivering_durations), 1) if delivering_durations else 0
 
-    # Лучший курьер (минимальное среднее время доставки)
+    # --- Лучший курьер по скорости (минимальное среднее время) ---
     best_courier_name = None
     best_avg = None
     for cid, data in courier_times.items():
@@ -1532,6 +1537,27 @@ def api_analytics_data(request):
             best_avg_minutes = round(avg, 1)
     if best_courier_name and best_avg is not None:
         best_courier_name = f"{best_courier_name} ({best_avg_minutes} мин.)"
+
+    # --- ТОП-5 КУРЬЕРОВ ПО КОЛИЧЕСТВУ ДОСТАВОК (и выручке) ---
+    top_couriers_by_deliveries = []
+    # Сортируем курьеров по количеству доставок (из courier_times)
+    sorted_couriers = sorted(courier_times.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+    for cid, data in sorted_couriers:
+        top_couriers_by_deliveries.append({
+            'username': courier_names.get(cid, f"Курьер #{cid}"),
+            'deliveries': data['count'],
+            'revenue': courier_revenue.get(cid, 0)
+        })
+
+    # --- ТОП-5 САМЫХ БЫСТРЫХ КУРЬЕРОВ (по среднему времени доставки) ---
+    fastest_couriers = []
+    sorted_by_speed = sorted(courier_times.items(), key=lambda x: x[1]['total'] / x[1]['count'])[:5]
+    for cid, data in sorted_by_speed:
+        avg = data['total'] / data['count']
+        fastest_couriers.append({
+            'username': courier_names.get(cid, f"Курьер #{cid}"),
+            'avg_time': f"{round(avg, 1)} мин."
+        })
 
     # --- Хит продаж ---
     popular = OrderItem.objects.filter(order__in=orders_qs)\
@@ -1553,7 +1579,7 @@ def api_analytics_data(request):
     slow_dishes_names = list(Product.objects.filter(id__in=slow_dishes_ids).values_list('name', flat=True))
 
     return JsonResponse({
-        'total_revenue': total_revenue,
+        'total_revenue': float(total_revenue),
         'orders_count': orders_count,
         'avg_check': avg_check,
         'avg_cooking_time': avg_cooking_time,
@@ -1561,8 +1587,10 @@ def api_analytics_data(request):
         'best_courier': best_courier_name,
         'most_popular': most_popular_name,
         'slow_dishes': slow_dishes_names,
+        # НОВЫЕ ПОЛЯ:
+        'top_couriers': top_couriers_by_deliveries,
+        'fastest_couriers': fastest_couriers,
     })
-
 
 @staff_member_required
 def edit_product(request, product_id):
