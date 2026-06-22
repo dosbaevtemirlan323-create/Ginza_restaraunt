@@ -163,6 +163,24 @@
         display: inline-flex;
         align-items: baseline;
         gap: 1px;
+        flex-wrap: wrap;
+    }
+    .old-price {
+        text-decoration: line-through;
+        color: #999;
+        font-size: 0.85rem;
+        margin-right: 8px;
+    }
+    .discount-badge {
+        background: #dc3545;
+        color: white;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-left: 8px;
+        display: inline-block;
+        line-height: 1.6;
     }
 
     /* Карточка товара */
@@ -360,6 +378,13 @@
         }
         .price-text {
             font-size: 0.85rem !important;
+        }
+        .old-price {
+            font-size: 0.7rem !important;
+        }
+        .discount-badge {
+            font-size: 0.6rem !important;
+            padding: 1px 6px;
         }
     }
     
@@ -628,7 +653,7 @@
                 </button>
                 
                 <!-- Кнопка переключения вида (видна только на телефонах) -->
-                <button class="btn btn-white shadow-sm rounded-3 toggle-view-btn" onclick="toggleGridView()" style="display: none;">
+                <button class="btn btn-white shadow-sm rounded-3 toggle-view-btn" onclick="toggleGridView()">
                     <i id="viewIcon" class="bi bi-list-ul text-warning"></i>
                 </button>
 
@@ -659,6 +684,16 @@
             {% else %}
                 <span class="text-muted small">Нет категорий</span>
             {% endif %}
+            
+            <!-- ТЕГИ — ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ -->
+            {% if all_tags %}
+                <span class="filter-btn disabled" style="background:transparent; border:none; color:#999; cursor:default;">|</span>
+                {% for tag in all_tags %}
+                    <a href="#" class="filter-btn" data-tag="{{ tag.id }}">#{{ tag.name }}</a>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Кнопка добавления категории — только для персонала -->
             {% if user.is_staff %}
             <button class="filter-btn" style="background: #f0f0f0;" onclick="openModal('addCategoryModal')">
                 <i class="bi bi-plus-lg"></i> Категория
@@ -705,7 +740,19 @@
                         </div>
                         <p class="text-muted small product-desc mb-2 mt-2">{{ product.description|truncatechars:60 }}</p>
                         <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
-                            <span class="fw-bold fs-5 price-text">{{ product.price }}<span class="currency-symbol">₽</span></span>
+                            <span class="fw-bold fs-5 price-text">
+                                {% if product.has_discount %}
+                                    <span class="old-price">{{ product.price|floatformat:2 }} ₽</span>
+                                    <span class="text-danger fw-bold">{{ product.discounted_price|floatformat:2 }} ₽</span>
+                                    {% if product.discount_percent %}
+                                        <span class="discount-badge">-{{ product.discount_percent|floatformat:0 }}%</span>
+                                    {% elif product.discount_amount %}
+                                        <span class="discount-badge">-{{ product.discount_amount|floatformat:2 }} ₽</span>
+                                    {% endif %}
+                                {% else %}
+                                    {{ product.price|floatformat:2 }} ₽
+                                {% endif %}
+                            </span>
                             <div id="cart-container-{{ product.id }}" onclick="event.stopPropagation()">
                                 {% if product.is_active %}
                                     {% get_cart_item_quantity cart product.id as item_qty %}
@@ -758,7 +805,8 @@
                      data-order="{{ forloop.counter }}"
                      data-rating="{{ product.get_rating|default:0 }}"
                      data-popular="{{ product.total_sold|default:0 }}"
-                     data-calories="{{ product.calories|default:0 }}">
+                     data-calories="{{ product.calories|default:0 }}"
+                     data-tags="{% for tag in product.tags.all %}{{ tag.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                     
                     <div class="card product-card shadow-sm h-100 position-relative {% if not product.is_active %}product-inactive{% endif %}" 
                         onclick="{% if product.is_active %}openProductModal('{{ product.id }}'){% endif %}">
@@ -826,7 +874,17 @@
 
                             <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
                                 <span class="fw-bold fs-5 price-text">
-                                    {{ product.price }}<span class="currency-symbol">₽</span>
+                                    {% if product.has_discount %}
+                                        <span class="old-price">{{ product.price|floatformat:2 }} ₽</span>
+                                        <span class="text-danger fw-bold">{{ product.discounted_price|floatformat:2 }} ₽</span>
+                                        {% if product.discount_percent %}
+                                            <span class="discount-badge">-{{ product.discount_percent|floatformat:0 }}%</span>
+                                        {% elif product.discount_amount %}
+                                            <span class="discount-badge">-{{ product.discount_amount|floatformat:2 }} ₽</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {{ product.price|floatformat:2 }} ₽
+                                    {% endif %}
                                 </span>
                                 
                                 <div id="cart-container-{{ product.id }}" onclick="event.stopPropagation()">
@@ -866,7 +924,19 @@
                                     
                                     <div class="d-flex justify-content-between align-items-start mb-2 mt-3">
                                         <h3 class="fw-bold mb-0 fs-4">{{ product.name }}</h3>
-                                        <span class="fs-4 fw-bold text-warning">{{ product.price }} ₽</span>
+                                        <span class="fs-4 fw-bold text-warning">
+                                            {% if product.has_discount %}
+                                                <span class="old-price" style="font-size: 1rem;">{{ product.price|floatformat:2 }} ₽</span>
+                                                {{ product.discounted_price|floatformat:2 }} ₽
+                                                {% if product.discount_percent %}
+                                                    <span class="discount-badge">-{{ product.discount_percent|floatformat:0 }}%</span>
+                                                {% elif product.discount_amount %}
+                                                    <span class="discount-badge">-{{ product.discount_amount|floatformat:2 }} ₽</span>
+                                                {% endif %}
+                                            {% else %}
+                                                {{ product.price|floatformat:2 }} ₽
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     
                                     <!-- ТЕГИ В МОДАЛКЕ ДЕТАЛЕЙ -->
@@ -890,7 +960,12 @@
                                     <p class="text-muted mb-3">{{ product.description|default:"Описание отсутствует" }}</p>
 
                                     <button type="button" onclick="updateCartQuantity('{{ product.id }}', 'add'); closeModal('productDetailModal{{ product.id }}');" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-2 py-md-3 shadow mb-4">
-                                        Добавить за {{ product.price }} ₽
+                                        Добавить за 
+                                        {% if product.has_discount %}
+                                            {{ product.discounted_price|floatformat:2 }} ₽
+                                        {% else %}
+                                            {{ product.price|floatformat:2 }} ₽
+                                        {% endif %}
                                     </button>
 
                                     <h6 class="fw-bold mb-2">Отзывы покупателей</h6>
@@ -1183,13 +1258,15 @@ function openProductModal(productId) {
 let currentFilters = {
     searchQuery: '',
     maxCalories: null,
-    activeCategory: 'all'
+    activeCategory: 'all',
+    activeTag: null   // новый фильтр
 };
 
 function applyFilters() {
     const searchTerm = currentFilters.searchQuery.toLowerCase().trim();
     const maxCalories = currentFilters.maxCalories;
     const activeCat = currentFilters.activeCategory;
+    const activeTag = currentFilters.activeTag;
     
     const allSections = document.querySelectorAll('.category-section');
     if (activeCat === 'all') {
@@ -1211,6 +1288,7 @@ function applyFilters() {
         
         let matchSearch = true;
         let matchCalories = true;
+        let matchTag = true;
         
         if (searchTerm !== '') {
             matchSearch = name.includes(searchTerm);
@@ -1220,7 +1298,12 @@ function applyFilters() {
             matchCalories = calories <= maxCalories;
         }
         
-        const shouldShow = matchSearch && matchCalories;
+        if (activeTag) {
+            const productTags = product.dataset.tags ? product.dataset.tags.split(',') : [];
+            matchTag = productTags.includes(activeTag);
+        }
+        
+        const shouldShow = matchSearch && matchCalories && matchTag;
         product.style.display = shouldShow ? 'block' : 'none';
     });
     
@@ -1277,6 +1360,7 @@ function initFilters() {
     const sortSelect = document.getElementById('sortSelect');
     const resetBtn = document.getElementById('resetFiltersBtn');
     const categoryBtns = document.querySelectorAll('.filter-btn[data-cat]');
+    const tagBtns = document.querySelectorAll('.filter-btn[data-tag]');
     
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
@@ -1310,9 +1394,42 @@ function initFilters() {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const catId = this.dataset.cat;
-            currentFilters.activeCategory = catId;
-            categoryBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+            // Если кликнули на уже активную категорию — сбрасываем её (показываем все)
+            if (currentFilters.activeCategory === catId) {
+                currentFilters.activeCategory = 'all';
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                document.querySelector('.filter-btn[data-cat="all"]')?.classList.add('active');
+            } else {
+                currentFilters.activeCategory = catId;
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                // Снимаем активность с тегов, чтобы не было конфликта
+                tagBtns.forEach(b => b.classList.remove('active'));
+                currentFilters.activeTag = null;
+            }
+            applyFilters();
+        });
+    });
+    
+    // Обработчики для кнопок тегов
+    tagBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tagId = this.dataset.tag;
+            // Если уже активен – сбрасываем
+            if (currentFilters.activeTag === tagId) {
+                currentFilters.activeTag = null;
+                this.classList.remove('active');
+            } else {
+                currentFilters.activeTag = tagId;
+                // Снимаем активность с других тегов
+                tagBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                // Снимаем активность с категорий, чтобы теги работали самостоятельно
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                document.querySelector('.filter-btn[data-cat="all"]')?.classList.add('active');
+                currentFilters.activeCategory = 'all';
+            }
             applyFilters();
         });
     });
@@ -1338,11 +1455,11 @@ function resetAllFilters() {
     }
     
     currentFilters.activeCategory = 'all';
+    currentFilters.activeTag = null;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
     const allBtn = document.querySelector('.filter-btn[data-cat="all"]');
-    if (allBtn) {
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        allBtn.classList.add('active');
-    }
+    if (allBtn) allBtn.classList.add('active');
     
     const sortSelect = document.getElementById('sortSelect');
     if (sortSelect) {
@@ -1468,27 +1585,27 @@ document.addEventListener('DOMContentLoaded', function() {
     initFilters();
     applyFilters();
     
-    const observerOptions = { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' };
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && currentFilters.activeCategory === 'all') {
-                const catId = entry.target.id.replace('cat-', '');
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    if (btn.dataset.cat === catId) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                });
-            }
-        });
-    }, observerOptions);
-    
+    const observerOptions = { threshold: 0.1, rootMargin: '-80px 0px -50% 0px' }; 
     document.querySelectorAll('.category-section').forEach(section => {
         observer.observe(section);
     });
 });
-
+function initCategoryObserver() {
+    if (window.categoryObserver) window.categoryObserver.disconnect();
+    const sections = document.querySelectorAll('.category-section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && currentFilters.activeCategory === 'all') {
+                const catId = entry.target.id.replace('cat-', '');
+                document.querySelectorAll('.filter-btn[data-cat]').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.cat === catId);
+                });
+            }
+        });
+    }, { threshold: 0.15, rootMargin: '-70px 0px -40% 0px' });
+    sections.forEach(section => observer.observe(section));
+    window.categoryObserver = observer;
+}
 // ========== ОТПРАВКА ФОРМ (AJAX) ==========
 function submitProductForm(event) {
     event.preventDefault();
