@@ -702,10 +702,31 @@
                         <div id="top-products-list" class="mb-2"><div class="text-center text-muted py-3">Загрузка...</div></div>
                     </div>
                 </div>
+                <!-- Топ курьеров -->
+                <div class="card border-0 shadow-sm rounded-4 mt-4">
+                    <div class="card-header bg-white border-0 pt-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-primary"></i> Топ-5 курьеров (по доставкам)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="top-couriers-list" class="mb-2"><div class="text-center text-muted">Загрузка...</div></div>
+                    </div>
+                </div>
+
+                <!-- Самые быстрые курьеры -->
+                <div class="card border-0 shadow-sm rounded-4 mt-4">
+                    <div class="card-header bg-white border-0 pt-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-success"></i> Самые быстрые курьеры</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="fastest-couriers-list" class="mb-2"><div class="text-center text-muted">Загрузка...</div></div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer border-0 bg-light p-4 rounded-bottom-4">
                 <button onclick="window.print()" class="btn btn-outline-dark rounded-pill px-4"><i class="bi bi-printer me-2"></i> Печать отчёта</button>
-                <button onclick="exportAnalyticsToCSV()" class="btn btn-success rounded-pill px-4"><i class="bi bi-file-spreadsheet me-2"></i> Экспорт CSV</button>
+                <button onclick="exportAnalyticsToPDF()" class="btn btn-success rounded-pill px-4">
+                    <i class="bi bi-file-pdf me-2"></i> Экспорт PDF
+                </button>
             </div>
         </div>
     </div>
@@ -1212,6 +1233,8 @@
                 document.getElementById('analytics-revenue').innerHTML = data.total_revenue.toLocaleString() + ' ₽';
                 document.getElementById('analytics-orders').innerText = data.orders_count;
                 document.getElementById('analytics-avg').innerHTML = data.avg_check.toLocaleString() + ' ₽';
+
+                // Топ-товары
                 const topDiv = document.getElementById('top-products-list');
                 if (data.top_products && data.top_products.length) {
                     let html = '<div class="list-group">';
@@ -1226,10 +1249,51 @@
                 } else {
                     topDiv.innerHTML = '<div class="text-muted text-center">Нет продаж за период</div>';
                 }
+
+                // 👇 НОВЫЕ ВЫЗОВЫ – здесь
+                renderTopCouriers(data.top_couriers);
+                renderFastestCouriers(data.fastest_couriers);
+
                 renderChart();
             })
             .catch(err => console.error(err));
     }
+
+    function renderTopCouriers(couriers) {
+        const container = document.getElementById('top-couriers-list');
+        if (!couriers || couriers.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center">Нет данных за период</div>';
+            return;
+        }
+        let html = '<div class="list-group">';
+        couriers.forEach(c => {
+            html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+                <div><strong>${escapeHtml(c.username)}</strong></div>
+                <span class="badge bg-primary rounded-pill">${c.deliveries} доставок</span>
+                <span class="badge bg-success rounded-pill">${c.revenue.toFixed(0)} ₽</span>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderFastestCouriers(couriers) {
+        const container = document.getElementById('fastest-couriers-list');
+        if (!couriers || couriers.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center">Нет данных за период</div>';
+            return;
+        }
+        let html = '<div class="list-group">';
+        couriers.forEach(c => {
+            html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+                <div><strong>${escapeHtml(c.username)}</strong></div>
+                <span class="badge bg-info rounded-pill">⏱️ ${c.avg_time}</span>
+            </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
     function renderChart() {
         if (!currentAnalyticsData) return;
         const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -1271,22 +1335,48 @@
         document.getElementById('analytics-end').value = end.toISOString().slice(0,10);
         loadAnalytics();
     }
-    function exportAnalyticsToCSV() {
-        if (!currentAnalyticsData) { alert('Нет данных для экспорта'); return; }
-        let csvRows = [['Дата', 'Выручка', 'Количество заказов']];
-        for (let i=0; i<currentAnalyticsData.days.length; i++) {
-            csvRows.push([currentAnalyticsData.days[i], currentAnalyticsData.revenues[i], currentAnalyticsData.order_counts[i]]);
+    function exportAnalyticsToPDF() {
+        const modalBody = document.querySelector('#reportModal .modal-body');
+        if (!modalBody) {
+            showToast('Не найден контент для экспорта', 'danger');
+            return;
         }
-        const csvContent = csvRows.map(row => row.join(',')).join('\n');
-        const blob = new Blob(["\uFEFF" + csvContent], {type: 'text/csv;charset=utf-8;'});
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute('download', 'analytics.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+
+        // Находим элементы управления (блок с датами и кнопками, футер)
+        const dateControls = modalBody.querySelector('.card:first-child');
+        const footer = document.querySelector('#reportModal .modal-footer');
+
+        // Временно скрываем их, чтобы они не попали в PDF
+        if (dateControls) dateControls.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+
+        // Настройки PDF
+        const opt = {
+            margin:        [10, 10, 10, 10], // отступы сверху, справа, снизу, слева (мм)
+            filename:     `analytics_report_${new Date().toISOString().slice(0,10)}.pdf`,
+            image:        { type: 'jpeg', quality: 0.95 },
+            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        // Генерируем PDF
+        html2pdf()
+            .set(opt)
+            .from(modalBody)
+            .save()
+            .then(() => {
+                // Восстанавливаем видимость элементов после сохранения
+                if (dateControls) dateControls.style.display = '';
+                if (footer) footer.style.display = '';
+                showToast('PDF успешно создан', 'success');
+            })
+            .catch(err => {
+                console.error(err);
+                if (dateControls) dateControls.style.display = '';
+                if (footer) footer.style.display = '';
+                showToast('Ошибка при создании PDF', 'danger');
+            });
     }
 
     // ========== КУРЬЕРЫ ОНЛАЙН ==========
@@ -1399,4 +1489,5 @@
     });
 
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 {% endblock %}
