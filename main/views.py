@@ -34,11 +34,35 @@ from collections import defaultdict
 from datetime import datetime
 import requests
 from django.conf import settings
+import logging
+logger = logging.getLogger(__name__)
 
 BAIKONUR_LAT_MIN = 45.58
 BAIKONUR_LAT_MAX = 45.66
 BAIKONUR_LNG_MIN = 63.27
 BAIKONUR_LNG_MAX = 63.35
+
+def get_product_price_with_operator_discount(product, now):
+    """Возвращает цену товара с учётом операторской скидки (продукт, категория, all) и флаг, была ли применена скидка."""
+    all_discounts = Discount.objects.filter(
+        active=True,
+        start_date__lte=now,
+        end_date__gte=now
+    )
+    disc = all_discounts.filter(applies_to='product', product=product).first()
+    if not disc:
+        disc = all_discounts.filter(applies_to='category', category=product.category).first()
+    if not disc:
+        disc = all_discounts.filter(applies_to='all').first()
+    if disc:
+        if disc.discount_type == 'percent':
+            price = product.price * (100 - disc.value) / 100
+        else:
+            price = product.price - disc.value
+        price = max(price, 0)
+        return price, True
+    return product.price, False
+
 
 # ========== ЖЁСТКИЕ ПРАВИЛА РЕКОМЕНДАЦИЙ ==========
 # Правила по ID (основные блюда → рекомендуемые ID)
@@ -305,8 +329,52 @@ def menu_view(request):
         recommended_for_menu = get_ai_recommendations(request.user, limit=8)
     else:
         user_favorites = []
-        recommended_for_menu = get_ai_recommendations(None, limit=8)   # вызываем с None
+        recommended_for_menu = get_ai_recommendations(None, limit=8)
 
+    now = timezone.now()
+    
+    # ---- Применяем операторские скидки к товарам в категориях ----
+    for category in categories:
+        for product in category.products.all():
+            discounted_price, has_discount = get_product_price_with_operator_discount(product, now)
+            product.discounted_price = discounted_price
+            product.has_discount = has_discount
+            if has_discount:
+                disc = Discount.objects.filter(
+                    active=True,
+                    start_date__lte=now,
+                    end_date__gte=now
+                ).filter(
+                    Q(applies_to='product', product=product) |
+                    Q(applies_to='category', category=product.category) |
+                    Q(applies_to='all')
+                ).first()
+                product.discount_percent = disc.value if disc.discount_type == 'percent' else None
+                product.discount_amount = disc.value if disc.discount_type == 'fixed' else None
+            else:
+                product.discount_percent = None
+                product.discount_amount = None
+
+    # ---- Теперь применяем скидки к товарам в блоке "Повар рекомендует" ----
+    for product in recommended_for_menu:
+        discounted_price, has_discount = get_product_price_with_operator_discount(product, now)
+        product.discounted_price = discounted_price
+        product.has_discount = has_discount
+        if has_discount:
+            disc = Discount.objects.filter(
+                active=True,
+                start_date__lte=now,
+                end_date__gte=now
+            ).filter(
+                Q(applies_to='product', product=product) |
+                Q(applies_to='category', category=product.category) |
+                Q(applies_to='all')
+            ).first()
+            product.discount_percent = disc.value if disc.discount_type == 'percent' else None
+            product.discount_amount = disc.value if disc.discount_type == 'fixed' else None
+        else:
+            product.discount_percent = None
+            product.discount_amount = None
 
     context = {
         'categories': categories,
@@ -356,9 +424,8 @@ def cart_detail(request):
         elif total_spent >= 5000:
             personal_discount = 3
 
-    # Акционные скидки (модель Discount)
-    from django.utils import timezone
     now = timezone.now()
+    # Акционные скидки (на всё меню)
     active_discounts = Discount.objects.filter(
         active=True,
         applies_to='all',
@@ -371,15 +438,61 @@ def cart_detail(request):
         if disc.discount_type == 'percent':
             campaign_discount_percent = disc.value
 
-    final_discount = max(personal_discount, campaign_discount_percent)
-    total_cart_price = cart.get_total_price()
-    discount_amount = total_cart_price * final_discount / 100
-    final_total = total_cart_price - discount_amount
+    # ---- Обработка операторских скидок для каждого товара ----
+    cart_items_with_discount = []
+    total_original = Decimal('0')
+    total_discounted = Decimal('0')
+    has_operator_discount = False
+
+    for item in cart:
+        product = item['product']
+        original_price = product.price
+        discounted_price, has_disc = get_product_price_with_operator_discount(product, now)
+        item['original_price'] = original_price
+        item['discounted_price'] = discounted_price
+        item['has_discount'] = has_disc
+        if has_disc:
+            has_operator_discount = True
+            disc = Discount.objects.filter(
+                active=True,
+                start_date__lte=now,
+                end_date__gte=now
+            ).filter(
+                Q(applies_to='product', product=product) |
+                Q(applies_to='category', category=product.category) |
+                Q(applies_to='all')
+            ).first()
+            if disc:
+                if disc.discount_type == 'percent':
+                    item['discount_percent'] = disc.value
+                    item['discount_amount'] = None
+                else:
+                    item['discount_percent'] = None
+                    item['discount_amount'] = disc.value
+            else:
+                item['discount_percent'] = None
+                item['discount_amount'] = None
+        else:
+            item['discount_percent'] = None
+            item['discount_amount'] = None
+        cart_items_with_discount.append(item)
+        total_original += original_price * item['quantity']
+        total_discounted += discounted_price * item['quantity']
+
+    # ---- Если есть операторская скидка, персональная/акционная скидка НЕ применяется ----
+    if has_operator_discount:
+        final_discount = 0
+    else:
+        final_discount = max(personal_discount, campaign_discount_percent)
+    
+    discount_amount = total_discounted * (Decimal(final_discount) / 100)
+    final_total = total_discounted - discount_amount
 
     now_local = timezone.localtime(timezone.now())
 
     return render(request, 'main/cart_detail.html', {
-        'cart': cart,
+        'cart': cart,                       # для количества и прочего
+        'cart_items': cart_items_with_discount,   # ВАЖНО: в шаблоне итерируемся по нему
         'cross_sell_products': cross_sell_products,
         'is_new_user': not request.user.is_authenticated or user_orders_count < 4,
         'orders_count': user_orders_count,
@@ -389,6 +502,9 @@ def cart_detail(request):
         'final_discount': final_discount,
         'discount_amount': discount_amount,
         'final_total': final_total,
+        'has_operator_discount': has_operator_discount,   # для блокировки баллов
+        'total_original': total_original,
+        'total_discounted': total_discounted,
     })
 
 def cart_add(request, product_id):
@@ -466,16 +582,11 @@ def order_create(request):
         return redirect('menu')
     
     if request.method == 'POST':
-        # --- Получаем данные из формы ---
         address_id = request.POST.get('address_id')
         new_address = request.POST.get('new_address')
         phone = request.POST.get('phone')
         payment_method = request.POST.get('payment_method')
         use_points = request.POST.get('use_points') == 'on'
-        
-        # --- Скидка из скрытых полей ---
-        discount_percent = Decimal(request.POST.get('applied_discount_percent', 0))
-        discount_amount = Decimal(request.POST.get('discount_amount', 0))
         
         # --- Желаемое время доставки ---
         delivery_time_from_str = request.POST.get('delivery_time_from')
@@ -503,7 +614,6 @@ def order_create(request):
             except ValueError:
                 pass
         
-        # --- Один адрес ---
         # --- Получение адреса ---
         final_address = None
         lat = lng = None
@@ -519,7 +629,6 @@ def order_create(request):
         elif address_id:
             addr_obj = get_object_or_404(Address, id=address_id, user=request.user)
             final_address = addr_obj.address_line
-            # ВАЖНО: даже для сохранённого адреса проверяем его сейчас!
             is_valid, lat, lng = geocode_address(final_address)
             if not is_valid:
                 messages.error(request, f"Адрес «{final_address}» не найден в г. Байконур. Пожалуйста, удалите его из профиля и введите корректный.")
@@ -528,22 +637,65 @@ def order_create(request):
             messages.error(request, "Пожалуйста, выберите или введите адрес доставки")
             return redirect('cart_detail')
         
-        # --- Расчёт итоговой цены с учётом скидки ---
-        total_cart_price = cart.get_total_price()
-        price_after_discount = total_cart_price * (100 - discount_percent) / 100
+        # ---- Удаляем старую корзину, чтобы избежать Decimal в сессии ----
+        request.session.pop('cart', None)
         
-        # --- Баллы ---
+        # ---- Расчёт операторских скидок на товары ----
+        now = timezone.now()
+        cart_items = list(cart)
+        operator_discounted = False
+        total_with_operator_discount = Decimal('0')
+        item_data = []  # (product, quantity, price_with_discount, has_operator_discount)
+        
+        for item in cart_items:
+            product = item['product']
+            price, has_disc = get_product_price_with_operator_discount(product, now)
+            if has_disc:
+                operator_discounted = True
+            item_data.append((product, item['quantity'], price, has_disc))
+            total_with_operator_discount += price * item['quantity']
+        
+        # ---- Расчёт итоговой цены ----
         profile, _ = Profile.objects.get_or_create(user=request.user)
-        total_points_to_spend = Decimal('0')
-        if use_points and profile.points > 0:
-            max_by_price = (price_after_discount * Decimal('0.30')).quantize(Decimal('1'))
-            max_by_points = (Decimal(profile.points) * Decimal('0.30')).quantize(Decimal('1'))
-            max_deductible = min(max_by_price, max_by_points)
-            total_points_to_spend = min(Decimal(profile.points), max_deductible)
+        points_used = Decimal('0')
+        discount_percent = Decimal('0')
+        discount_amount = Decimal('0')
         
-        final_price = price_after_discount - total_points_to_spend
+        if operator_discounted:
+            # Если есть операторская скидка – отключаем Ginza Pass и баллы
+            final_price = total_with_operator_discount
+            points_used = Decimal('0')
+            discount_percent = Decimal('0')
+            discount_amount = Decimal('0')
+        else:
+            total_spent = Order.objects.filter(user=request.user, status='completed').aggregate(Sum('total_price'))['total_price__sum'] or 0
+            personal_discount = 0
+            if total_spent >= 15000:
+                personal_discount = 5
+            elif total_spent >= 5000:
+                personal_discount = 3
+            
+            campaign_discount = Discount.objects.filter(
+                active=True,
+                applies_to='all',
+                start_date__lte=now,
+                end_date__gte=now
+            ).first()
+            campaign_discount_percent = 0
+            if campaign_discount and campaign_discount.discount_type == 'percent':
+                campaign_discount_percent = campaign_discount.value
+            
+            final_discount = max(personal_discount, campaign_discount_percent)
+            discount_percent = Decimal(final_discount)
+            discount_amount = total_with_operator_discount * discount_percent / 100
+            price_after_discount = total_with_operator_discount - discount_amount
+            
+            if use_points and profile.points > 0:
+                max_deductible = min(price_after_discount * Decimal('0.30'), Decimal(profile.points))
+                points_used = max_deductible
+            final_price = price_after_discount - points_used
         
-        # --- Геокодирование, если координат нет ---
+        # --- Геокодирование (если координат нет) ---
         if lat is None or lng is None:
             is_valid, lat, lng = geocode_address(final_address)
             if not is_valid:
@@ -559,7 +711,7 @@ def order_create(request):
                     phone=phone,
                     payment_method='cash',
                     total_price=final_price,
-                    points_used=int(total_points_to_spend),
+                    points_used=int(points_used),
                     status='new',
                     is_paid=False,
                     delivery_time_from=delivery_time_from,
@@ -573,26 +725,26 @@ def order_create(request):
                     new_status='new',
                     changed_by=request.user
                 )
-                for item in cart:
+                for product, qty, price, _ in item_data:
                     OrderItem.objects.create(
                         order=order,
-                        product=item['product'],
-                        price=item['price'],
-                        quantity=item['quantity'],
-                        comment=item.get('comment', '')
+                        product=product,
+                        price=price,
+                        quantity=qty,
+                        comment=''
                     )
                 
-                # Списываем баллы
-                if total_points_to_spend > 0:
-                    profile.points -= int(total_points_to_spend)
+                if points_used > 0:
+                    profile.points -= int(points_used)
                     profile.save()
-                # Начисляем кэшбэк
-                earned = int(final_price * Decimal('0.05'))
+                if not operator_discounted:
+                    earned = int(final_price * Decimal('0.05'))
+                else:
+                    earned = 0
                 profile.points += earned
                 profile.save()
                 
                 cart.clear()
-                # Отправка в ресторан
                 try:
                     send_order_to_restaurant(order)
                     send_receipt_email(order)
@@ -619,17 +771,18 @@ def order_create(request):
             'phone': phone,
             'payment_method': payment_method,
             'use_points': use_points,
-            'total_cart_price': float(total_cart_price),
+            'total_cart_price': float(total_with_operator_discount),
             'discount_percent': float(discount_percent),
             'discount_amount': float(discount_amount),
-            'total_points_to_spend': float(total_points_to_spend),
+            'total_points_to_spend': float(points_used),
             'delivery_time_from': delivery_time_from.isoformat() if delivery_time_from else None,
             'delivery_time_to': delivery_time_to.isoformat() if delivery_time_to else None,
             'lat': lat,
             'lng': lng,
+            'operator_discounted': operator_discounted,
+            'item_data': [(p.id, qty, float(price), has_disc) for p, qty, price, has_disc in item_data],
         }
         
-        # Создаём платёж в ЮKassa
         idempotence_key = str(uuid.uuid4())
         try:
             payment = Payment.create({
@@ -663,7 +816,6 @@ def payment_success(request):
         messages.error(request, "Информация о заказе не найдена. Попробуйте оформить заказ заново.")
         return redirect('cart_detail')
     
-    # Проверяем статус платежа в ЮKassa
     try:
         from yookassa import Payment
         payment = Payment.find_one(pending_payment_id)
@@ -690,6 +842,8 @@ def payment_success(request):
     delivery_time_to_str = pending_order.get('delivery_time_to')
     lat = pending_order.get('lat')
     lng = pending_order.get('lng')
+    operator_discounted = pending_order.get('operator_discounted', False)
+    item_data = pending_order.get('item_data', [])
     
     delivery_time_from = None
     delivery_time_to = None
@@ -707,9 +861,15 @@ def payment_success(request):
     profile = request.user.profile
     cart = Cart(request)
     
-    # Цена после скидки
-    price_after_discount = total_cart_price * (100 - discount_percent) / 100
-    final_price = price_after_discount - total_points_to_spend
+    if operator_discounted:
+        final_price = total_cart_price
+        points_used = 0
+        discount_percent = 0
+        discount_amount = 0
+    else:
+        price_after_discount = total_cart_price - discount_amount
+        points_used = total_points_to_spend
+        final_price = price_after_discount - points_used
     
     try:
         order = Order.objects.create(
@@ -718,7 +878,7 @@ def payment_success(request):
             phone=phone,
             payment_method=payment_method,
             total_price=final_price,
-            points_used=int(total_points_to_spend),
+            points_used=int(points_used),
             status='new',
             payment_id=pending_payment_id,
             is_paid=True,
@@ -733,21 +893,23 @@ def payment_success(request):
             new_status='new',
             changed_by=request.user
         )
-        for item in cart:
+        for product_id, qty, price, _ in item_data:
+            product = Product.objects.get(id=product_id)
             OrderItem.objects.create(
                 order=order,
-                product=item['product'],
-                price=item['price'],
-                quantity=item['quantity'],
-                comment=item.get('comment', '')
+                product=product,
+                price=Decimal(str(price)),
+                quantity=qty,
+                comment=''
             )
         
-        # Списываем баллы
-        if total_points_to_spend > 0:
-            profile.points -= int(total_points_to_spend)
+        if points_used > 0:
+            profile.points -= int(points_used)
             profile.save()
-        # Начисляем кэшбэк
-        earned = int(final_price * Decimal('0.05'))
+        if not operator_discounted:
+            earned = int(final_price * Decimal('0.05'))
+        else:
+            earned = 0
         profile.points += earned
         profile.save()
         
@@ -755,7 +917,6 @@ def payment_success(request):
         request.session.pop('pending_order', None)
         request.session.pop('pending_payment_id', None)
         
-        # Отправка в ресторан
         try:
             success = send_order_to_restaurant(order)
             if success:
@@ -1647,12 +1808,18 @@ def operator_panel(request):
     today_count = Order.objects.filter(status='completed', created_at__date=today).count()
     avg_check = int(total_revenue / today_count) if today_count else 0
     
+    discounts = Discount.objects.all().order_by('-created_at')
+    categories_all = Category.objects.all()
+    products_all = Product.objects.filter(is_active=True)
     context = {
         'orders': orders_page,
         'status_filter': status_filter,
         'total_revenue': total_revenue,
         'today_count': today_count,
         'avg_check': avg_check,
+        'discounts': discounts,
+        'categories': categories_all,
+        'products': products_all,
     }
     return render(request, 'main/operator_panel.html', context)
 
@@ -1786,8 +1953,9 @@ def create_discount(request):
             messages.success(request, f'Скидка "{name}" создана')
         except Exception as e:
             messages.error(request, f'Ошибка: {e}')
-        return redirect('discount_list')
-    return redirect('discount_list')
+        return redirect('operator_panel')   # ← исправлено
+    
+    return redirect('operator_panel')
 
 @staff_member_required
 def toggle_discount(request, discount_id):
@@ -1795,7 +1963,7 @@ def toggle_discount(request, discount_id):
     discount.active = not discount.active
     discount.save()
     messages.success(request, f'Скидка {"активирована" if discount.active else "деактивирована"}')
-    return redirect('discount_list')
+    return redirect('operator_panel')
 
 
 @staff_member_required
@@ -2499,7 +2667,7 @@ def cancel_order(request, order_id):
         profile.save()
     
     # Логируем
-    logger.info(f"Заказ №{order.id} отменён оператором {request.user.username}")
+    print(f"Заказ №{order.id} отменён оператором {request.user.username}")
     
     # Обновляем счётчики и отправляем уведомление клиенту (если есть WebSocket)
     # ... можно добавить отправку уведомления через WebSocket
