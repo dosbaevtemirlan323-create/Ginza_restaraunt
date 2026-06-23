@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'widget_tweaks',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'channels', 
     'main',
 ]
@@ -138,7 +139,6 @@ EMAIL_HOST_PASSWORD = 'voss hrje lszn nkzb'
 DEFAULT_FROM_EMAIL = f'GINZA DELIVERY <{EMAIL_HOST_USER}>'
 
 # Sites framework
-INSTALLED_APPS += ['django.contrib.sites']
 SITE_ID = 1
 
 # Аутентификация
