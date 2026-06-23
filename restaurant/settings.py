@@ -58,6 +58,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -163,6 +164,16 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
+# <-- ДОБАВЬ ЭТОТ БЛОК НИЖЕ
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -182,14 +193,3 @@ CHANNEL_LAYERS = {
         # },
     },
 }
-
-
-@receiver(post_migrate)
-def update_site_domain(sender, **kwargs):
-    if sender.name == 'django.contrib.sites':
-        from django.contrib.sites.models import Site
-        # Берем самый первый сайт (SITE_ID = 1) и жестко прописываем ему твой домен
-        Site.objects.filter(id=1).update(
-            domain='ginza-baikonur.up.railway.app',
-            name='Ginza Baikonur'
-        )
