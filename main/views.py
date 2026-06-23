@@ -747,11 +747,20 @@ def order_create(request):
                 profile.save()
                 
                 cart.clear()
+                
+                # --- БЕЗОПАСНАЯ ОТПРАВКА УВЕДОМЛЕНИЙ ---
+                # 1. Пробуем отправить заказ на панель повара/ресторана
                 try:
                     send_order_to_restaurant(order)
+                except Exception as e:
+                    print(f"Error sending to restaurant panel: {e}")
+                
+                # 2. Гарантированно отправляем чек клиенту на email
+                try:
                     send_receipt_email(order)
                 except Exception as e:
-                    print(f"Error sending to restaurant: {e}")
+                    print(f"Error sending receipt email to client: {e}")
+                # --------------------------------------
                 
                 request.session['open_receipt_id'] = order.id
                 messages.success(request, f"Заказ №{order.id} оформлен! Оплата наличными при получении.")
@@ -919,12 +928,17 @@ def payment_success(request):
         request.session.pop('pending_order', None)
         request.session.pop('pending_payment_id', None)
         
+        # 1. Пробуем отправить на кухню (если не вышло — пишем ошибку в консоль, но код не ломаем)
         try:
-            success = send_order_to_restaurant(order)
-            if success:
-                send_receipt_email(order)
+            send_order_to_restaurant(order)
         except Exception as e:
-            print(f"Error sending to restaurant: {e}")
+            print(f"Ошибка отправки на кухню: {e}")
+
+        # 2. Оплата ведь ТОЧНО прошла, поэтому чек отправляем в любом случае!
+        try:
+            send_receipt_email(order)
+        except Exception as e:
+            print(f"Ошибка отправки чека: {e}")
         
         request.session['open_receipt_id'] = order.id
         messages.success(request, f"Заказ №{order.id} успешно оплачен и создан!")
