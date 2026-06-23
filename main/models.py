@@ -194,6 +194,10 @@ class OrderItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     comment = models.CharField(max_length=255, blank=True, null=True)
 
+    def get_cost(self):
+        """Возвращает общую стоимость позиции (цена × количество)"""
+        return self.price * self.quantity
+
 
 # --- ИСТОРИЯ СМЕНЫ СТАТУСОВ ЗАКАЗА ---
 class OrderStatusHistory(models.Model):
