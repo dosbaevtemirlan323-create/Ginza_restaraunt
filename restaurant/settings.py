@@ -135,11 +135,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Настройки почты для отправки чеков
 # Настройки почты для отправки чеков и сброса пароля через Gmail
 # Настройки почты: выводим всё в консоль сервера, обходя любые блокировки портов
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'apikey'  # всегда 'apikey'
-EMAIL_HOST_PASSWORD = 'sbdz fmvr zzjv lzep'
+# Настройки реальной почты через Gmail SSL
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'dosbaevtemirlan323@gmail.com'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') # Пароль берется из Railway: sbdz fmvr zzjv lzep
+
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+
+EMAIL_TIMEOUT = 10              # Жесткий таймаут, чтобы Daphne не убивал процесс
+EMAIL_FAIL_SILENTLY = False     # Выключаем скрытие ошибок, чтобы видеть проблемы в логах
+DEFAULT_FROM_EMAIL = 'GINZA DELIVERY <dosbaevtemirlan323@gmail.com>'
 # Sites framework
 SITE_ID = 1
 
