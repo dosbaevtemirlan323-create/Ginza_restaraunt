@@ -134,9 +134,11 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'dosbaevtemirlan323@gmail.com'
-# ВНИМАНИЕ: Здесь должен быть "Пароль приложения", а не пароль от аккаунта!
 EMAIL_HOST_PASSWORD = 'voss hrje lszn nkzb'
 DEFAULT_FROM_EMAIL = f'GINZA DELIVERY <{EMAIL_HOST_USER}>'
+
+# КРИТИЧЕСКИЙ ФИКС: сайт больше не упадет, если у Railway проблемы с сетью до Gmail
+EMAIL_FAIL_SILENTLY = True
 
 # Sites framework
 SITE_ID = 1
