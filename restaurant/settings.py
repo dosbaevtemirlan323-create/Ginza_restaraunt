@@ -134,19 +134,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Настройки почты для отправки чеков
 # Настройки почты для отправки чеков и сброса пароля через Gmail
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'dosbaevtemirlan323@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-
-# Переключаемся на защищенный SSL порт 465 (он открыт на Railway)
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
-
+# Настройки почты: выводим всё в консоль сервера, обходя любые блокировки портов
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 EMAIL_FAIL_SILENTLY = True
-DEFAULT_FROM_EMAIL = 'GINZA DELIVERY <dosbaevtemirlan323@gmail.com>'
-
 # Sites framework
 SITE_ID = 1
 
