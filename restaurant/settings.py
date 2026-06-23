@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -180,3 +182,14 @@ CHANNEL_LAYERS = {
         # },
     },
 }
+
+
+@receiver(post_migrate)
+def update_site_domain(sender, **kwargs):
+    if sender.name == 'django.contrib.sites':
+        from django.contrib.sites.models import Site
+        # Берем самый первый сайт (SITE_ID = 1) и жестко прописываем ему твой домен
+        Site.objects.filter(id=1).update(
+            domain='ginza-baikonur.up.railway.app',
+            name='Ginza Baikonur'
+        )
