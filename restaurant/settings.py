@@ -134,19 +134,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Настройки почты для отправки чеков
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'dosbaevtemirlan323@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 
-# Переключаемся на SSL и порт 465
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
+# Логин и пароль берем из переменных Railway
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER_BREVO')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD_BREVO')
 
 EMAIL_FAIL_SILENTLY = True
 DEFAULT_FROM_EMAIL = 'GINZA DELIVERY <dosbaevtemirlan323@gmail.com>'
-# КРИТИЧЕСКИЙ ФИКС: сайт больше не упадет, если у Railway проблемы с сетью до Gmail
-EMAIL_FAIL_SILENTLY = True
 
 # Sites framework
 SITE_ID = 1
