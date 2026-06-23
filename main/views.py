@@ -9,6 +9,8 @@ from django.db.models import Prefetch, Sum, F, Q, Count
 from django.contrib import messages
 from decimal import Decimal
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 from .cart import Cart
 from .models import Category, OrderItem, Product, Order, Profile, Favorite, Address, Review, RestaurantConfig, OrderMessage, OrderStatusHistory, Discount, Tag
 from .forms import UserRegisterForm
@@ -1505,24 +1507,25 @@ def api_analytics_data(request):
             minutes = delta.total_seconds() / 60
             delivering_durations.append(minutes)
 
-            # Найти курьера, который вёз этот заказ
-            try:
-                order = Order.objects.get(id=oid, courier__isnull=False)
-                courier_id = order.courier.id
-                courier_name = order.courier.username
-                courier_names[courier_id] = courier_name
+            # --- ИСПРАВЛЕННЫЙ БЛОК ---
+            order_obj = Order.objects.filter(id=oid).first()
+            if order_obj and order_obj.courier:
+                try:
+                    courier_user = User.objects.get(username=order_obj.courier)
+                    courier_id = courier_user.id
+                    courier_name = courier_user.username
+                    courier_names[courier_id] = courier_name
 
-                if courier_id not in courier_times:
-                    courier_times[courier_id] = {'total': 0, 'count': 0}
-                courier_times[courier_id]['total'] += minutes
-                courier_times[courier_id]['count'] += 1
+                    if courier_id not in courier_times:
+                        courier_times[courier_id] = {'total': 0, 'count': 0}
+                    courier_times[courier_id]['total'] += minutes
+                    courier_times[courier_id]['count'] += 1
 
-                # Суммируем выручку по курьеру
-                if courier_id not in courier_revenue:
-                    courier_revenue[courier_id] = 0
-                courier_revenue[courier_id] += float(order.total_price)
-            except Order.DoesNotExist:
-                pass
+                    if courier_id not in courier_revenue:
+                        courier_revenue[courier_id] = 0
+                    courier_revenue[courier_id] += float(order_obj.total_price)
+                except User.DoesNotExist:
+                    pass
 
     avg_delivery_time = round(sum(delivering_durations) / len(delivering_durations), 1) if delivering_durations else 0
 
@@ -2139,6 +2142,33 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+
+            # ---- ОТПРАВКА ПРИВЕТСТВЕННОГО ПИСЬМА ----
+            subject = 'Добро пожаловать в GINZA DELIVERY!'
+            message = f'''
+            Здравствуйте, {user.username}!
+
+            Вы успешно зарегистрировались в сервисе доставки GINZA.
+            Теперь вы можете делать заказы и получать бонусы.
+
+            Ваш логин: {user.username}
+            Email: {user.email}
+
+            С уважением,
+            Команда GINZA
+            '''
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Логируем ошибку, но не прерываем регистрацию
+                print(f"Не удалось отправить письмо: {e}")
+
             return redirect('menu')
     else:
         form = UserRegisterForm()
@@ -2569,6 +2599,64 @@ def get_analytics_data(request):
     ).order_by('-qty')[:5]
     top_products = [{'name': t['product__name'], 'qty': t['qty']} for t in top]
 
+
+        # --- Время доставки (delivering → completed) и статистика курьеров ---
+    delivering_history = OrderStatusHistory.objects.filter(
+        order__in=orders,
+        new_status__in=['delivering', 'completed']
+    ).order_by('order_id', 'created_at')
+
+    courier_times = {}      # courier_id -> {'total': сумма минут, 'count': кол-во}
+    courier_names = {}
+    courier_revenue = {}
+
+    for order in orders.filter(courier__isnull=False):
+        courier_username = order.courier
+        try:
+            courier_user = User.objects.get(username=courier_username)
+            courier_id = courier_user.id
+            courier_name = courier_user.username
+            courier_names[courier_id] = courier_name
+
+            if courier_id not in courier_times:
+                courier_times[courier_id] = {'total': 0, 'count': 0}
+            courier_times[courier_id]['count'] += 1
+
+            # Время доставки – если есть оба статуса
+            delivering_entry = order.status_history.filter(new_status='delivering').first()
+            completed_entry = order.status_history.filter(new_status='completed').first()
+            if delivering_entry and completed_entry:
+                minutes = (completed_entry.created_at - delivering_entry.created_at).total_seconds() / 60
+                courier_times[courier_id]['total'] += minutes
+
+            if courier_id not in courier_revenue:
+                courier_revenue[courier_id] = 0
+            courier_revenue[courier_id] += float(order.total_price)
+        except User.DoesNotExist:
+            pass
+
+    # --- ТОП-5 КУРЬЕРОВ ПО КОЛИЧЕСТВУ ДОСТАВОК ---
+    top_couriers = []
+    sorted_couriers = sorted(courier_times.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+    for cid, data in sorted_couriers:
+        top_couriers.append({
+            'username': courier_names.get(cid, f"Курьер #{cid}"),
+            'deliveries': data['count'],
+            'revenue': courier_revenue.get(cid, 0)
+        })
+
+    # --- ТОП-5 САМЫХ БЫСТРЫХ КУРЬЕРОВ (только если есть время) ---
+    fastest_couriers = []
+    # Фильтруем только тех, у кого есть время (total > 0)
+    couriers_with_time = {cid: data for cid, data in courier_times.items() if data['total'] > 0}
+    sorted_by_speed = sorted(couriers_with_time.items(), key=lambda x: x[1]['total'] / x[1]['count'])[:5]
+    for cid, data in sorted_by_speed:
+        avg = data['total'] / data['count']
+        fastest_couriers.append({
+            'username': courier_names.get(cid, f"Курьер #{cid}"),
+            'avg_time': f"{round(avg, 1)} мин."
+        })
+
     return JsonResponse({
         'total_revenue': float(total_revenue),
         'orders_count': orders_count,
@@ -2579,6 +2667,9 @@ def get_analytics_data(request):
         'top_products': top_products,
         'start_date': start_date.isoformat(),
         'end_date': end_date.isoformat(),
+        # Добавляем курьеров
+        'top_couriers': top_couriers,
+        'fastest_couriers': fastest_couriers,
     })
 
 @staff_member_required
